@@ -81,7 +81,7 @@ async function fetchPlaceDetails(placeId: string) {
 async function saveCache(cafeId: string, cacheKey: string, data: Record<string, unknown>) {
   const expiresAt = new Date(Date.now() + CACHE_TTL.GOOGLE_REVIEW * 1000);
   await prisma.googlePlaceCache.create({
-    data: { cafeId, data, expiresAt },
+    data: { cafeId, data: data as any, expiresAt },
   }).catch(() => null);
   await redis
     .setex(cacheKey, CACHE_TTL.GOOGLE_REVIEW, JSON.stringify(data))
@@ -147,7 +147,7 @@ export async function GET(
         const emptyData = { reviews: [] };
         const emptyExpires = new Date(Date.now() + 60 * 60 * 24 * 1000);
         await prisma.googlePlaceCache.create({
-          data: { cafeId, data: emptyData, expiresAt: emptyExpires },
+          data: { cafeId, data: emptyData as any, expiresAt: emptyExpires },
         }).catch(() => null);
         await redis.setex(cacheKey, 60 * 60 * 24, JSON.stringify(emptyData)).catch(() => null);
         return NextResponse.json(emptyData);
