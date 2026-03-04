@@ -14,9 +14,8 @@ const loginSchema = z.object({
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
-  debug: true,
   trustHost: true,
-  // adapter: PrismaAdapter(prisma), // temporarily disabled for testing
+  adapter: PrismaAdapter(prisma),
   providers: [
     KakaoProvider({
       clientId: process.env.KAKAO_CLIENT_ID!,
