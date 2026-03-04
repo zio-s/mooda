@@ -1,5 +1,4 @@
 import NextAuth from 'next-auth';
-import { PrismaAdapter } from '@auth/prisma-adapter';
 import Credentials from 'next-auth/providers/credentials';
 import KakaoProvider from 'next-auth/providers/kakao';
 import { prisma } from '@/lib/prisma';
@@ -15,7 +14,6 @@ const loginSchema = z.object({
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
   trustHost: true,
-  adapter: PrismaAdapter(prisma),
   providers: [
     KakaoProvider({
       clientId: process.env.KAKAO_CLIENT_ID!,
@@ -48,4 +46,47 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
+  callbacks: {
+    ...authConfig.callbacks,
+    async signIn({ user, account }) {
+      if (account?.provider === 'kakao' && user.email) {
+        try {
+          const existing = await prisma.user.findUnique({ where: { email: user.email } });
+          if (!existing) {
+            await prisma.user.create({
+              data: {
+                email: user.email,
+                name: user.name,
+                image: user.image,
+              },
+            });
+          }
+        } catch (e) {
+          console.error('Failed to upsert kakao user:', e);
+        }
+      }
+      return true;
+    },
+    async jwt({ token, user, account }) {
+      if (user) {
+        token.id = user.id;
+        token.role = (user as { role?: string }).role ?? 'user';
+      }
+      if (account?.provider === 'kakao' && user?.email) {
+        const dbUser = await prisma.user.findUnique({ where: { email: user.email } });
+        if (dbUser) {
+          token.id = dbUser.id;
+          token.role = dbUser.role;
+        }
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (token) {
+        session.user.id = token.id as string;
+        session.user.role = (token.role as string) ?? 'user';
+      }
+      return session;
+    },
+  },
 });
