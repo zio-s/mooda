@@ -16,7 +16,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
   debug: true,
   trustHost: true,
-  adapter: PrismaAdapter(prisma),
+  // adapter: PrismaAdapter(prisma), // temporarily disabled for testing
   providers: [
     KakaoProvider({
       clientId: process.env.KAKAO_CLIENT_ID!,
