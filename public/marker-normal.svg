@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36">
+  <!-- Shadow -->
+  <ellipse cx="14" cy="34.5" rx="6" ry="1.5" fill="rgba(0,0,0,0.18)"/>
+  <!-- Body (teardrop) -->
+  <path d="M14 1C7.373 1 2 6.373 2 13c0 7.8 12 22 12 22S26 20.8 26 13C26 6.373 20.627 1 14 1z" fill="#d97706" stroke="#b45309" stroke-width="0.8"/>
+  <!-- White circle -->
+  <circle cx="14" cy="13" r="7" fill="white" fill-opacity="0.95"/>
+  <!-- Coffee dot -->
+  <circle cx="14" cy="13" r="3" fill="#d97706"/>
+</svg>
