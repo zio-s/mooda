@@ -21,6 +21,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     KakaoProvider({
       clientId: process.env.KAKAO_CLIENT_ID!,
       clientSecret: process.env.KAKAO_CLIENT_SECRET!,
+      checks: ['state'],
       profile(profile) {
         const kakaoAccount = (profile as { kakao_account?: { email?: string; profile?: { nickname?: string; profile_image_url?: string } } }).kakao_account;
         const email = kakaoAccount?.email ?? `kakao_${profile.id}@mooda.local`;

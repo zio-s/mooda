@@ -12,6 +12,7 @@ export const authConfig: NextAuthConfig = {
     KakaoProvider({
       clientId: process.env.KAKAO_CLIENT_ID!,
       clientSecret: process.env.KAKAO_CLIENT_SECRET!,
+      checks: ['state'],
     }),
   ],
   callbacks: {
