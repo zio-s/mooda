@@ -37,6 +37,23 @@ export async function POST(request: NextRequest) {
       where.lng = { gte: params.swLng, lte: params.neLng };
     }
 
+    // 영업중 필터
+    if (params.openNow) {
+      const now = new Date();
+      const koreaTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+      const dayOfWeek = koreaTime.getDay();
+      const currentTime = `${String(koreaTime.getHours()).padStart(2, '0')}:${String(koreaTime.getMinutes()).padStart(2, '0')}`;
+
+      where.hours = {
+        some: {
+          dayOfWeek,
+          isClosed: false,
+          openTime: { lte: currentTime },
+          closeTime: { gte: currentTime },
+        },
+      };
+    }
+
     // 분위기 필터
     if (params.moods.length > 0) {
       where.moods = {

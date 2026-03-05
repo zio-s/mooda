@@ -12,7 +12,7 @@ export const cafesApi = createApi({
         method: 'POST',
         body: params,
       }),
-      keepUnusedDataFor: 120, // 2분간 이전 결과 캐시 유지
+      keepUnusedDataFor: 120,
     }),
 
     getCafe: builder.query<Cafe, string>({
@@ -35,6 +35,7 @@ export const cafesApi = createApi({
         method: 'POST',
         body: { moodId },
       }),
+      invalidatesTags: (_, __, { cafeId }) => [{ type: 'Cafe', id: cafeId }],
     }),
 
     createReview: builder.mutation<

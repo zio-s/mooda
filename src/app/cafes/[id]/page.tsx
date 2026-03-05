@@ -47,12 +47,20 @@ export default async function CafeDetailPage({ params }: Props) {
 
   if (!cafe) notFound();
 
-  const myVoteRows = session?.user?.id
-    ? await prisma.moodVote.findMany({
-        where: { userId: session.user.id, cafeId: id },
-        select: { moodId: true },
-      })
-    : [];
+  const [myVoteRows, favoriteRow] = await Promise.all([
+    session?.user?.id
+      ? prisma.moodVote.findMany({
+          where: { userId: session.user.id, cafeId: id },
+          select: { moodId: true },
+        })
+      : [],
+    session?.user?.id
+      ? prisma.userFavorite.findFirst({
+          where: { userId: session.user.id, cafeId: id },
+          select: { id: true },
+        })
+      : null,
+  ]);
 
   const cafeData = {
     ...cafe,
@@ -76,7 +84,7 @@ export default async function CafeDetailPage({ params }: Props) {
       createdAt: r.createdAt.toISOString(),
     })),
     myVotes: myVoteRows.map((v) => v.moodId),
-    isFavorited: false,
+    isFavorited: !!favoriteRow,
     distance: undefined,
     isOpen: undefined,
     createdAt: cafe.createdAt.toISOString(),

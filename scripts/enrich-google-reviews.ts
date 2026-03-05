@@ -19,7 +19,11 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const isSupabase = (process.env.DATABASE_URL ?? '').includes('supabase.com');
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ...(isSupabase ? { ssl: { rejectUnauthorized: false } } : {}),
+});
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
@@ -39,21 +43,35 @@ function sleep(ms: number) {
 
 // ─── Phase 1: Find Place ─────────────────────────────────────────────────
 
-async function findGooglePlaceId(cafeName: string, lat: number, lng: number): Promise<string | null> {
+interface FindPlaceResult {
+  placeId: string | null;
+  status: string;
+}
+
+async function findGooglePlaceId(cafeName: string, lat: number, lng: number, neighborhood?: string | null): Promise<FindPlaceResult> {
+  // 지역명 포함하여 검색 정확도 향상
+  const input = neighborhood ? `${neighborhood} ${cafeName}` : cafeName;
   const url = new URL('https://maps.googleapis.com/maps/api/place/findplacefromtext/json');
-  url.searchParams.set('input', cafeName);
+  url.searchParams.set('input', input);
   url.searchParams.set('inputtype', 'textquery');
   url.searchParams.set('fields', 'place_id,name,formatted_address');
-  url.searchParams.set('locationbias', `circle:500@${lat},${lng}`);
+  url.searchParams.set('locationbias', `circle:2000@${lat},${lng}`);
   url.searchParams.set('language', 'ko');
   url.searchParams.set('key', GOOGLE_API_KEY);
 
   const res = await fetch(url.toString());
-  if (!res.ok) return null;
+  if (!res.ok) return { placeId: null, status: `HTTP_${res.status}` };
 
   const json = await res.json();
+  const status = json.status ?? 'UNKNOWN';
+
+  // 할당량 초과 또는 API 거부 시 상태 반환
+  if (status === 'OVER_QUERY_LIMIT' || status === 'REQUEST_DENIED') {
+    return { placeId: null, status };
+  }
+
   const candidates = json.candidates ?? [];
-  return candidates.length > 0 ? candidates[0].place_id : null;
+  return { placeId: candidates.length > 0 ? candidates[0].place_id : null, status };
 }
 
 // ─── Phase 2: Place Details ──────────────────────────────────────────────
@@ -68,7 +86,22 @@ interface GoogleReviewRaw {
   language?: string;
 }
 
-async function fetchGoogleReviews(placeId: string) {
+interface FetchReviewsResult {
+  reviews: Array<{
+    authorName: string;
+    authorPhoto?: string;
+    rating: number;
+    text: string;
+    relativeTime: string;
+    time: number;
+    language: string;
+  }>;
+  googleRating?: number;
+  googleTotalRatings?: number;
+  status: string;
+}
+
+async function fetchGoogleReviews(placeId: string): Promise<FetchReviewsResult | null> {
   const url = new URL('https://maps.googleapis.com/maps/api/place/details/json');
   url.searchParams.set('place_id', placeId);
   url.searchParams.set('fields', 'reviews,rating,user_ratings_total');
@@ -79,6 +112,12 @@ async function fetchGoogleReviews(placeId: string) {
   if (!res.ok) return null;
 
   const json = await res.json();
+  const status = json.status ?? 'UNKNOWN';
+
+  if (status === 'OVER_QUERY_LIMIT' || status === 'REQUEST_DENIED') {
+    return { reviews: [], status, googleRating: undefined, googleTotalRatings: undefined };
+  }
+
   const result = json.result ?? {};
 
   return {
@@ -93,6 +132,7 @@ async function fetchGoogleReviews(placeId: string) {
     })),
     googleRating: result.rating ?? undefined,
     googleTotalRatings: result.user_ratings_total ?? undefined,
+    status,
   };
 }
 
@@ -127,8 +167,9 @@ async function main() {
   let reviewSaved = 0;
   let reviewSkipped = 0;
   let apiCalls = 0;
+  let quotaExceeded = false;
 
-  for (let i = 0; i < cafes.length; i++) {
+  for (let i = 0; i < cafes.length && !quotaExceeded; i++) {
     const cafe = cafes[i];
     const prefix = `  [${i + 1}/${cafes.length}] ${cafe.name}`;
     const parts: string[] = [];
@@ -140,16 +181,26 @@ async function main() {
         parts.push(`🔗 placeId 있음`);
       } else {
         try {
-          const placeId = await findGooglePlaceId(cafe.name, cafe.lat, cafe.lng);
+          const result = await findGooglePlaceId(cafe.name, cafe.lat, cafe.lng, cafe.neighborhood);
           apiCalls++;
           await sleep(150);
 
-          if (placeId) {
+          if (result.status === 'OVER_QUERY_LIMIT') {
+            console.error(`\n🚨 Google API 일일 할당량 초과! 내일 다시 실행해주세요.`);
+            console.log(`   현재까지 매칭 성공: ${matched}개 / API 호출: ${apiCalls}건`);
+            quotaExceeded = true; break;
+          }
+          if (result.status === 'REQUEST_DENIED') {
+            console.error(`\n🚨 Google API 요청 거부! API 키와 billing 설정을 확인해주세요.`);
+            quotaExceeded = true; break;
+          }
+
+          if (result.placeId) {
             await prisma.cafe.update({
               where: { id: cafe.id },
-              data: { googlePlaceId: placeId },
+              data: { googlePlaceId: result.placeId },
             });
-            cafe.googlePlaceId = placeId;
+            cafe.googlePlaceId = result.placeId;
             matched++;
             parts.push(`🔗 매칭 성공`);
           } else {
@@ -180,8 +231,17 @@ async function main() {
           apiCalls++;
           await sleep(150);
 
+          if (data?.status === 'OVER_QUERY_LIMIT') {
+            console.error(`\n🚨 Google API 일일 할당량 초과! 내일 다시 실행해주세요.`);
+            console.log(`   현재까지 리뷰 저장: ${reviewSaved}개 / API 호출: ${apiCalls}건`);
+            quotaExceeded = true; break;
+          }
+          if (data?.status === 'REQUEST_DENIED') {
+            console.error(`\n🚨 Google API 요청 거부! API 키와 billing 설정을 확인해주세요.`);
+            quotaExceeded = true; break;
+          }
+
           if (data && data.reviews.length > 0) {
-            // 기존 캐시 삭제
             if (FORCE) {
               await prisma.googlePlaceCache.deleteMany({ where: { cafeId: cafe.id } });
             }

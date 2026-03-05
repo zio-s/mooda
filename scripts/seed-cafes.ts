@@ -10,7 +10,11 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const isSupabase = (process.env.DATABASE_URL ?? '').includes('supabase.com');
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ...(isSupabase ? { ssl: { rejectUnauthorized: false } } : {}),
+});
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY ?? process.env.KAKAO_CLIENT_ID!;
