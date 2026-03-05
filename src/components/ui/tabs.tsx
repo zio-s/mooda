@@ -49,15 +49,13 @@ const TabsTriggerButton = styled.button<{ $active: boolean }>`
   justify-content: center;
   flex: 1;
   min-width: 0;
-  padding: 6px 4px;
-  font-size: 13px;
+  padding: 6px 2px;
+  font-size: 12px;
   font-weight: ${theme.fontWeight.medium};
   border-radius: 7px;
   border: none;
   cursor: pointer;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   transition: all 0.15s ease;
   background: ${({ $active }) => ($active ? theme.colors.white : 'transparent')};
   color: ${({ $active }) => ($active ? theme.colors.text : theme.colors.textMuted)};

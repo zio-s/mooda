@@ -273,19 +273,19 @@ export function CafeDetailClient({ cafe }: Props) {
 
       <Tabs defaultValue="info">
         <TabsList>
-          <TabsTrigger value="info">기본 정보</TabsTrigger>
+          <TabsTrigger value="info">정보</TabsTrigger>
           <TabsTrigger value="reviews">
-            리뷰 {cafe.reviewCount > 0 && `(${cafe.reviewCount})`}
+            리뷰{cafe.reviewCount > 0 ? ` ${cafe.reviewCount}` : ''}
           </TabsTrigger>
-          <TabsTrigger value="blogs">블로그 후기</TabsTrigger>
+          <TabsTrigger value="blogs">블로그</TabsTrigger>
           {googleData && googleData.reviews.length > 0 && (
             <TabsTrigger value="google">
-              Google ({googleData.reviews.length})
+              Google {googleData.reviews.length}
             </TabsTrigger>
           )}
           {allPhotos.length > 0 && (
             <TabsTrigger value="gallery">
-              갤러리 ({allPhotos.length})
+              갤러리 {allPhotos.length}
             </TabsTrigger>
           )}
         </TabsList>
