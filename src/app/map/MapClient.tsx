@@ -74,7 +74,7 @@ export function MapClient() {
   }, [center.lat, center.lng, bounds, filters.moods, filters.openNow, filters.sort]);
 
   // RTK Query: 이전 데이터를 유지하면서 background refetch
-  const { data, isLoading, isFetching } = useSearchCafesQuery(searchParams!, {
+  const { data, isLoading, isFetching, isError } = useSearchCafesQuery(searchParams!, {
     skip: !searchParams,
   });
 
@@ -196,7 +196,7 @@ export function MapClient() {
         <ListPanel $visible={showList}>
           <ListHeader>
             <ListCount>
-              {isLoading ? '검색 중...' : isFetching ? `카페 ${cafes.length}개 (업데이트 중...)` : `카페 ${cafes.length}개`}
+              {isLoading ? '검색 중...' : isError ? '검색 실패' : isFetching ? `카페 ${cafes.length}개 (업데이트 중...)` : `카페 ${cafes.length}개`}
             </ListCount>
           </ListHeader>
           <ListInner>
@@ -206,6 +206,11 @@ export function MapClient() {
                   <Skeleton key={i} style={{ height: 160, borderRadius: 8 }} />
                 ))}
               </SkeletonList>
+            ) : isError ? (
+              <EmptyState>
+                <div style={{ fontSize: 36 }}>😵</div>
+                <p>카페 검색에 실패했습니다.<br />잠시 후 다시 시도해주세요.</p>
+              </EmptyState>
             ) : cafes.length === 0 ? (
               <EmptyState>
                 <div style={{ fontSize: 36 }}>☕</div>

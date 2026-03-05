@@ -53,15 +53,20 @@ export function CafeMap({ onCafeSelect, cafes }: CafeMapProps) {
     );
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── 언마운트 시 타이머 정리 ────────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      if (boundsTimerRef.current) clearTimeout(boundsTimerRef.current);
+    };
+  }, []);
+
   const handleBoundsChange = useCallback(
     (map: kakao.maps.Map) => {
-      const mapCenter = map.getCenter();
-      dispatch(setCenter({ lat: mapCenter.getLat(), lng: mapCenter.getLng() }));
-      dispatch(setLevel(map.getLevel()));
-
-      // 디바운스: 지도 조작이 끝난 후 400ms 뒤에 검색
+      // 디바운스: 드래그/줌 완료 후 400ms 뒤에 상태 업데이트 + 검색
       if (boundsTimerRef.current) clearTimeout(boundsTimerRef.current);
       boundsTimerRef.current = setTimeout(() => {
+        const mapCenter = map.getCenter();
+        const mapLevel = map.getLevel();
         const bounds = map.getBounds();
         const sw = bounds.getSouthWest();
         const ne = bounds.getNorthEast();
@@ -73,7 +78,7 @@ export function CafeMap({ onCafeSelect, cafes }: CafeMapProps) {
           neLng: ne.getLng(),
         };
 
-        // 이전 bounds와 비교: 중심이 10% 이상 이동했거나 줌 레벨이 바뀐 경우에만 재검색
+        // 이전 bounds와 비교: 의미 있는 변화가 있을 때만 검색
         const prev = lastBoundsRef.current;
         if (prev) {
           const prevLatRange = prev.neLat - prev.swLat;
@@ -82,13 +87,20 @@ export function CafeMap({ onCafeSelect, cafes }: CafeMapProps) {
           const centerLngDiff = Math.abs((newBounds.swLng + newBounds.neLng) / 2 - (prev.swLng + prev.neLng) / 2);
           const newLatRange = newBounds.neLat - newBounds.swLat;
 
-          const centerMoved = centerLatDiff > prevLatRange * 0.1 || centerLngDiff > prevLngRange * 0.1;
+          const centerMoved = centerLatDiff > prevLatRange * 0.15 || centerLngDiff > prevLngRange * 0.15;
           const zoomChanged = Math.abs(newLatRange - prevLatRange) > prevLatRange * 0.2;
 
-          if (!centerMoved && !zoomChanged) return;
+          if (!centerMoved && !zoomChanged) {
+            // bounds는 안 바꾸지만 center/level은 UI용으로 업데이트
+            dispatch(setCenter({ lat: mapCenter.getLat(), lng: mapCenter.getLng() }));
+            dispatch(setLevel(mapLevel));
+            return;
+          }
         }
 
         lastBoundsRef.current = newBounds;
+        dispatch(setCenter({ lat: mapCenter.getLat(), lng: mapCenter.getLng() }));
+        dispatch(setLevel(mapLevel));
         dispatch(setBounds(newBounds));
       }, 400);
     },

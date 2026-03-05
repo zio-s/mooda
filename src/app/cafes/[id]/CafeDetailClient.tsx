@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -118,10 +118,10 @@ export function CafeDetailClient({ cafe }: Props) {
 
   // ── 갤러리 라이트박스 ──────────────────────────────────────────────────
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
-  const allPhotos = [
+  const allPhotos = useMemo(() => [
     ...cafe.photos.map((p) => p.url),
     ...(googleData?.photos?.map((p) => p.url) ?? []),
-  ];
+  ], [cafe.photos, googleData?.photos]);
 
   const myExistingReview = session?.user?.id
     ? cafe.reviews.find((r) => r.userId === session.user!.id)
@@ -197,7 +197,7 @@ export function CafeDetailClient({ cafe }: Props) {
     }
   }
 
-  const topMoods = [...moods].sort((a, b) => b.voteCount - a.voteCount);
+  const topMoods = useMemo(() => [...moods].sort((a, b) => b.voteCount - a.voteCount), [moods]);
   const todayDay = new Date().getDay();
   const todayHours = cafe.hours.find((h) => h.dayOfWeek === todayDay);
 
