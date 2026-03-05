@@ -200,6 +200,35 @@ export const AreaOption = styled.button<{ $active?: boolean }>`
   }
 `;
 
+// ─── Loading Progress Bar ─────────────────────────────────
+export const LoadingBar = styled.div`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: ${theme.zIndex.dropdown};
+  overflow: hidden;
+  background: rgba(217, 119, 6, 0.15);
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -40%;
+    width: 40%;
+    height: 100%;
+    background: ${theme.colors.primary};
+    border-radius: 2px;
+    animation: loading-slide 1s ease-in-out infinite;
+  }
+
+  @keyframes loading-slide {
+    0% { left: -40%; }
+    100% { left: 100%; }
+  }
+`;
+
 // ─── Mobile Selected Cafe Preview ─────────────────────────
 export const MobilePreview = styled.div`
   position: absolute;

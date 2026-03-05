@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { cache } from 'react';
 import type { Metadata } from 'next';
 import { CafeDetailClient } from './CafeDetailClient';
 
@@ -8,12 +9,26 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
+// React cache로 같은 요청 내에서 DB 중복 조회 방지
+const getCafe = cache(async (id: string) => {
+  return prisma.cafe.findUnique({
+    where: { id },
+    include: {
+      photos: { orderBy: [{ isMain: 'desc' }, { createdAt: 'asc' }] },
+      hours: { orderBy: { dayOfWeek: 'asc' } },
+      moods: { include: { mood: true }, orderBy: { voteCount: 'desc' } },
+      reviews: {
+        include: { user: { select: { id: true, name: true, image: true } } },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+      },
+    },
+  });
+});
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const cafe = await prisma.cafe.findUnique({
-    where: { id },
-    select: { name: true, description: true, neighborhood: true },
-  });
+  const cafe = await getCafe(id);
 
   if (!cafe) return { title: '카페를 찾을 수 없습니다' };
 
@@ -25,31 +40,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CafeDetailPage({ params }: Props) {
   const { id } = await params;
-  const session = await auth();
-
-  const [cafe, myVoteRows] = await Promise.all([
-    prisma.cafe.findUnique({
-      where: { id },
-      include: {
-        photos: { orderBy: [{ isMain: 'desc' }, { createdAt: 'asc' }] },
-        hours: { orderBy: { dayOfWeek: 'asc' } },
-        moods: { include: { mood: true }, orderBy: { voteCount: 'desc' } },
-        reviews: {
-          include: { user: { select: { id: true, name: true, image: true } } },
-          orderBy: { createdAt: 'desc' },
-          take: 20,
-        },
-      },
-    }),
-    session?.user?.id
-      ? prisma.moodVote.findMany({
-          where: { userId: session.user.id, cafeId: id },
-          select: { moodId: true },
-        })
-      : Promise.resolve([]),
+  const [cafe, session] = await Promise.all([
+    getCafe(id),
+    auth(),
   ]);
 
   if (!cafe) notFound();
+
+  const myVoteRows = session?.user?.id
+    ? await prisma.moodVote.findMany({
+        where: { userId: session.user.id, cafeId: id },
+        select: { moodId: true },
+      })
+    : [];
 
   const cafeData = {
     ...cafe,

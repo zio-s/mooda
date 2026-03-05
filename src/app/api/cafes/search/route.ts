@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     const skip = (params.page - 1) * params.limit;
 
-    const [cafes, total] = await prisma.$transaction([
+    const [cafes, total] = await Promise.all([
       prisma.cafe.findMany({
         where,
         include: {
@@ -59,7 +59,6 @@ export async function POST(request: NextRequest) {
             orderBy: { voteCount: 'desc' },
             take: 5,
           },
-          hours: true,
         },
         skip,
         take: params.limit,

@@ -6,12 +6,13 @@ export const cafesApi = createApi({
   baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
   tagTypes: ['Cafe', 'Favorite'],
   endpoints: (builder) => ({
-    searchCafes: builder.mutation<SearchResult, SearchParams>({
-      query: (body) => ({
+    searchCafes: builder.query<SearchResult, SearchParams>({
+      query: (params) => ({
         url: '/cafes/search',
         method: 'POST',
-        body,
+        body: params,
       }),
+      keepUnusedDataFor: 120, // 2분간 이전 결과 캐시 유지
     }),
 
     getCafe: builder.query<Cafe, string>({
@@ -82,7 +83,7 @@ export const cafesApi = createApi({
 });
 
 export const {
-  useSearchCafesMutation,
+  useSearchCafesQuery,
   useGetCafeQuery,
   useGetCafeBlogsQuery,
   useGetCafeGoogleReviewsQuery,

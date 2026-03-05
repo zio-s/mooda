@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useSearchCafesMutation } from '@/store/api/cafesApi';
+import { useSearchCafesQuery } from '@/store/api/cafesApi';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { toggleMoodFilter, setSelectedCafe as deselectCafe, setUserLocation, setCenter, setLevel } from '@/store/slices/mapSlice';
 import { CafeMapWrapper } from '@/components/map/CafeMapWrapper';
@@ -47,18 +47,38 @@ import {
   AreaSelectBtn,
   AreaDropdown,
   AreaOption,
+  LoadingBar,
 } from './page.styles';
 
 export function MapClient() {
   const searchParamsHook = useSearchParams();
   const dispatch = useAppDispatch();
   const { filters, bounds, center } = useAppSelector((s) => s.map);
-  const [searchCafes, { data, isLoading }] = useSearchCafesMutation();
   const [selectedCafe, setSelectedCafe] = useState<Cafe | null>(null);
   const [showList, setShowList] = useState(false);
   const [selectedArea, setSelectedArea] = useState<number | null>(null);
   const [areaOpen, setAreaOpen] = useState(false);
   const areaRef = useRef<HTMLDivElement>(null);
+
+  // 검색 파라미터 메모이제이션
+  const searchParams = useMemo(() => {
+    if (!bounds) return null;
+    return {
+      lat: center.lat,
+      lng: center.lng,
+      ...bounds,
+      moods: filters.moods,
+      openNow: filters.openNow,
+      sort: filters.sort,
+    };
+  }, [center.lat, center.lng, bounds, filters.moods, filters.openNow, filters.sort]);
+
+  // RTK Query: 이전 데이터를 유지하면서 background refetch
+  const { data, isLoading, isFetching } = useSearchCafesQuery(searchParams!, {
+    skip: !searchParams,
+  });
+
+  const cafes = data?.cafes ?? [];
 
   // 드롭다운 외부 클릭 시 닫기
   useEffect(() => {
@@ -107,22 +127,6 @@ export function MapClient() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // 필터 또는 bounds 변경 시 재검색
-  useEffect(() => {
-    if (!bounds) return;
-    searchCafes({
-      lat: center.lat,
-      lng: center.lng,
-      ...bounds,
-      moods: filters.moods,
-      openNow: filters.openNow,
-      sort: filters.sort,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, bounds]);
-
-  const cafes = data?.cafes ?? [];
 
   return (
     <MapPageWrapper>
@@ -180,6 +184,9 @@ export function MapClient() {
 
       {/* 메인 영역 */}
       <MainArea>
+        {/* 로딩 프로그레스 바 */}
+        {isFetching && <LoadingBar />}
+
         {/* 지도 */}
         <MapArea $hidden={showList}>
           <CafeMapWrapper cafes={cafes} onCafeSelect={setSelectedCafe} />
@@ -189,7 +196,7 @@ export function MapClient() {
         <ListPanel $visible={showList}>
           <ListHeader>
             <ListCount>
-              {isLoading ? '검색 중...' : `카페 ${cafes.length}개`}
+              {isLoading ? '검색 중...' : isFetching ? `카페 ${cafes.length}개 (업데이트 중...)` : `카페 ${cafes.length}개`}
             </ListCount>
           </ListHeader>
           <ListInner>

@@ -112,6 +112,10 @@ export interface SearchParams {
   lat?: number;
   lng?: number;
   radius?: number;
+  swLat?: number;
+  swLng?: number;
+  neLat?: number;
+  neLng?: number;
   moods?: string[];
   purposes?: string[];
   photoFeatures?: string[];
