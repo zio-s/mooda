@@ -29,12 +29,13 @@ export function Tabs({
 
 // TabsList
 const TabsListWrapper = styled.div`
-  display: inline-flex;
+  display: flex;
   align-items: center;
   background: #f3f4f6;
   border-radius: ${theme.borderRadius.lg};
   padding: 3px;
   gap: 2px;
+  width: 100%;
 `;
 
 export function TabsList({ children }: { children: React.ReactNode }) {
@@ -46,13 +47,17 @@ const TabsTriggerButton = styled.button<{ $active: boolean }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px 14px;
-  font-size: ${theme.fontSize.sm};
+  flex: 1;
+  min-width: 0;
+  padding: 6px 4px;
+  font-size: 13px;
   font-weight: ${theme.fontWeight.medium};
   border-radius: 7px;
   border: none;
   cursor: pointer;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: all 0.15s ease;
   background: ${({ $active }) => ($active ? theme.colors.white : 'transparent')};
   color: ${({ $active }) => ($active ? theme.colors.text : theme.colors.textMuted)};
