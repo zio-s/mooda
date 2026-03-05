@@ -64,7 +64,7 @@ export const SelectionCount = styled.span`
 // MoodFilterChips
 export const ChipsWrapper = styled.div`
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
 `;
 
@@ -80,6 +80,8 @@ export const Chip = styled.button`
   font-size: ${theme.fontSize.xs};
   font-weight: ${theme.fontWeight.medium};
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: background 0.15s ease;
 
   &:hover {

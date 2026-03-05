@@ -16,12 +16,14 @@ export const MapPageWrapper = styled.div`
 // ─── Filter Bar ───────────────────────────────────────────
 export const FilterBar = styled.div`
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
   border-bottom: 1px solid ${theme.colors.border};
   background: ${theme.colors.bg};
   padding: 8px 12px;
   flex-shrink: 0;
+  overflow: hidden;
 `;
 
 export const FilterBadge = styled.span`
@@ -39,12 +41,17 @@ export const FilterBadge = styled.span`
 
 export const ChipsScroll = styled.div`
   flex: 1;
+  min-width: 0;
   overflow-x: auto;
-  display: flex;
+  display: none;
   align-items: center;
 
   &::-webkit-scrollbar {
     display: none;
+  }
+
+  @media (min-width: ${theme.breakpoints.md}) {
+    display: flex;
   }
 `;
 
