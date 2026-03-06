@@ -12,6 +12,7 @@ import { CafeCard } from '@/components/cafe/CafeCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import { CafeSearch } from '@/components/search/CafeSearch';
 import { Filter, List, MapPin, ChevronDown } from 'lucide-react';
 import type { Cafe } from '@/types';
 
@@ -110,6 +111,17 @@ export function MapClient() {
     );
   }, [dispatch]);
 
+  // 카페 검색 결과 선택
+  const handleSearchSelect = useCallback((result: { cafeId: string; lat: number; lng: number; name: string }) => {
+    dispatch(setCenter({ lat: result.lat, lng: result.lng }));
+    dispatch(setLevel(3)); // 가까이 줌
+    setShowList(false);
+    // cafeId가 있으면 마커 선택 상태로 전환
+    if (result.cafeId) {
+      dispatch(deselectCafe(result.cafeId));
+    }
+  }, [dispatch]);
+
   // 지역 바로가기
   const handleAreaSelect = useCallback((idx: number) => {
     const area = AREA_PRESETS[idx];
@@ -149,6 +161,8 @@ export function MapClient() {
             <MoodFilter />
           </SheetContent>
         </Sheet>
+
+        <CafeSearch onSelect={handleSearchSelect} />
 
         <ChipsScroll>
           <MoodFilterChips />

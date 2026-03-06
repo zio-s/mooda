@@ -17,31 +17,41 @@ const variantStyles: Record<Variant, ReturnType<typeof css>> = {
     background: ${theme.colors.primary};
     color: ${theme.colors.white};
     border: none;
-    &:hover:not(:disabled) { background: ${theme.colors.primaryDark}; }
+    @media (hover: hover) {
+      &:hover:not(:disabled) { background: ${theme.colors.primaryDark}; }
+    }
   `,
   outline: css`
     background: transparent;
     color: ${theme.colors.text};
     border: 1.5px solid ${theme.colors.border};
-    &:hover:not(:disabled) { background: ${theme.colors.bgMuted}; }
+    @media (hover: hover) {
+      &:hover:not(:disabled) { background: ${theme.colors.bgMuted}; }
+    }
   `,
   ghost: css`
     background: transparent;
     color: ${theme.colors.text};
     border: none;
-    &:hover:not(:disabled) { background: ${theme.colors.bgMuted}; }
+    @media (hover: hover) {
+      &:hover:not(:disabled) { background: ${theme.colors.bgMuted}; }
+    }
   `,
   secondary: css`
     background: #f3f4f6;
     color: ${theme.colors.text};
     border: none;
-    &:hover:not(:disabled) { background: #e5e7eb; }
+    @media (hover: hover) {
+      &:hover:not(:disabled) { background: #e5e7eb; }
+    }
   `,
   destructive: css`
     background: ${theme.colors.error};
     color: white;
     border: none;
-    &:hover:not(:disabled) { background: #b91c1c; }
+    @media (hover: hover) {
+      &:hover:not(:disabled) { background: #b91c1c; }
+    }
   `,
   link: css`
     background: transparent;

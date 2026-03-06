@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
       { protocol: 'https', hostname: 'maps.googleapis.com' },
       { protocol: 'https', hostname: '*.blogfiles.naver.net' },
+      { protocol: 'https', hostname: '*.pstatic.net' },
+      { protocol: 'https', hostname: 'search.pstatic.net' },
     ],
   },
   experimental: {

@@ -1,4 +1,4 @@
-const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY!;
+const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY ?? process.env.KAKAO_CLIENT_ID!;
 const KAKAO_LOCAL_API_BASE = 'https://dapi.kakao.com/v2/local';
 
 export interface KakaoPlace {

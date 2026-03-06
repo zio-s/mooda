@@ -138,6 +138,19 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+// ─── Keyword Search ─────────────────────────────────────────────────
+export interface KeywordSearchResult {
+  kakaoPlaceId: string;
+  name: string;
+  address: string;
+  phone: string | null;
+  lat: number;
+  lng: number;
+  kakaoUrl: string;
+  category: string;
+  cafeId: string | null;
+}
+
 export interface MapBounds {
   swLat: number;
   swLng: number;

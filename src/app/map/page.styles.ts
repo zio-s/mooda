@@ -23,7 +23,7 @@ export const FilterBar = styled.div`
   background: ${theme.colors.bg};
   padding: 8px 12px;
   flex-shrink: 0;
-  overflow: hidden;
+  z-index: ${theme.zIndex.dropdown};
 `;
 
 export const FilterBadge = styled.span`
@@ -159,9 +159,11 @@ export const AreaSelectBtn = styled.button`
   white-space: nowrap;
   transition: all 0.15s ease;
 
-  &:hover {
-    border-color: ${theme.colors.primary};
-    color: ${theme.colors.primary};
+  @media (hover: hover) {
+    &:hover {
+      border-color: ${theme.colors.primary};
+      color: ${theme.colors.primary};
+    }
   }
 
   svg {
@@ -202,8 +204,10 @@ export const AreaOption = styled.button<{ $active?: boolean }>`
   text-align: left;
   transition: background 0.1s ease;
 
-  &:hover {
-    background: ${({ $active }) => ($active ? theme.colors.primaryLight : theme.colors.bgMuted)};
+  @media (hover: hover) {
+    &:hover {
+      background: ${({ $active }) => ($active ? theme.colors.primaryLight : theme.colors.bgMuted)};
+    }
   }
 `;
 
