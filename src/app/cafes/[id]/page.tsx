@@ -11,19 +11,24 @@ interface Props {
 
 // React cache로 같은 요청 내에서 DB 중복 조회 방지
 const getCafe = cache(async (id: string) => {
-  return prisma.cafe.findUnique({
-    where: { id },
-    include: {
-      photos: { orderBy: [{ isMain: 'desc' }, { createdAt: 'asc' }] },
-      hours: { orderBy: { dayOfWeek: 'asc' } },
-      moods: { include: { mood: true }, orderBy: { voteCount: 'desc' } },
-      reviews: {
-        include: { user: { select: { id: true, name: true, image: true } } },
-        orderBy: { createdAt: 'desc' },
-        take: 20,
+  try {
+    return await prisma.cafe.findUnique({
+      where: { id },
+      include: {
+        photos: { orderBy: [{ isMain: 'desc' }, { createdAt: 'asc' }] },
+        hours: { orderBy: { dayOfWeek: 'asc' } },
+        moods: { include: { mood: true }, orderBy: { voteCount: 'desc' } },
+        reviews: {
+          include: { user: { select: { id: true, name: true, image: true } } },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+        },
       },
-    },
-  });
+    });
+  } catch (error) {
+    console.error(`getCafe(${id}) failed:`, error instanceof Error ? error.message : error);
+    throw error;
+  }
 });
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
