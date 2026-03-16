@@ -1,59 +1,62 @@
 'use client';
 
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { theme } from '@/styles/theme';
 
-export const SheetWrap = styled(motion.div)`
+// ─── 배경 오버레이 ──────────────────────────────────────────────────
+export const Overlay = styled.div`
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  max-height: 80vh;
-  background: ${theme.colors.bgCard};
-  border-top-left-radius: ${theme.borderRadius.xl};
-  border-top-right-radius: ${theme.borderRadius.xl};
-  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.14);
-  z-index: 150;
-  touch-action: none;
-  user-select: none;
-  display: flex;
-  flex-direction: column;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 140;
+  -webkit-tap-highlight-color: transparent;
 
-  /* 데스크톱에서 숨김 — ListPanel 사용 */
   @media (min-width: ${theme.breakpoints.md}) {
     display: none;
   }
 `;
 
-export const DragHandle = styled.div`
+// ─── 시트 본체 ──────────────────────────────────────────────────────
+export const SheetWrap = styled.div<{ $visible: boolean }>`
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 150;
+  background: ${theme.colors.bgCard};
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+  transform: translateY(${({ $visible }) => ($visible ? '0' : '110%')});
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+  max-height: 75vh;
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  height: 20px;
-  padding-top: 8px;
-  flex-shrink: 0;
-  cursor: grab;
+  flex-direction: column;
+  pointer-events: ${({ $visible }) => ($visible ? 'auto' : 'none')};
 
-  &:active {
-    cursor: grabbing;
+  @media (min-width: ${theme.breakpoints.md}) {
+    display: none;
   }
 `;
 
 export const HandleBar = styled.div`
   width: 36px;
   height: 4px;
+  margin: 10px auto 6px;
   border-radius: 2px;
   background: ${theme.colors.border};
+  flex-shrink: 0;
 `;
 
 export const InfoSection = styled.div`
-  padding: 4px 16px 8px;
+  padding: 0 16px 14px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   flex-shrink: 0;
+  overflow-y: auto;
 `;
 
 export const TopRow = styled.div`
@@ -72,15 +75,15 @@ export const CafeName = styled.h3`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.3;
+  line-height: 1.4;
 `;
 
 export const CloseBtn = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
   border: none;
   border-radius: ${theme.borderRadius.full};
@@ -88,8 +91,13 @@ export const CloseBtn = styled.button`
   color: ${theme.colors.textMuted};
   cursor: pointer;
   transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  position: relative;
+  z-index: 10;
 
-  &:hover {
+  &:hover,
+  &:active {
     background: ${theme.colors.border};
     color: ${theme.colors.text};
   }
@@ -138,13 +146,14 @@ export const Actions = styled.div`
   align-items: center;
   gap: 6px;
   padding-top: 4px;
+  flex-wrap: wrap;
 `;
 
 export const DetailLink = styled(Link)`
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 14px;
+  padding: 8px 16px;
   border-radius: ${theme.borderRadius.md};
   background: ${theme.colors.primary};
   color: ${theme.colors.white};
@@ -152,6 +161,7 @@ export const DetailLink = styled(Link)`
   font-weight: ${theme.fontWeight.medium};
   text-decoration: none;
   transition: background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 
   &:hover {
     background: ${theme.colors.primaryDark};
@@ -162,7 +172,7 @@ export const KakaoLink = styled.a`
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 6px 10px;
+  padding: 8px 12px;
   border-radius: ${theme.borderRadius.md};
   background: ${theme.colors.kakao};
   color: ${theme.colors.kakaoText};
@@ -170,9 +180,36 @@ export const KakaoLink = styled.a`
   font-weight: ${theme.fontWeight.medium};
   text-decoration: none;
   transition: opacity 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
 
   &:hover {
     opacity: 0.85;
+  }
+`;
+
+export const ToggleBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: ${theme.borderRadius.md};
+  background: ${theme.colors.bgMuted};
+  color: ${theme.colors.text};
+  font-size: ${theme.fontSize.sm};
+  font-weight: ${theme.fontWeight.medium};
+  cursor: pointer;
+  transition: background 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+
+  &:hover,
+  &:active {
+    background: ${theme.colors.border};
+  }
+
+  svg {
+    transition: transform 0.2s ease;
   }
 `;
 
@@ -180,30 +217,12 @@ export const KakaoLink = styled.a`
 export const ExpandedSection = styled.div`
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  max-height: 50vh;
+  flex: 1;
+  min-height: 0;
   border-top: 1px solid ${theme.colors.border};
   margin-top: 4px;
 `;
 
 export const RouteSection = styled.div`
-  padding-bottom: 16px;
-`;
-
-export const PhotoSection = styled.div`
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-`;
-
-export const StatusBadge = styled.span<{ $open: boolean }>`
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  padding: 3px 8px;
-  border-radius: ${theme.borderRadius.full};
-  background: ${({ $open }) => ($open ? theme.colors.success : theme.colors.error)};
-  color: ${theme.colors.white};
-  font-size: ${theme.fontSize.xs};
-  font-weight: ${theme.fontWeight.medium};
+  padding: 8px 16px 16px;
 `;

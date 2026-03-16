@@ -11,6 +11,7 @@ const CafeMap = dynamic(() => import('./CafeMap').then((m) => ({ default: m.Cafe
 
 export function CafeMapWrapper(props: {
   onCafeSelect?: (cafe: Cafe | null) => void;
+  onNearbyFound?: (cafe: Cafe) => void;
   cafes: Cafe[];
 }) {
   return <CafeMap {...props} />;

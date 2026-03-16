@@ -4,13 +4,21 @@ import { theme } from '@/styles/theme';
 
 export const CardWrapper = styled.article`
   border-radius: ${theme.borderRadius.lg};
-  border: 1px solid ${theme.colors.border};
+  border: none;
   background: ${theme.colors.bgCard};
   overflow: hidden;
-  transition: box-shadow 0.2s ease;
+  box-shadow: ${theme.shadows.card};
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 
-  &:hover {
-    box-shadow: ${theme.shadows.md};
+  @media (hover: hover) {
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: ${theme.shadows.cardHover};
+    }
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 `;
 
@@ -28,6 +36,43 @@ export const PhotoArea = styled.div<{ $compact?: boolean }>`
   ${CardWrapper}:hover & img {
     transform: scale(1.05);
   }
+`;
+
+export const PhotoCarousel = styled.div`
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  height: 100%;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+`;
+
+export const PhotoSlide = styled.div`
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  position: relative;
+  height: 100%;
+`;
+
+export const PhotoDots = styled.div`
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  z-index: 2;
+`;
+
+export const PhotoDot = styled.span<{ $active?: boolean }>`
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: ${({ $active }) => ($active ? '#fff' : 'rgba(255, 255, 255, 0.5)')};
+  transition: background 0.2s ease;
 `;
 
 export const PhotoPlaceholder = styled.div`
@@ -52,7 +97,7 @@ export const StatusBadge = styled.span<{ $open: boolean }>`
 `;
 
 export const Content = styled.div`
-  padding: 12px;
+  padding: 12px 14px 14px;
 `;
 
 export const TitleRow = styled.div`
@@ -125,11 +170,12 @@ export const MoodTags = styled.div`
 export const MoodTag = styled.span`
   display: inline-flex;
   align-items: center;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: ${theme.borderRadius.sm};
-  border: 1px solid ${theme.colors.primaryMid};
+  height: 22px;
+  padding: 0 8px;
+  border-radius: ${theme.borderRadius.full};
+  border: none;
   background: ${theme.colors.primaryLight};
   color: ${theme.colors.primaryText};
-  font-size: ${theme.fontSize.xs};
+  font-size: 11px;
+  font-weight: ${theme.fontWeight.medium};
 `;

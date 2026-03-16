@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { Heart, Star, MapPin } from 'lucide-react';
 import { PATHS } from '@/constants/paths';
@@ -7,6 +8,10 @@ import type { Cafe } from '@/types';
 import {
   CardWrapper,
   PhotoArea,
+  PhotoCarousel,
+  PhotoSlide,
+  PhotoDots,
+  PhotoDot,
   PhotoPlaceholder,
   StatusBadge,
   Content,
@@ -37,11 +42,52 @@ export function CafeCard({ cafe, compact = false, onFavorite, isFavorited }: Caf
     .sort((a, b) => b.voteCount - a.voteCount)
     .slice(0, 3);
 
+  const photos = cafe.photos?.length > 0 ? cafe.photos : [];
+  const hasMultiplePhotos = photos.length > 1;
+  const [activeSlide, setActiveSlide] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const idx = Math.round(el.scrollLeft / el.offsetWidth);
+    setActiveSlide(idx);
+  }, []);
+
   return (
     <CardWrapper>
       <NameLink href={PATHS.CafeDetail(cafe.id)}>
         <PhotoArea $compact={compact}>
-          {cafe.mainPhoto ? (
+          {photos.length > 0 ? (
+            hasMultiplePhotos ? (
+              <>
+                <PhotoCarousel ref={scrollRef} onScroll={handleScroll}>
+                  {photos.map((photo, i) => (
+                    <PhotoSlide key={photo.id}>
+                      <Image
+                        src={photo.url}
+                        alt={`${cafe.name} ${i + 1}`}
+                        fill
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                      />
+                    </PhotoSlide>
+                  ))}
+                </PhotoCarousel>
+                <PhotoDots>
+                  {photos.map((_, i) => (
+                    <PhotoDot key={i} $active={i === activeSlide} />
+                  ))}
+                </PhotoDots>
+              </>
+            ) : (
+              <Image
+                src={photos[0].url}
+                alt={cafe.name}
+                fill
+                sizes="(max-width: 768px) 100vw, 33vw"
+              />
+            )
+          ) : cafe.mainPhoto ? (
             <Image
               src={cafe.mainPhoto}
               alt={cafe.name}

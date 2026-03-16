@@ -80,6 +80,14 @@ export const cafesApi = createApi({
         `/route/transit?sx=${fromLng}&sy=${fromLat}&ex=${toLng}&ey=${toLat}`,
       keepUnusedDataFor: 300, // 5분 캐시
     }),
+
+    searchNearby: builder.mutation<
+      { cafe: Cafe | null; created?: boolean },
+      { lat: number; lng: number; radius?: number }
+    >({
+      query: ({ lat, lng, radius = 50 }) =>
+        `/cafes/nearby?lat=${lat}&lng=${lng}&radius=${radius}`,
+    }),
   }),
 });
 
@@ -94,4 +102,5 @@ export const {
   useAddFavoriteMutation,
   useRemoveFavoriteMutation,
   useGetTransitRouteQuery,
+  useSearchNearbyMutation,
 } = cafesApi;

@@ -56,6 +56,7 @@ export function MapClient() {
   const dispatch = useAppDispatch();
   const { filters, bounds, center } = useAppSelector((s) => s.map);
   const [selectedCafe, setSelectedCafe] = useState<Cafe | null>(null);
+  const [nearbyCafe, setNearbyCafe] = useState<Cafe | null>(null);
   const [showList, setShowList] = useState(false);
   const [selectedArea, setSelectedArea] = useState<number | null>(null);
   const [areaOpen, setAreaOpen] = useState(false);
@@ -79,7 +80,15 @@ export function MapClient() {
     skip: !searchParams,
   });
 
-  const cafes = data?.cafes ?? [];
+  const searchCafes = data?.cafes ?? [];
+
+  // 주변 검색으로 찾은 카페가 검색 결과에 없으면 추가
+  const cafes = useMemo(() => {
+    if (!nearbyCafe) return searchCafes;
+    const exists = searchCafes.some((c) => c.id === nearbyCafe.id);
+    if (exists) return searchCafes;
+    return [...searchCafes, nearbyCafe];
+  }, [searchCafes, nearbyCafe]);
 
   // 드롭다운 외부 클릭 시 닫기
   useEffect(() => {
@@ -93,9 +102,16 @@ export function MapClient() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [areaOpen]);
 
+  // 주변 카페 검색 결과 처리
+  const handleNearbyFound = useCallback((cafe: Cafe) => {
+    setNearbyCafe(cafe);
+    setSelectedCafe(cafe);
+  }, []);
+
   // 바텀시트 닫기: 로컬 상태 + Redux 마커 deselect
   const handleBottomSheetClose = useCallback(() => {
     setSelectedCafe(null);
+    setNearbyCafe(null);
     dispatch(deselectCafe(null));
   }, [dispatch]);
 
@@ -203,7 +219,7 @@ export function MapClient() {
 
         {/* 지도 */}
         <MapArea $hidden={showList}>
-          <CafeMapWrapper cafes={cafes} onCafeSelect={setSelectedCafe} />
+          <CafeMapWrapper cafes={cafes} onCafeSelect={setSelectedCafe} onNearbyFound={handleNearbyFound} />
         </MapArea>
 
         {/* 카페 목록 패널 */}

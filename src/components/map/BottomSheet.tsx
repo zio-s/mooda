@@ -1,15 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useCallback, useState } from 'react';
-import { useAnimation, type PanInfo } from 'framer-motion';
-import { Star, MapPin, X, ChevronUp, ChevronDown, ExternalLink } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Star, MapPin, X, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { useAppSelector } from '@/store/hooks';
 import { useGetTransitRouteQuery } from '@/store/api/cafesApi';
 import { RouteSummaryBar, RouteSteps } from './RouteDetail';
 import type { Cafe } from '@/types';
 import {
+  Overlay,
   SheetWrap,
-  DragHandle,
   HandleBar,
   InfoSection,
   TopRow,
@@ -24,192 +23,180 @@ import {
   ExpandedSection,
   RouteSection,
   KakaoLink,
+  ToggleBtn,
 } from './BottomSheet.styles';
 import { PATHS } from '@/constants/paths';
 
-// ─── 상수 ────────────────────────────────────────────────────────────
-const HIDDEN_Y = 500;
-const SPRING = { type: 'spring' as const, damping: 32, stiffness: 320 };
-
 function formatDistance(m?: number) {
-  if (m === undefined) return null;
+  if (m == null) return null;
   return m < 1000 ? `${m}m` : `${(m / 1000).toFixed(1)}km`;
 }
 
-// ─── Props ──────────────────────────────────────────────────────────
 interface BottomSheetProps {
   cafe: Cafe | null;
   onClose: () => void;
   onRequestLocation?: () => void;
 }
 
-// ─── Component ──────────────────────────────────────────────────────
 export function BottomSheet({ cafe, onClose, onRequestLocation }: BottomSheetProps) {
-  const controls = useAnimation();
-  const [expanded, setExpanded] = useState(true);
-  const infoRef = useRef<HTMLDivElement>(null);
-
+  const [showRoute, setShowRoute] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [displayCafe, setDisplayCafe] = useState<Cafe | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userLocation = useAppSelector((s) => s.map.userLocation);
 
-  // 경로 조회 (카페 선택 + 현위치 있을 때만)
+  // 닫기 타이머 정리 헬퍼
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  // cafe prop 변경에 반응
+  useEffect(() => {
+    if (cafe) {
+      // 새 카페 → 대기 중인 닫기 취소, 표시
+      clearCloseTimer();
+      setDisplayCafe(cafe);
+      setShowRoute(false);
+      // CSS transition 트리거를 위해 다음 프레임에서 visible 설정
+      const raf = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setVisible(true));
+      });
+      return () => cancelAnimationFrame(raf);
+    } else {
+      // 카페 없음 → 슬라이드 아웃 후 데이터 클리어
+      setVisible(false);
+      const timer = setTimeout(() => setDisplayCafe(null), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [cafe, clearCloseTimer]);
+
+  // unmount 시 타이머 정리
+  useEffect(() => {
+    return () => clearCloseTimer();
+  }, [clearCloseTimer]);
+
+  // 경로 조회
   const { data: route, isLoading: routeLoading, isError: routeError } = useGetTransitRouteQuery(
     {
       fromLat: userLocation?.lat ?? 0,
       fromLng: userLocation?.lng ?? 0,
-      toLat: cafe?.lat ?? 0,
-      toLng: cafe?.lng ?? 0,
+      toLat: displayCafe?.lat ?? 0,
+      toLng: displayCafe?.lng ?? 0,
     },
-    { skip: !cafe || !userLocation },
+    { skip: !displayCafe || !userLocation },
   );
 
-  // ── cafe 변경 시 시트 표시/숨김 ────────────────────────────────────
-  useEffect(() => {
-    if (cafe) {
-      setExpanded(true);
-      controls.start({ y: 0, transition: SPRING });
-    } else {
-      setExpanded(true);
-      controls.start({ y: HIDDEN_Y, transition: SPRING });
+  // X 버튼 / 오버레이 클릭 → 닫기
+  const handleClose = useCallback((e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
     }
-  }, [cafe, controls]);
+    setVisible(false);
+    setShowRoute(false);
+    // 애니메이션 완료 후 부모에 알림
+    clearCloseTimer();
+    closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = null;
+      onClose();
+    }, 350);
+  }, [onClose, clearCloseTimer]);
 
-  // ── 닫기 ─────────────────────────────────────────────────────────
-  const handleClose = useCallback(async () => {
-    await controls.start({ y: HIDDEN_Y, transition: SPRING });
-    setExpanded(false);
-    onClose();
-  }, [controls, onClose]);
+  const c = displayCafe;
 
-  // ── 드래그 종료 스냅 로직 ─────────────────────────────────────────
-  const handleDragEnd = useCallback(
-    async (_: unknown, info: PanInfo) => {
-      const { velocity, offset } = info;
+  const topMoods = c?.moods
+    ? [...c.moods].sort((a, b) => b.voteCount - a.voteCount).slice(0, 3)
+    : [];
 
-      if (velocity.y > 400 || offset.y > 80) {
-        await handleClose();
-        return;
-      }
-
-      // 원래 위치로 복귀
-      controls.start({ y: 0, transition: SPRING });
-    },
-    [controls, handleClose],
-  );
-
-  // ── 확장 토글 ─────────────────────────────────────────────────────
-  const handleToggleExpand = useCallback(() => {
-    setExpanded((prev) => !prev);
-  }, []);
-
-  // ── 데이터 ────────────────────────────────────────────────────────
-  const topMoods = [...(cafe?.moods ?? [])]
-    .sort((a, b) => b.voteCount - a.voteCount)
-    .slice(0, 3);
-
-  // 카카오맵 딥링크
-  const kakaoLink = cafe
-    ? `https://map.kakao.com/link/to/${encodeURIComponent(cafe.name)},${cafe.lat},${cafe.lng}`
+  const kakaoLink = c
+    ? `https://map.kakao.com/link/to/${encodeURIComponent(c.name)},${c.lat},${c.lng}`
     : '#';
 
-  // ─────────────────────────────────────────────────────────────────
+  const hasRoute = route || routeLoading;
+
+  if (!c && !visible) return null;
+
   return (
-    <SheetWrap
-      animate={controls}
-      initial={{ y: HIDDEN_Y }}
-      drag="y"
-      dragConstraints={{ top: 0, bottom: HIDDEN_Y }}
-      dragElastic={{ top: 0.05, bottom: 0 }}
-      onDragEnd={handleDragEnd}
-    >
-      {/* ── 드래그 핸들 ───────────────────────────────────────────── */}
-      <DragHandle>
+    <>
+      {visible && <Overlay onClick={handleClose} />}
+
+      <SheetWrap $visible={visible}>
         <HandleBar />
-      </DragHandle>
 
-      {/* ── 정보 영역 ────────────────────────────────────────────── */}
-      <InfoSection ref={infoRef}>
-        <TopRow>
-          <CafeName>{cafe?.name ?? ''}</CafeName>
-          <CloseBtn
-            onClick={(e) => { e.stopPropagation(); handleClose(); }}
-            aria-label="닫기"
-          >
-            <X size={16} />
-          </CloseBtn>
-        </TopRow>
+        <InfoSection>
+          <TopRow>
+            <CafeName>{c?.name || '카페'}</CafeName>
+            <CloseBtn onClick={handleClose} aria-label="닫기" type="button">
+              <X size={16} />
+            </CloseBtn>
+          </TopRow>
 
-        <MetaRow>
-          <MetaItem>
-            <Star size={12} fill="#fbbf24" color="#fbbf24" />
-            {cafe?.avgRating.toFixed(1) ?? '–'}
-            <span>({cafe?.reviewCount ?? 0})</span>
-          </MetaItem>
-          {cafe?.distance !== undefined && (
+          <MetaRow>
             <MetaItem>
-              <MapPin size={12} />
-              {formatDistance(cafe.distance)}
+              <Star size={12} fill="#fbbf24" color="#fbbf24" />
+              {c?.avgRating != null ? c.avgRating.toFixed(1) : '–'}
+              <span>({c?.reviewCount ?? 0})</span>
             </MetaItem>
+            {c?.distance != null && (
+              <MetaItem>
+                <MapPin size={12} />
+                {formatDistance(c.distance)}
+              </MetaItem>
+            )}
+          </MetaRow>
+
+          <RouteSummaryBar
+            route={route}
+            isLoading={routeLoading}
+            isError={routeError}
+            hasLocation={!!userLocation}
+            distance={c?.distance}
+            onRequestLocation={onRequestLocation}
+          />
+
+          {topMoods.length > 0 && (
+            <MoodChips>
+              {topMoods.map((m) => (
+                <MoodChip key={m.moodId}>{m.moodLabel}</MoodChip>
+              ))}
+            </MoodChips>
           )}
-        </MetaRow>
 
-        {/* 경로 요약 (시간, 환승, 거리) */}
-        <RouteSummaryBar
-          route={route}
-          isLoading={routeLoading}
-          isError={routeError}
-          hasLocation={!!userLocation}
-          distance={cafe?.distance}
-          onRequestLocation={onRequestLocation}
-        />
+          <Actions>
+            {c?.id && (
+              <DetailLink href={PATHS.CafeDetail(c.id)}>
+                상세 보기
+              </DetailLink>
+            )}
+            <KakaoLink href={kakaoLink} target="_blank" rel="noopener noreferrer">
+              <ExternalLink size={12} />
+              카카오맵
+            </KakaoLink>
+            {hasRoute && (
+              <ToggleBtn type="button" onClick={() => setShowRoute(!showRoute)}>
+                경로 상세
+                {showRoute ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
+              </ToggleBtn>
+            )}
+          </Actions>
+        </InfoSection>
 
-        {topMoods.length > 0 && (
-          <MoodChips>
-            {topMoods.map((m) => (
-              <MoodChip key={m.moodId}>{m.moodLabel}</MoodChip>
-            ))}
-          </MoodChips>
+        {showRoute && (
+          <ExpandedSection>
+            <RouteSection>
+              <RouteSteps
+                route={route}
+                isLoading={routeLoading}
+                isError={routeError}
+                hasLocation={!!userLocation}
+              />
+            </RouteSection>
+          </ExpandedSection>
         )}
-
-        <Actions>
-          {cafe && (
-            <DetailLink href={PATHS.CafeDetail(cafe.id)}>
-              상세 보기
-            </DetailLink>
-          )}
-          <KakaoLink href={kakaoLink} target="_blank" rel="noopener noreferrer">
-            <ExternalLink size={12} />
-            카카오맵
-          </KakaoLink>
-          {(route || routeLoading) && (
-            <button
-              onClick={handleToggleExpand}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 3,
-                padding: '6px 10px', border: 'none', borderRadius: 8,
-                background: '#f3f4f6', color: '#374151',
-                fontSize: 13, fontWeight: 500, cursor: 'pointer',
-              }}
-            >
-              {expanded ? '경로 접기' : '경로 상세'}
-              {expanded ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
-            </button>
-          )}
-        </Actions>
-      </InfoSection>
-
-      {/* ── 경로 상세 (확장 시 표시) ──────────────────────────────── */}
-      {expanded && (
-        <ExpandedSection>
-          <RouteSection>
-            <RouteSteps
-              route={route}
-              isLoading={routeLoading}
-              isError={routeError}
-              hasLocation={!!userLocation}
-            />
-          </RouteSection>
-        </ExpandedSection>
-      )}
-    </SheetWrap>
+      </SheetWrap>
+    </>
   );
 }

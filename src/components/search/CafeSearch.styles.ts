@@ -5,18 +5,24 @@ import { theme } from '@/styles/theme';
 
 export const SearchWrapper = styled.div`
   position: relative;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 0;
+  max-width: 280px;
 `;
 
 export const SearchInputWrap = styled.div<{ $focused?: boolean }>`
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 10px;
-  border: 1px solid ${({ $focused }) => ($focused ? theme.colors.primary : theme.colors.border)};
+  padding: 6px 10px;
+  border: 1.5px solid ${({ $focused }) => ($focused ? theme.colors.primary : theme.colors.border)};
   border-radius: ${theme.borderRadius.md};
-  background: ${theme.colors.white};
-  transition: border-color 0.15s ease;
+  background: ${({ $focused }) => ($focused ? theme.colors.white : theme.colors.bgMuted)};
+  transition: all 0.2s ease;
+
+  ${({ $focused }) =>
+    $focused &&
+    `box-shadow: 0 0 0 3px ${theme.colors.primary}15;`}
 
   svg {
     flex-shrink: 0;
@@ -30,14 +36,11 @@ export const SearchInput = styled.input`
   background: transparent;
   font-size: ${theme.fontSize.sm};
   color: ${theme.colors.text};
-  width: 120px;
+  width: 100%;
+  min-width: 0;
 
   &::placeholder {
     color: ${theme.colors.textLight};
-  }
-
-  @media (min-width: ${theme.breakpoints.md}) {
-    width: 180px;
   }
 `;
 

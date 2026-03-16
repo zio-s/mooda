@@ -8,12 +8,16 @@ const globalForRedis = globalThis as unknown as {
 function isRedisConfigured(): boolean {
   const host = process.env.REDIS_HOST || '';
   const url = process.env.REDIS_URL || '';
-  // production에서 localhost는 사용 불가 (Vercel 등)
+
+  // 환경변수 자체가 없으면 미설정
+  if (!host && !url) return false;
+
+  // localhost Redis는 production에서 사용 불가
   if (process.env.NODE_ENV === 'production') {
-    if (!host && !url) return false;
     if (host === 'localhost' || host === '127.0.0.1') return false;
     if (url.includes('localhost') || url.includes('127.0.0.1')) return false;
   }
+
   return true;
 }
 
@@ -35,14 +39,22 @@ function createRedisClient(): Redis {
     host: process.env.REDIS_HOST || 'localhost',
     port: parseInt(process.env.REDIS_PORT || '6379'),
     password: process.env.REDIS_PASSWORD,
+    connectTimeout: 3000, // 3초 내 연결 안 되면 포기
+    maxRetriesPerRequest: 1, // 요청당 재시도 1회만
     retryStrategy: (times) => {
-      if (times > 3) return null;
-      return Math.min(times * 200, 1000);
+      if (times > 1) return null; // 1회 재시도 후 포기
+      return 200;
     },
+    lazyConnect: true, // 실제 사용 시까지 연결 지연
   });
 
-  client.on('error', (err) => {
-    console.error('Redis connection error:', err);
+  let connectionFailed = false;
+
+  client.on('error', () => {
+    if (!connectionFailed) {
+      connectionFailed = true;
+      console.warn('[Redis] Connection failed — using no-op fallback');
+    }
   });
 
   return client;

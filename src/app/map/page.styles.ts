@@ -18,12 +18,17 @@ export const FilterBar = styled.div`
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   border-bottom: 1px solid ${theme.colors.border};
   background: ${theme.colors.bg};
-  padding: 8px 12px;
+  padding: 8px 10px;
   flex-shrink: 0;
   z-index: ${theme.zIndex.dropdown};
+
+  @media (min-width: ${theme.breakpoints.md}) {
+    gap: 8px;
+    padding: 8px 12px;
+  }
 `;
 
 export const FilterBadge = styled.span`
@@ -43,15 +48,11 @@ export const ChipsScroll = styled.div`
   flex: 1;
   min-width: 0;
   overflow-x: auto;
-  display: none;
+  display: flex;
   align-items: center;
 
   &::-webkit-scrollbar {
     display: none;
-  }
-
-  @media (min-width: ${theme.breakpoints.md}) {
-    display: flex;
   }
 `;
 
@@ -127,14 +128,25 @@ export const EmptyState = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 56px 16px;
+  padding: 64px 24px;
   text-align: center;
   color: ${theme.colors.textMuted};
 
+  div {
+    width: 64px;
+    height: 64px;
+    border-radius: ${theme.borderRadius.full};
+    background: ${theme.colors.bgMuted};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   p {
-    margin: 8px 0 0;
+    margin: 12px 0 0;
     font-size: ${theme.fontSize.sm};
-    line-height: 1.6;
+    line-height: 1.7;
+    letter-spacing: -0.01em;
   }
 `;
 

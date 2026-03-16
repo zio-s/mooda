@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       prisma.cafe.findMany({
         where,
         include: {
-          photos: { where: { isMain: true }, take: 1 },
+          photos: { orderBy: [{ isMain: 'desc' }, { createdAt: 'asc' }], take: 4 },
           moods: {
             include: { mood: true },
             orderBy: { voteCount: 'desc' },
@@ -107,6 +107,12 @@ export async function POST(request: NextRequest) {
       return {
         ...cafe,
         mainPhoto: cafe.photos[0]?.url ?? null,
+        photos: cafe.photos.map((p) => ({
+          id: p.id,
+          url: p.url,
+          caption: p.caption,
+          isMain: p.isMain,
+        })),
         distance,
         moods: cafe.moods.map((cm) => ({
           moodId: cm.moodId,
