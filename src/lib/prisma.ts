@@ -15,11 +15,10 @@ function createPrismaClient() {
 
   const pool = new pg.Pool({
     connectionString,
-    // Vercel 서버리스: 커넥션 풀 최소화
-    max: process.env.VERCEL ? 2 : 10,
-    idleTimeoutMillis: 20000,
+    // Vercel 서버리스 + Supabase Transaction mode pooler
+    max: 1,
+    idleTimeoutMillis: 10000,
     connectionTimeoutMillis: 10000,
-    // Supabase SSL 설정
     ssl:
       process.env.NODE_ENV === 'production'
         ? { rejectUnauthorized: false }
