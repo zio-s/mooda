@@ -147,7 +147,8 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues }, { status: 400 });
     }
-    console.error('POST /api/cafes/search error:', error);
-    return NextResponse.json({ error: 'Search failed' }, { status: 500 });
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error('POST /api/cafes/search error:', errMsg, error);
+    return NextResponse.json({ error: 'Search failed', detail: errMsg }, { status: 500 });
   }
 }

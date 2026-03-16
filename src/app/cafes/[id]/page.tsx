@@ -63,10 +63,35 @@ export default async function CafeDetailPage({ params }: Props) {
   ]);
 
   const cafeData = {
-    ...cafe,
+    id: cafe.id,
+    name: cafe.name,
+    address: cafe.address,
+    addressDetail: cafe.addressDetail ?? null,
+    lat: cafe.lat,
+    lng: cafe.lng,
+    phone: cafe.phone ?? null,
+    kakaoPlaceId: cafe.kakaoPlaceId ?? null,
+    kakaoUrl: cafe.kakaoUrl ?? null,
+    instagramUrl: cafe.instagramUrl ?? null,
+    website: cafe.website ?? null,
+    description: cafe.description ?? null,
+    district: cafe.district ?? null,
+    neighborhood: cafe.neighborhood ?? null,
+    avgRating: cafe.avgRating,
+    reviewCount: cafe.reviewCount,
     mainPhoto: cafe.photos.find((p) => p.isMain)?.url ?? cafe.photos[0]?.url ?? null,
-    photos: cafe.photos,
-    hours: cafe.hours,
+    photos: cafe.photos.map((p) => ({
+      id: p.id,
+      url: p.url,
+      caption: p.caption ?? null,
+      isMain: p.isMain,
+    })),
+    hours: cafe.hours.map((h) => ({
+      dayOfWeek: h.dayOfWeek,
+      openTime: h.openTime ?? null,
+      closeTime: h.closeTime ?? null,
+      isClosed: h.isClosed,
+    })),
     moods: cafe.moods.map((cm) => ({
       moodId: cm.moodId,
       moodKey: cm.mood.key,
@@ -87,8 +112,8 @@ export default async function CafeDetailPage({ params }: Props) {
     isFavorited: !!favoriteRow,
     distance: undefined,
     isOpen: undefined,
-    createdAt: cafe.createdAt.toISOString(),
-    updatedAt: cafe.updatedAt.toISOString(),
+    createdAt: cafe.createdAt?.toISOString() ?? new Date().toISOString(),
+    updatedAt: cafe.updatedAt?.toISOString() ?? new Date().toISOString(),
   };
 
   return <CafeDetailClient cafe={cafeData} />;
