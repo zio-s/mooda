@@ -10,21 +10,20 @@ import type { Cafe, MapBounds } from '@/types';
 /**
  * Marker LOD (03_screens.md § 01 지도 · 마커)
  *
- *  Kakao level ↓ = zoom ↑.
+ *  Kakao level ↓ = zoom ↑. 2단계 체계(pill ↔ cluster)로 운영.
  *  - level ≤ 4  (~zoom ≥ 16, 축척 100m 이내) : 이름 pill
- *  - level 5–6  (~zoom 14-15, 축척 250–500m): 도트 (22px brand + 2.5 white)
- *  - level ≥ 7  (~zoom ≤ 13, 축척 1km+)      : MarkerClusterer — halo 40 / inner 28
+ *  - level ≥ 5  (~zoom ≤ 15, 축척 250m+)    : MarkerClusterer — halo 40 / inner 28
  *
- *  서울 주요 상권(종로/강남/성수 등) 기준 level 7에서 이미 밀집도가 높아
- *  dot 모드면 시각적 오버랩이 심각. 스펙의 "줌 13–15 = 도트" 중 level 7은
- *  cluster 분기로 옮겨 과부하를 방지.
+ *  중간 "도트" 모드는 도심 밀도가 높아 여전히 겹침이 발생하므로 제거하고
+ *  클러스터 분기로 흡수. 개별 단위 구별이 필요하면 level 4(≈zoom 16)까지
+ *  줌인하면 pill로 전환된다.
  */
 const PILL_MAX_LEVEL = 4;
-const DOT_MAX_LEVEL = 6;
-// Kakao MarkerClusterer의 grid 픽셀 반경. zoom에 따라 실제 거리 해석이 달라짐:
-// level 7(1km 스케일)에서 80px ≈ ~80m, level 9(4km 스케일)에서는 ~320m.
-// 너무 크면(>200) 서울 도심 전체가 한 덩어리로 묶여 "100" 같은 거대 배지가 뜸.
-const CLUSTER_GRID_SIZE = 80;
+const DOT_MAX_LEVEL = 4; // dot 모드 제거(pill ↔ cluster).
+// Kakao MarkerClusterer의 grid 픽셀 반경. 넓을수록 더 확실히 묶임. 140은
+// level 5(250m 스케일)에서 ~140m, level 7(1km)에서 ~1.4km 반경으로 병합 →
+// 도심 밀집 지역에서도 시각적 겹침 없이 클러스터 배지로 정돈.
+const CLUSTER_GRID_SIZE = 140;
 // ±10% 패딩 내 마커만 렌더 (화면 밖 마커는 DOM에 두지 않음)
 const BOUNDS_PADDING_RATIO = 0.1;
 
