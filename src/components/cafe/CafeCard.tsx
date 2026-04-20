@@ -15,6 +15,7 @@ import {
   PhotoSlide,
   PhotoDots,
   PhotoDot,
+  PhotoCountPill,
   PhotoPlaceholder,
   BadgeAnchor,
   Content,
@@ -26,6 +27,8 @@ import {
   MoodTags,
   MoodTag,
 } from './CafeCard.styles';
+
+const DOT_MAX = 3;
 
 interface CafeCardProps {
   cafe: Cafe;
@@ -90,11 +93,17 @@ export function CafeCard({ cafe, compact = false, onFavorite, isFavorited }: Caf
                     </PhotoSlide>
                   ))}
                 </PhotoCarousel>
-                <PhotoDots>
-                  {photos.map((_, i) => (
-                    <PhotoDot key={i} $active={i === activeSlide} />
-                  ))}
-                </PhotoDots>
+                {photos.length <= DOT_MAX ? (
+                  <PhotoDots>
+                    {photos.map((_, i) => (
+                      <PhotoDot key={i} $active={i === activeSlide} />
+                    ))}
+                  </PhotoDots>
+                ) : (
+                  <PhotoCountPill aria-label={`사진 ${activeSlide + 1} / ${photos.length}`}>
+                    {activeSlide + 1} / {photos.length}
+                  </PhotoCountPill>
+                )}
               </>
             ) : (
               <Image

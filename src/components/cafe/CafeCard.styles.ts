@@ -93,6 +93,26 @@ export const PhotoDot = styled.span<{ $active?: boolean }>`
   transition: background 0.2s ease;
 `;
 
+/**
+ * 사진이 많을 때 점 N개 대신 "N/M" pill로 전환 — 노이즈 감축.
+ * 우측 하단에 놓아 점과 시각적으로 다름을 명시.
+ */
+export const PhotoCountPill = styled.span`
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  z-index: 2;
+`;
+
 export const PhotoPlaceholder = styled.div`
   display: flex;
   height: 100%;
