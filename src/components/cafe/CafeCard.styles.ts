@@ -2,6 +2,23 @@ import styled from 'styled-components';
 import Link from 'next/link';
 import { theme } from '@/styles/theme';
 
+/**
+ * 카드 전체가 하나의 링크로 동작하도록 CardLink로 감싼다. 내부의 인터랙티브
+ * 요소(♥ 버튼 등)는 e.preventDefault + e.stopPropagation으로 네비게이션을
+ * 막고 자신의 핸들러만 실행.
+ */
+export const CardLink = styled(Link)`
+  display: block;
+  color: inherit;
+  text-decoration: none;
+
+  &:focus-visible {
+    outline: 2px solid ${theme.colors.primary};
+    outline-offset: 2px;
+    border-radius: ${theme.borderRadius.lg};
+  }
+`;
+
 export const CardWrapper = styled.article`
   border-radius: ${theme.borderRadius.lg};
   border: none;
@@ -9,15 +26,16 @@ export const CardWrapper = styled.article`
   overflow: hidden;
   box-shadow: ${theme.shadows.card};
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
 
   @media (hover: hover) {
-    &:hover {
+    ${CardLink}:hover & {
       transform: translateY(-2px);
       box-shadow: ${theme.shadows.cardHover};
     }
   }
 
-  &:active {
+  ${CardLink}:active & {
     transform: translateY(0);
   }
 `;
@@ -106,13 +124,9 @@ export const TitleRow = styled.div`
   gap: 8px;
 `;
 
-export const NameLink = styled(Link)`
-  min-width: 0;
-  text-decoration: none;
-  display: block;
-`;
-
 export const CafeName = styled.h3`
+  min-width: 0;
+  flex: 1;
   font-size: ${theme.fontSize.sm};
   font-weight: ${theme.fontWeight.semibold};
   line-height: 1.3;
@@ -123,8 +137,8 @@ export const CafeName = styled.h3`
   margin: 0;
   transition: color 0.15s ease;
 
-  ${NameLink}:hover & {
-    color: ${theme.colors.primaryDark};
+  ${CardLink}:hover & {
+    color: ${theme.colors.primaryHover};
   }
 `;
 

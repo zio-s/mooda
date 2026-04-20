@@ -8,6 +8,7 @@ import { OpenBadge } from '@/components/cafe/OpenBadge';
 import { computeOpenStatus, type CafeHourInput } from '@/lib/cafe/openStatus';
 import type { Cafe } from '@/types';
 import {
+  CardLink,
   CardWrapper,
   PhotoArea,
   PhotoCarousel,
@@ -18,7 +19,6 @@ import {
   BadgeAnchor,
   Content,
   TitleRow,
-  NameLink,
   CafeName,
   FavoriteBtn,
   MetaRow,
@@ -72,8 +72,8 @@ export function CafeCard({ cafe, compact = false, onFavorite, isFavorited }: Caf
   }, []);
 
   return (
-    <CardWrapper>
-      <NameLink href={PATHS.CafeDetail(cafe.id)}>
+    <CardLink href={PATHS.CafeDetail(cafe.id)} aria-label={`${cafe.name} 상세 페이지로 이동`}>
+      <CardWrapper>
         <PhotoArea $compact={compact}>
           {photos.length > 0 ? (
             hasMultiplePhotos ? (
@@ -120,51 +120,54 @@ export function CafeCard({ cafe, compact = false, onFavorite, isFavorited }: Caf
             </BadgeAnchor>
           )}
         </PhotoArea>
-      </NameLink>
 
-      <Content>
-        <TitleRow>
-          <NameLink href={PATHS.CafeDetail(cafe.id)}>
+        <Content>
+          <TitleRow>
             <CafeName>{cafe.name}</CafeName>
-          </NameLink>
-          {onFavorite && (
-            <FavoriteBtn
-              onClick={(e) => {
-                e.preventDefault();
-                onFavorite(cafe.id, !!isFavorited);
-              }}
-            >
-              <Heart
-                size={16}
-                fill={isFavorited ? '#ef4444' : 'none'}
-                color={isFavorited ? '#ef4444' : 'currentColor'}
-              />
-            </FavoriteBtn>
-          )}
-        </TitleRow>
+            {onFavorite && (
+              <FavoriteBtn
+                type="button"
+                aria-label={isFavorited ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+                onClick={(e) => {
+                  // 카드 전체가 링크이므로 ♥ 버튼은 상세 이동을 막고 자기 로직만.
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onFavorite(cafe.id, !!isFavorited);
+                }}
+              >
+                <Heart
+                  size={16}
+                  fill={isFavorited ? '#ef4444' : 'none'}
+                  color={isFavorited ? '#ef4444' : 'currentColor'}
+                  aria-hidden
+                />
+              </FavoriteBtn>
+            )}
+          </TitleRow>
 
-        <MetaRow>
-          <MetaItem>
-            <Star size={12} fill="#fbbf24" color="#fbbf24" />
-            {cafe.avgRating.toFixed(1)}
-            <span>({cafe.reviewCount})</span>
-          </MetaItem>
-          {cafe.distance !== undefined && (
+          <MetaRow>
             <MetaItem>
-              <MapPin size={12} />
-              {formatDistance(cafe.distance)}
+              <Star size={12} fill="#fbbf24" color="#fbbf24" aria-hidden />
+              {cafe.avgRating.toFixed(1)}
+              <span>({cafe.reviewCount})</span>
             </MetaItem>
-          )}
-        </MetaRow>
+            {cafe.distance !== undefined && (
+              <MetaItem>
+                <MapPin size={12} aria-hidden />
+                {formatDistance(cafe.distance)}
+              </MetaItem>
+            )}
+          </MetaRow>
 
-        {!compact && topMoods.length > 0 && (
-          <MoodTags>
-            {topMoods.map((mood) => (
-              <MoodTag key={mood.moodId}>{mood.moodLabel}</MoodTag>
-            ))}
-          </MoodTags>
-        )}
-      </Content>
-    </CardWrapper>
+          {!compact && topMoods.length > 0 && (
+            <MoodTags>
+              {topMoods.map((mood) => (
+                <MoodTag key={mood.moodId}>{mood.moodLabel}</MoodTag>
+              ))}
+            </MoodTags>
+          )}
+        </Content>
+      </CardWrapper>
+    </CardLink>
   );
 }
