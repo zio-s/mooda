@@ -12,11 +12,18 @@ import type { Cafe, MapBounds } from '@/types';
  *
  *  Kakao level ↓ = zoom ↑.
  *  - level ≤ 4  (~zoom ≥ 16, 축척 100m 이내) : 이름 pill
- *  - level 5–7  (~zoom 13-15, 축척 250m–1km) : 도트 (22px brand + 2.5 white)
- *  - level ≥ 8  (~zoom ≤ 12, 축척 2km+)       : MarkerClusterer — halo 40 / inner 28
+ *  - level 5–6  (~zoom 14-15, 축척 250–500m): 도트 (22px brand + 2.5 white)
+ *  - level ≥ 7  (~zoom ≤ 13, 축척 1km+)      : MarkerClusterer — halo 40 / inner 28
+ *
+ *  서울 주요 상권(종로/강남/성수 등) 기준 level 7에서 이미 밀집도가 높아
+ *  dot 모드면 시각적 오버랩이 심각. 스펙의 "줌 13–15 = 도트" 중 level 7은
+ *  cluster 분기로 옮겨 과부하를 방지.
  */
 const PILL_MAX_LEVEL = 4;
-const DOT_MAX_LEVEL = 7;
+const DOT_MAX_LEVEL = 6;
+// Kakao MarkerClusterer의 grid 픽셀 반경. 기본값 60은 level 7에서 너무 좁아
+// 이웃 카페를 묶지 못하고 개별 DOM으로 쏟아지는 문제가 있었음 — 120으로 상향.
+const CLUSTER_GRID_SIZE = 120;
 // ±10% 패딩 내 마커만 렌더 (화면 밖 마커는 DOM에 두지 않음)
 const BOUNDS_PADDING_RATIO = 0.1;
 
@@ -224,7 +231,7 @@ function CafeMarkersImpl({ cafes, level, bounds, selectedCafeId, onMarkerClick }
         averageCenter
         minLevel={DOT_MAX_LEVEL + 1}
         minClusterSize={2}
-        gridSize={60}
+        gridSize={CLUSTER_GRID_SIZE}
         calculator={CLUSTER_RANGES}
         styles={CLUSTER_STYLES}
         disableClickZoom={false}
