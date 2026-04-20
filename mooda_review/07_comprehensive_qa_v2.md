@@ -411,7 +411,7 @@ ANALYZE=true npm run build
 | BottomSheet max-height 동적 (v1 M1 반영됨) | BottomSheet.styles.ts:37 | ✅ |
 | MoodFilterSheet scroll lock useEffect | MoodFilterSheet.tsx:58-66 | ✅ |
 | MoodFilterSheet Body overscroll contain | MoodFilterSheet.tsx:344 | ✅ |
-| 한글 IME 대응 필요 (v1 M9) | SearchClient.tsx | ⚠️ 미반영 |
+| 한글 IME 대응 필요 (v1 M9) | SearchClient.tsx | ✅ `6eebd5f` 반영 확인 — `composingRef` + `onCompositionStart/End` + Enter 핸들러도 IME 분기 포함 |
 | 네이버지도 앱 딥링크 + 웹 폴백 | BottomSheet · CafeDetail | ✅ (중복이긴 함, N12) |
 | safe-area-inset-bottom 반영 | 곳곳 | ✅ |
 | iOS 16px 인풋 전역 | globals.css:98 | ✅ |
