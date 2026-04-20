@@ -3,6 +3,7 @@ import './globals.css';
 import { Providers } from '@/components/providers';
 import { Header } from '@/components/layout/Header';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
+import { ServiceWorkerManager } from '@/components/pwa/ServiceWorkerManager';
 
 export const viewport: Viewport = {
   themeColor: '#b45309',
@@ -48,30 +49,8 @@ export default function RootLayout({
           <Header />
           <main>{children}</main>
           <InstallPrompt />
+          <ServiceWorkerManager />
         </Providers>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                  ${
-                    process.env.NODE_ENV === 'production'
-                      ? `navigator.serviceWorker.register('/sw.js');`
-                      : // Dev에서는 등록하지 않고, 과거에 등록됐던 SW/캐시를 적극 정리.
-                        `navigator.serviceWorker.getRegistrations()
-                          .then((regs) => Promise.all(regs.map((r) => r.unregister())))
-                          .then(() => {
-                            if (window.caches) {
-                              caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
-                            }
-                          })
-                          .catch(() => {});`
-                  }
-                });
-              }
-            `,
-          }}
-        />
       </body>
     </html>
   );

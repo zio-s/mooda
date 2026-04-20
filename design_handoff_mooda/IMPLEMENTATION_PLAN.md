@@ -99,10 +99,10 @@
 - [ ] 네이버지도 딥링크 (`nmap://route/public?...`) 상세 페이지 버튼
 
 ### PWA 오프라인
-- [ ] Workbox 통합 (`04_state_and_api.md § 오프라인`)
-- [ ] 최근 본 카페 7일 캐시 (CacheFirst)
-- [ ] 오프라인 fallback 페이지 ("저장된 카페")
-- [ ] SW 업데이트 토스트 ("새 버전 · 새로고침")
+- [x] Workbox **미사용**·수제 전략 — `public/sw.js` 재작성. 정적(script/style/font/image/_next/static) = Stale-While-Revalidate, `/api/cafes/*` 일반 = Network First (3s timeout + 24h TTL), `/api/cafes/{id}` = Cache First (7일 · 50 entries LRU), 네비게이션 = Network First + offline fallback. 캐시 이름 `mooda-v3-*`로 네임스페이스 + activate 시 valid 아닌 캐시 전량 purge.
+- [x] 최근 본 카페 7일 캐시 (CacheFirst) — `x-mooda-cached-at` 헤더로 저장 시각 태깅 + `enforceEntryLimit`로 LRU 축출. `/cafes/{id}` 네비게이션 HTML도 동일 전략으로 오프라인에서도 열람 가능.
+- [x] 오프라인 fallback 페이지 — `app/offline/page.tsx` + `OfflineClient.tsx`. 최근 본 카페 목록(useRecentSearches 재사용) · navigator.onLine 관찰 · "다시 시도" 버튼. `precacheAndRoute` 대체로 `/offline`을 SW install 시 강제 캐시.
+- [x] SW 업데이트 토스트 — `components/pwa/ServiceWorkerManager.tsx`. reg.waiting / updatefound / installing.statechange 감지해서 "새 버전이 준비됐어요" sonner 토스트 + "새로고침" 액션 → `postMessage({type:'SKIP_WAITING'})` → controllerchange 이벤트에서 reload. 1시간마다 reg.update()로 장시간 켜둔 탭 대응.
 
 ### 접근성
 - [ ] 지도 영역 옆 시각적 숨김 목록 (`role="list"`)
