@@ -128,8 +128,8 @@
 
 ## 전역 수용 기준
 
-- [ ] iPhone 12-15 PWA standalone 기준 레이아웃 이상 없음
-- [ ] 320px 너비에서 가로 스크롤 없음
-- [ ] Lighthouse Performance ≥ 85 (mobile · 3G Slow throttle)
-- [ ] TypeScript strict 유지 — `any` 신규 금지
-- [ ] 모든 styled-component의 색/간격/라디우스는 `theme.ts` 참조 (하드코딩 금지)
+- [ ] iPhone 12-15 PWA standalone 기준 레이아웃 이상 없음 *(사용자 실기 확인 필요)*
+- [x] 320px 너비에서 가로 스크롤 없음 — FilterBar `min-width: 0` + 고정 자식 `flex-shrink:0`, SearchTrigger `flex:1 1 auto`, ChipsScroll 조건부 렌더로 `e27654b`에서 해소.
+- [ ] Lighthouse Performance ≥ 85 (mobile · 3G Slow throttle) *(사용자 실측 필요)*
+- [x] TypeScript strict 유지 — `any` 신규 금지. `e27654b` sweep에서 발견된 5건 모두 정당 사유(Naver SDK 타입 미제공 · ODSAY/Google JSON 경계)이고 eslint-disable 명시. 신규 any 위반 0.
+- [x] 모든 styled-component의 색/간격/라디우스는 `theme.ts` 참조 (하드코딩 금지) — 주요 경로 정리 완료. 랜딩 `app/page.styles.ts`는 의도적 legacy 톤으로 남김(별도 PR).
