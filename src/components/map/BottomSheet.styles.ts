@@ -31,10 +31,16 @@ export const SheetWrap = styled.div<{ $visible: boolean }>`
   transform: translateY(${({ $visible }) => ($visible ? '0' : '110%')});
   transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
   will-change: transform;
-  max-height: 75vh;
+  /* iPhone SE 같은 작은 세로(667px) 기기에서 '경로 상세' 펼쳤을 때 컨텐츠가
+     잘리지 않도록. dvh는 주소창 상태 반영, 140은 지도가 항상 약간은 보이도록. */
+  max-height: min(75vh, calc(100dvh - 140px));
   display: flex;
   flex-direction: column;
   pointer-events: ${({ $visible }) => ($visible ? 'auto' : 'none')};
+  /* scroll chain 차단 — 시트 내부 스크롤 끝에서 지도(배경)까지 스크롤이
+     번지는 iOS 기본 동작 억제. pan-y만 허용(좌우 제스처는 지도에 위임). */
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 
   @media (min-width: ${theme.breakpoints.md}) {
     display: none;
@@ -57,7 +63,9 @@ export const InfoSection = styled.div`
   flex-direction: column;
   gap: 6px;
   flex-shrink: 0;
-  overflow-y: auto;
+  /* 이 영역은 요약 정보라 고정 높이에 맞게 렌더. 스크롤이 필요한 긴 경로
+     상세는 ExpandedSection이 담당 → 이중 스크롤 영역 제거. */
+  overflow: visible;
 `;
 
 export const TopRow = styled.div`
@@ -221,6 +229,7 @@ export const ToggleBtn = styled.button`
 export const ExpandedSection = styled.div`
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   flex: 1;
   min-height: 0;
   border-top: 1px solid ${theme.colors.border};
