@@ -224,11 +224,18 @@ const slideUp = keyframes`
   to { transform: translateY(0); }
 `;
 
+/**
+ * Naver/Kakao 지도 SDK가 내부적으로 zoom/type control에 z-index 100~300
+ * 대를 부여함. theme.z.bottomSheet(25)로는 sheet가 그 아래로 깔림.
+ * 9999로 강제 상향해 어떤 SDK UI 위에도 올라오도록.
+ */
+const SHEET_Z = 9999;
+
 const OverlayStyled = styled(Dialog.Overlay)`
   position: fixed;
   inset: 0;
   background: ${theme.colors.overlay};
-  z-index: ${theme.z.bottomSheet};
+  z-index: ${SHEET_Z};
   animation: ${fadeIn} 0.18s ease-out;
 `;
 
@@ -237,12 +244,15 @@ const SheetStyled = styled(Dialog.Content)`
   left: 0;
   right: 0;
   bottom: 0;
+  /* 탭 전환마다 컨텐츠 수가 달라 시트 높이가 튀지 않도록 고정 비율로 잡음.
+     max-height는 극단 상한. min(80dvh, 720px)로 데스크톱 과도한 확대 방지. */
+  height: min(80dvh, 720px);
   max-height: 88dvh;
   background: ${theme.colors.card};
   border-top-left-radius: 24px;
   border-top-right-radius: 24px;
   box-shadow: ${theme.shadows.sheet};
-  z-index: ${theme.z.bottomSheet};
+  z-index: ${SHEET_Z + 1};
   display: flex;
   flex-direction: column;
   padding-bottom: env(safe-area-inset-bottom, 0px);

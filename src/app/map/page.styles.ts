@@ -24,15 +24,12 @@ export const FilterBar = styled.div`
   background: ${theme.colors.bg};
   padding: 8px 10px;
   flex-shrink: 0;
-  min-width: 0; /* 부모 flex에서 넘침 방지 */
+  min-width: 0;
+  /* 가로 overflow 방지 — 자식이 총합 viewport를 넘기면 ChipsScroll이 자체
+     overflow-x scroll 하거나 버튼 텍스트가 shrink/ellipsis 되도록 두어도 OK.
+     "분위기 필터"/"지역 이동" 버튼에 flex-shrink:0을 걸면 SearchTrigger
+     min-width(120)와 합쳐 뷰포트를 쉽게 넘김 → 이 규칙 제거. */
   z-index: ${theme.zIndex.dropdown};
-
-  /* 고정 크기여야 할 직접 자식(분위기 필터 버튼, 지역 이동 버튼 등)은
-     shrink 금지 → SearchTrigger/ChipsScroll만 축소·확장. */
-  & > button,
-  & > div[data-fixed='true'] {
-    flex-shrink: 0;
-  }
 
   @media (min-width: ${theme.breakpoints.md}) {
     gap: 8px;
@@ -160,9 +157,7 @@ export const EmptyState = styled.div`
 `;
 
 // ─── Area Select (지역 바로가기) ──────────────────────────
-export const AreaSelectWrap = styled.div.attrs<Record<string, unknown>>({
-  'data-fixed': 'true',
-})`
+export const AreaSelectWrap = styled.div`
   position: relative;
   flex-shrink: 0;
 `;
