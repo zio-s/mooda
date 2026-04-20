@@ -70,18 +70,20 @@
 - [x] **에러 inline state** 컴포넌트 — `components/feedback/ErrorState.tsx` (variant banner/block + onRetry + err/errBg 색상) — `04_state_and_api.md § 에러`
 
 ### Week 3
-- [ ] **카페 상세 리디자인** — `03_screens.md § 04 카페 상세`
-  - [ ] 히어로 그라디언트 placeholder
-  - [ ] 4-칸 quick action (길찾기·전화·저장·공유)
-  - [ ] Mood Vote 카드 + **옵티미스틱 업데이트**
-  - [ ] 탭(정보·리뷰·블로그·구글·사진)
-- [ ] **/map segmented control** — `03_screens.md § 05 목록`
-  - [ ] 지도/목록 상태 공유 (Redux UI slice)
-  - [ ] 정렬 드롭다운(거리/평점/인기)
-  - [ ] 목록 카드 디자인
-- [ ] **RTK Query · UI slice 분리** — `04_state_and_api.md § 상태 분리`
-  - [ ] 서버 상태는 RTK Query 전담
-  - [ ] UI slice는 selectedMarkerId, mapCenter, activeFilters, sheetHeight 만
+- [x] **카페 상세 리디자인** — `03_screens.md § 04 카페 상세`
+  - [x] 히어로 그라디언트 placeholder — HeroShell 320px + primaryLight2→primaryLight 135deg + 빗금 텍스처 + ☕ 글리프. 사진 있을 때 HeroPhotoFill로 스왑, HeroCountPill("1/N") 노출.
+  - [x] 4-칸 quick action — 길찾기(네이버/카카오 딥링크 confirm) · 전화(tel: 승격, 없으면 disabled+toast) · 저장(favorite 토글) · 공유(navigator.share + clipboard 폴백). brandTint bg / r12 / 11.5/600 · active scale 0.97.
+  - [x] Mood Vote 카드 + 실패 shake — 기존 로컬 옵티미스틱 유지, 실패 시 MoodVoteButton `$shake` keyframes 400ms + 전용 toast. *(cacheApi.util.updateQueryData 도입은 CafeDetailClient가 initialData 주입 방식이라 스킵 — 필요 시 별도 PR)*
+  - [x] 탭(정보·리뷰·블로그·구글·사진) — 기존 Radix Tabs 유지, Hero/메타 재구성에 맞춰 ContentInner 래퍼로 감쌈.
+  - [x] OpenBadge md 메타에 전면 배치 + 운영시각 "22:00까지"로 축약.
+- [x] **/map segmented control** — `03_screens.md § 05 목록`
+  - [x] 지도/목록 상태 공유 — mapSlice `viewMode: 'map' | 'list'` + `setViewMode` 액션 추가. 기존 로컬 `showList` state 제거.
+  - [x] 정렬 드롭다운(거리/평점/인기) — SortWrap/SortMenu + role=menuitemradio, 외부 클릭 닫힘, `setSort` 디스패치.
+  - [x] Segmented UI — bg ink-100 padding 3 / 활성 탭 bg white + shadow sm + 700 weight, 목록 탭에 결과수 배지.
+  - [x] 목록 카드 디자인 — 기존 `CafeCard` 재사용 (Day 5에서 OpenBadge로 개편 완료).
+- [x] **RTK Query · UI slice 분리** — `04_state_and_api.md § 상태 분리`
+  - [x] 서버 상태는 RTK Query 전담 — `cafesApi`(search, count, getCafe, blogs, google reviews, favorites, transit, searchNearby) 확인, slice에 서버 데이터 없음(isLoading/cafes[]/error 없음).
+  - [x] UI slice는 center/level/bounds/selectedCafeId/userLocation/viewMode/filters만 보유 — 스냅 높이는 바텀시트 컴포넌트 로컬 상태로 남김.
 
 **Week 2-3 Exit 조건**: 사용자가 탐색 → 비교 → 선택 → 상세 → 투표 flow를 끊김 없이 완수 가능.
 

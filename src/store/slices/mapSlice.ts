@@ -7,6 +7,10 @@ interface MapState {
   bounds: MapBounds | null;
   selectedCafeId: string | null;
   userLocation: { lat: number; lng: number } | null;
+  /**
+   * UI-only: /map 화면에서 지도/목록 중 어느 뷰를 볼지. 서버 데이터 아님.
+   */
+  viewMode: 'map' | 'list';
   filters: {
     moods: string[];
     openNow: boolean;
@@ -20,6 +24,7 @@ const initialState: MapState = {
   bounds: null,
   selectedCafeId: null,
   userLocation: null,
+  viewMode: 'map',
   filters: {
     moods: [],
     openNow: false,
@@ -64,6 +69,9 @@ export const mapSlice = createSlice({
     setSort(state, action: PayloadAction<SearchParams['sort']>) {
       state.filters.sort = action.payload ?? 'distance';
     },
+    setViewMode(state, action: PayloadAction<'map' | 'list'>) {
+      state.viewMode = action.payload;
+    },
     resetFilters(state) {
       state.filters = initialState.filters;
     },
@@ -80,6 +88,7 @@ export const {
   clearMoodFilters,
   setOpenNow,
   setSort,
+  setViewMode,
   resetFilters,
 } = mapSlice.actions;
 

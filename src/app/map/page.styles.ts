@@ -264,3 +264,114 @@ export const MobilePreview = styled.div`
     display: none;
   }
 `;
+
+// ─── Segmented control (지도 / 목록) ───────────────────────
+export const Segmented = styled.div`
+  display: inline-flex;
+  padding: 3px;
+  background: ${theme.colors.ink100};
+  border-radius: 10px;
+  flex-shrink: 0;
+`;
+
+export const SegmentedBtn = styled.button<{ $active: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: ${({ $active }) => ($active ? 700 : 500)};
+  color: ${({ $active }) => ($active ? theme.colors.ink900 : theme.colors.ink500)};
+  background: ${({ $active }) => ($active ? theme.colors.white : 'transparent')};
+  box-shadow: ${({ $active }) => ($active ? theme.shadows.sm : 'none')};
+  transition: background 0.15s ease, color 0.15s ease;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+`;
+
+export const SegmentedCount = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: ${theme.colors.primary};
+  color: ${theme.colors.white};
+  font-size: 10px;
+  font-weight: 700;
+`;
+
+// ─── Sort dropdown ─────────────────────────────────────────
+export const SortWrap = styled.div`
+  position: relative;
+  flex-shrink: 0;
+`;
+
+export const SortBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: ${theme.colors.ink700};
+  border-radius: 8px;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: ${theme.colors.ink100};
+  }
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+`;
+
+export const SortMenu = styled.ul<{ $open: boolean }>`
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 140px;
+  background: ${theme.colors.card};
+  border: 1px solid ${theme.colors.ink200};
+  border-radius: 12px;
+  box-shadow: ${theme.shadows.lg};
+  padding: 4px;
+  display: ${({ $open }) => ($open ? 'block' : 'none')};
+  z-index: ${theme.z.mapFloatingButton};
+  list-style: none;
+`;
+
+export const SortOption = styled.button<{ $active: boolean }>`
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 13.5px;
+  font-weight: ${({ $active }) => ($active ? 700 : 500)};
+  color: ${({ $active }) => ($active ? theme.colors.primary : theme.colors.ink900)};
+  border-radius: 8px;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: ${theme.colors.ink50};
+  }
+`;
+
+// ─── Toolbar row (segmented + sort) ────────────────────────
+export const Toolbar = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid ${theme.colors.ink100};
+  background: ${theme.colors.bg};
+  flex-shrink: 0;
+`;

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useSearchCafesQuery } from '@/store/api/cafesApi';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { toggleMoodFilter, setSelectedCafe as deselectCafe, setUserLocation, setCenter, setLevel } from '@/store/slices/mapSlice';
+import { toggleMoodFilter, setSelectedCafe as deselectCafe, setUserLocation, setCenter, setLevel, setViewMode, setSort } from '@/store/slices/mapSlice';
 import { useDebouncedMapBounds, useDebouncedMapCenter } from '@/hooks/useDebouncedMapBounds';
 import { encodeGeohash, haversineMeters } from '@/lib/geohash';
 import { CafeMapWrapper } from '@/components/map/CafeMapWrapper';
@@ -16,7 +16,7 @@ import { CafeCard } from '@/components/cafe/CafeCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { SearchTrigger } from '@/components/search/SearchTrigger';
-import { Filter, List, MapPin, ChevronDown } from 'lucide-react';
+import { Filter, List, Map as LucideMap, MapPin, ChevronDown, ArrowDownUp } from 'lucide-react';
 import type { Cafe, SearchParams } from '@/types';
 
 // ─── 지역 바로가기 데이터 ─────────────────────────────────────────────
@@ -55,22 +55,38 @@ import {
   AreaDropdown,
   AreaOption,
   LoadingBar,
+  Toolbar,
+  Segmented,
+  SegmentedBtn,
+  SegmentedCount,
+  SortWrap,
+  SortBtn,
+  SortMenu,
+  SortOption,
 } from './page.styles';
+
+const SORT_OPTIONS: { key: 'distance' | 'rating' | 'reviews'; label: string }[] = [
+  { key: 'distance', label: '거리순' },
+  { key: 'rating', label: '평점순' },
+  { key: 'reviews', label: '인기순' },
+];
 
 export function MapClient() {
   const searchParamsHook = useSearchParams();
   const dispatch = useAppDispatch();
-  const { filters } = useAppSelector((s) => s.map);
+  const { filters, viewMode } = useAppSelector((s) => s.map);
   const debouncedBounds = useDebouncedMapBounds(300);
   const { center: debouncedCenter, level: debouncedLevel } = useDebouncedMapCenter(300);
+  const showList = viewMode === 'list';
 
   const [selectedCafe, setSelectedCafe] = useState<Cafe | null>(null);
   const [nearbyCafe, setNearbyCafe] = useState<Cafe | null>(null);
-  const [showList, setShowList] = useState(false);
   const [selectedArea, setSelectedArea] = useState<number | null>(null);
   const [areaOpen, setAreaOpen] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [sortOpen, setSortOpen] = useState(false);
   const areaRef = useRef<HTMLDivElement>(null);
+  const sortRef = useRef<HTMLDivElement>(null);
 
   // "commitedParams"만 RTK Query에 전달 — 매 드래그마다 새 요청을 쏘지 않음.
   const [committedParams, setCommittedParams] = useState<SearchParams | null>(null);
@@ -165,17 +181,21 @@ export function MapClient() {
     commit(pendingParams, debouncedLevel);
   }, [pendingParams, commit, debouncedLevel]);
 
-  // 드롭다운 외부 클릭 시 닫기
+  // 드롭다운 외부 클릭 시 닫기 (지역 · 정렬)
   useEffect(() => {
-    if (!areaOpen) return;
+    if (!areaOpen && !sortOpen) return;
     const handleClick = (e: MouseEvent) => {
-      if (areaRef.current && !areaRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (areaOpen && areaRef.current && !areaRef.current.contains(target)) {
         setAreaOpen(false);
+      }
+      if (sortOpen && sortRef.current && !sortRef.current.contains(target)) {
+        setSortOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [areaOpen]);
+  }, [areaOpen, sortOpen]);
 
   // 주변 카페 검색 결과 처리
   const handleNearbyFound = useCallback((cafe: Cafe) => {
@@ -258,14 +278,57 @@ export function MapClient() {
           </AreaDropdown>
         </AreaSelectWrap>
 
-        <Button variant="outline" size="sm" onClick={() => setShowList(!showList)}>
-          {showList ? (
-            <><MapPin size={16} /> 지도</>
-          ) : (
-            <><List size={16} /> 목록</>
-          )}
-        </Button>
       </FilterBar>
+
+      {/* Segmented(지도/목록) + 정렬 — 03_screens.md § 05 목록 */}
+      <Toolbar>
+        <Segmented role="tablist" aria-label="보기 전환">
+          <SegmentedBtn
+            role="tab"
+            aria-selected={viewMode === 'map'}
+            $active={viewMode === 'map'}
+            onClick={() => dispatch(setViewMode('map'))}
+          >
+            <LucideMap aria-hidden />
+            지도
+          </SegmentedBtn>
+          <SegmentedBtn
+            role="tab"
+            aria-selected={viewMode === 'list'}
+            $active={viewMode === 'list'}
+            onClick={() => dispatch(setViewMode('list'))}
+          >
+            <List aria-hidden />
+            목록
+            {cafes.length > 0 && <SegmentedCount>{cafes.length}</SegmentedCount>}
+          </SegmentedBtn>
+        </Segmented>
+
+        <SortWrap ref={sortRef}>
+          <SortBtn type="button" onClick={() => setSortOpen((v) => !v)}>
+            <ArrowDownUp aria-hidden />
+            {SORT_OPTIONS.find((o) => o.key === filters.sort)?.label ?? '거리순'}
+            <ChevronDown size={12} />
+          </SortBtn>
+          <SortMenu $open={sortOpen} role="menu">
+            {SORT_OPTIONS.map((option) => (
+              <li key={option.key}>
+                <SortOption
+                  role="menuitemradio"
+                  aria-checked={filters.sort === option.key}
+                  $active={filters.sort === option.key}
+                  onClick={() => {
+                    dispatch(setSort(option.key));
+                    setSortOpen(false);
+                  }}
+                >
+                  {option.label}
+                </SortOption>
+              </li>
+            ))}
+          </SortMenu>
+        </SortWrap>
+      </Toolbar>
 
       {/* 메인 영역 */}
       <MainArea>
