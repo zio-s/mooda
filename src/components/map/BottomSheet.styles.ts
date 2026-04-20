@@ -71,7 +71,9 @@ export const CafeName = styled.h3`
   margin: 0;
   font-size: ${theme.fontSize.md};
   font-weight: ${theme.fontWeight.semibold};
-  color: ${theme.colors.primaryText};
+  /* 카페명은 primaryLight 배경이 아니라 card 배경 위의 primary heading →
+     ink900(theme.colors.text)로 통일해 가독성 우선. */
+  color: ${theme.colors.text};
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -137,7 +139,7 @@ export const MoodChip = styled.span`
   padding: 2px 8px;
   border-radius: ${theme.borderRadius.full};
   background: ${theme.colors.primaryLight};
-  color: ${theme.colors.primaryText};
+  color: ${theme.colors.onPrimaryTint};
   font-size: ${theme.fontSize.xs};
   font-weight: ${theme.fontWeight.medium};
 `;

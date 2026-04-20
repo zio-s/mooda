@@ -267,7 +267,7 @@ export const MoodVoteButton = styled.button<{ $voted?: boolean; $shake?: boolean
   background: ${({ $voted }) => $voted ? theme.colors.primary : theme.colors.primaryLight};
   padding: 6px 12px;
   font-size: ${theme.fontSize.sm};
-  color: ${({ $voted }) => $voted ? theme.colors.white : theme.colors.primaryText};
+  color: ${({ $voted }) => $voted ? theme.colors.white : theme.colors.onPrimaryTint};
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   font-weight: ${({ $voted }) => $voted ? '600' : '400'};
@@ -292,7 +292,7 @@ export const VoteCount = styled.span`
   background: ${theme.colors.primaryMid};
   padding: 1px 6px;
   font-size: ${theme.fontSize.xs};
-  color: ${theme.colors.primaryText};
+  color: ${theme.colors.onPrimaryTint};
 `;
 
 export const MoodHint = styled.p`

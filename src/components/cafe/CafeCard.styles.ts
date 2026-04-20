@@ -208,7 +208,7 @@ export const MoodTag = styled.span`
   border-radius: ${theme.borderRadius.full};
   border: none;
   background: ${theme.colors.primaryLight};
-  color: ${theme.colors.primaryText};
+  color: ${theme.colors.onPrimaryTint};
   font-size: 11px;
   font-weight: ${theme.fontWeight.medium};
 `;

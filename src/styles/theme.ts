@@ -10,8 +10,14 @@ export const theme = {
     primaryHover: '#92400e',  // amber-800
     primaryLight: '#fef7ed',  // warm tint (was #fef3c7)
     primaryLight2: '#fde4b8', // amber-200 tint
-    primaryText: '#92400e',   // amber-800 — dark brand accent text (kept for back-compat)
-    onPrimary: '#ffffff',     // text on primary surface
+    /**
+     * primaryText (amber-800): primaryLight(tint) 배경 위 텍스트 색. 브랜드
+     * 톤을 유지하면서 읽기 가능. 순수 헤드라인에는 ink900 이 더 나음.
+     * @deprecated 의미가 명확하도록 `onPrimaryTint` 사용 권장.
+     */
+    primaryText: '#92400e',
+    onPrimaryTint: '#92400e', // primaryLight 배경 위 텍스트 (semantic)
+    onPrimary: '#ffffff',     // text on primary (solid) surface
 
     // Legacy primary aliases (back-compat)
     primaryDark: '#92400e',
