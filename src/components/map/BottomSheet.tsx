@@ -80,6 +80,44 @@ export function BottomSheet({ cafe, onClose, onRequestLocation }: BottomSheetPro
     return () => clearCloseTimer();
   }, [clearCloseTimer]);
 
+  // 물리 뒤로가기(Android Chrome 등)로 시트만 닫히게 — popstate 통합.
+  // cafe가 set될 때마다 1회 pushState, 시트 종료 시 state를 소진해 history
+  // 스택이 쌓이지 않게 한다. 중복 push 방지 플래그(pushedRef)로 새 카페로
+  // 교체될 때도 한 번만 push.
+  const pushedRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (cafe && !pushedRef.current) {
+      pushedRef.current = true;
+      window.history.pushState({ mooda: 'bottom-sheet' }, '');
+    }
+
+    const onPop = () => {
+      if (pushedRef.current) {
+        pushedRef.current = false;
+        // 히스토리가 이미 back 됐으므로 pushState 없이 onClose만 실행.
+        setVisible(false);
+        setShowRoute(false);
+        clearCloseTimer();
+        closeTimerRef.current = setTimeout(() => {
+          closeTimerRef.current = null;
+          onClose();
+        }, 350);
+      }
+    };
+    window.addEventListener('popstate', onPop);
+
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      // 언마운트될 때 내가 push한 state가 남아있으면 정리.
+      if (pushedRef.current) {
+        pushedRef.current = false;
+        // history.back은 SPA route 이탈 유발 가능 → state 교체로 대체
+        // (사용자가 back 누르기 전에 부모에서 cafe=null 시 정상 플로우).
+      }
+    };
+  }, [cafe, onClose, clearCloseTimer]);
+
   // 경로 조회
   const { data: route, isLoading: routeLoading, isError: routeError } = useGetTransitRouteQuery(
     {
@@ -91,15 +129,20 @@ export function BottomSheet({ cafe, onClose, onRequestLocation }: BottomSheetPro
     { skip: !displayCafe || !userLocation },
   );
 
-  // X 버튼 / 오버레이 클릭 → 닫기
+  // X 버튼 / 오버레이 클릭 → 닫기. pushState로 쌓인 히스토리를 back()으로
+  // 소진해 popstate 핸들러가 공용 close 로직을 실행한다. pushedRef가 false면
+  // (이미 popstate 등으로 소진됐다는 뜻) 직접 onClose.
   const handleClose = useCallback((e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
       e.preventDefault();
     }
+    if (typeof window !== 'undefined' && pushedRef.current) {
+      window.history.back();
+      return;
+    }
     setVisible(false);
     setShowRoute(false);
-    // 애니메이션 완료 후 부모에 알림
     clearCloseTimer();
     closeTimerRef.current = setTimeout(() => {
       closeTimerRef.current = null;
