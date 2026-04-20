@@ -18,14 +18,40 @@
 
 ### C. 코드 미세 수정 (Claude Code로 가능)
 상세 진단은 `05_review_after_impl.md` 참조.
-- [ ] `BottomSheet` 물리 뒤로가기 통합 — history.pushState + popstate (§ 4.2)
-- [ ] `NamePill`/`Dot` bounce 애니메이션에 `prefers-reduced-motion` 대응 (§ 4.3)
-- [ ] `openStatus.ts` `closingSoonMinutes` 옵션 파라미터화 (§ 3.5)
-- [ ] `ResearchAreaChip` Toolbar/FilterBar와 겹침 여부 검증 및 동적 top 오프셋 (§ 3.4)
-- [ ] `CafeCard` PhotoDots 3개 초과 시 "N/M" 텍스트 인디케이터로 전환 (§ 4.4)
-- [ ] `primaryText` 토큰 리네이밍 → `onPrimaryTint`, 카페명은 `ink900`으로 통일 (§ 4.1)
-- [ ] `BottomSheet` snap points(peek/half/full) 3단 — 경로 상세 펼칠 때 잘림 방지 (§ 3.2) **[선택]**
-- [ ] `CafeCard` PhotoCarousel `onScroll` → `onScrollEnd` + rAF throttle (§ 3.1) **[선택, jank 확인 후]**
+- [x] `BottomSheet` 물리 뒤로가기 통합 — `795b31c`
+- [x] `NamePill`/`Dot` bounce 애니메이션에 `prefers-reduced-motion` 대응 — `a69fea8` (전역)
+- [x] `openStatus.ts` `closingSoonMinutes` 옵션 파라미터화 — `53ea780`
+- [x] `ResearchAreaChip` Toolbar/FilterBar와 겹침 여부 검증 — `e5142b8` (구조상 겹침 없음 확인 + CSS 변수 훅)
+- [x] `CafeCard` PhotoDots 3개 초과 시 "N/M" 텍스트 인디케이터 — `d1cfb1d`
+- [x] `primaryText` 토큰 리네이밍 → `onPrimaryTint`, 카페명 `ink900` 통일 — `4f72f5c`
+- [x] `BottomSheet` 동적 max-height — `5a4c833` (`min(75vh, calc(100dvh-140px))`)
+- [ ] `BottomSheet` snap points(peek/half/full) 3단 **[선택 · 릴리즈 후]**
+- [ ] `CafeCard` PhotoCarousel `onScrollEnd` + rAF throttle **[선택 · jank 확인 후]**
+
+### C'. 06_responsive_qa Phase 1 (QA 리뷰 반영)
+- [x] QA-C1 Header safe-area-inset-top — `c2be9f3`
+- [x] QA-C2 BottomSheet overscroll + scroll chain — `5a4c833`
+- [x] QA-C3 MoodFilterSheet body scroll lock + overscroll — `faaa7e8`
+- [x] QA-C4 Search 인풋/버튼 44px — `dba269e`
+- [x] QA-C5 SearchTrigger compact + FilterBar 축소 — `4a0eb73`
+- [x] QA-C7 Search Wrapper `height:100dvh; overflow:hidden` — `925cb3f`
+- [x] QA-M9 한글 IME composition 처리 — `6eebd5f`
+
+### C''. 추가 현장 수정 (실기 검증 중 발견)
+- [x] 가로 스크롤 (skip-link `left:-9999px`) → clip-path — `6067d0d` + `e1171a3`
+- [x] FilterBar overflow (flex-shrink:0 과다 적용) — `1317494`
+- [x] MoodFilterSheet z-index 지도 컨트롤에 가림 — `1317494`
+- [x] MoodFilterSheet 탭별 높이 변동 — `1317494` (fixed 80dvh)
+- [x] MoodFilterSheet X 버튼 + "전체 해제" 겹침 (X 제거) — `3401442`
+- [x] AreaSelect 드롭다운 우측 오버플로 — `3401442` (right-anchor)
+- [x] 목록/즐겨찾기에서 카드 전체 영역 클릭 → 상세 이동 — `e1928b3`
+
+### C'''. 06_responsive_qa Phase 2 — 권장 잔여
+- [ ] **M5** FavoriteBtn hit area 44×44 (현재 아이콘 16px 단독)
+- [ ] **M7** MapClient EmptyState 이모지 div 인라인 스타일 제거 → styled div 규칙 적용
+- [ ] **L6** `:focus-visible` box-shadow 교체 (pill/rounded 친화)
+- [ ] M4 Header Nav 모바일 margin-left 축소 (375px 빠듯함)
+- [ ] L1 SegmentedBtn 아이콘 14→16
 
 ### D. 관측 지표 설계 (제품 결정)
 - [ ] 분위기 태그별 클릭률/선택률 로깅
