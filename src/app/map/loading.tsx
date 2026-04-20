@@ -2,7 +2,7 @@
 
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
-import { Skeleton, SkeletonBlock } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Wrapper = styled.div`
   height: calc(100dvh - 56px);
@@ -29,7 +29,7 @@ const MapStage = styled.div`
   position: relative;
 `;
 
-const MapFill = styled(SkeletonBlock).attrs({ $h: 0, $r: 0 })`
+const MapFill = styled(Skeleton)`
   position: absolute;
   inset: 0;
   height: 100%;

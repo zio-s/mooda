@@ -2,7 +2,7 @@
 
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
-import { Skeleton, SkeletonBlock } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Wrapper = styled.div`
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 32px);
@@ -10,7 +10,9 @@ const Wrapper = styled.div`
   min-height: 100dvh;
 `;
 
-const Hero = styled(SkeletonBlock).attrs({ $h: 320, $r: 0 })`
+const Hero = styled(Skeleton)`
+  width: 100%;
+  height: 320px;
   border-radius: 0;
 `;
 
