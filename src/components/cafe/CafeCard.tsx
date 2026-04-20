@@ -74,14 +74,49 @@ export function CafeCard({ cafe, compact = false, onFavorite, isFavorited }: Caf
     setActiveSlide(idx);
   }, []);
 
+  // PhotoCarousel 스와이프와 CardLink 탭 충돌 해소. PhotoCarousel 위에서
+  // touchstart→touchmove 거리 10px 초과면 swipedRef=true로 표시, 직후
+  // CardLink click이 발사되면 preventDefault로 네비게이션 차단.
+  const swipedRef = useRef(false);
+  const touchStartXRef = useRef(0);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    touchStartXRef.current = e.touches[0]?.clientX ?? 0;
+    swipedRef.current = false;
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    const x = e.touches[0]?.clientX ?? touchStartXRef.current;
+    if (Math.abs(x - touchStartXRef.current) > 10) {
+      swipedRef.current = true;
+    }
+  }, []);
+
+  const handleCardClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (swipedRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      swipedRef.current = false;
+    }
+  }, []);
+
   return (
-    <CardLink href={PATHS.CafeDetail(cafe.id)} aria-label={`${cafe.name} 상세 페이지로 이동`}>
+    <CardLink
+      href={PATHS.CafeDetail(cafe.id)}
+      aria-label={`${cafe.name} 상세 페이지로 이동`}
+      onClick={handleCardClick}
+    >
       <CardWrapper>
         <PhotoArea $compact={compact}>
           {photos.length > 0 ? (
             hasMultiplePhotos ? (
               <>
-                <PhotoCarousel ref={scrollRef} onScroll={handleScroll}>
+                <PhotoCarousel
+                  ref={scrollRef}
+                  onScroll={handleScroll}
+                  onTouchStart={handleTouchStart}
+                  onTouchMove={handleTouchMove}
+                >
                   {photos.map((photo, i) => (
                     <PhotoSlide key={photo.id}>
                       <Image
