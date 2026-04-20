@@ -259,14 +259,27 @@ export function CafeDetailClient({ cafe }: Props) {
   }
 
   function handleDirections() {
-    const kakaoUrl = `https://map.kakao.com/link/to/${encodeURIComponent(cafe.name)},${cafe.lat},${cafe.lng}`;
-    const naverUrl = `nmap://route/public?dlat=${cafe.lat}&dlng=${cafe.lng}&dname=${encodeURIComponent(cafe.name)}&appname=mooda.app`;
-    // 아주 기본형 — 사용자가 선택할 수 있도록 프롬프트.
-    const choice = typeof window !== 'undefined'
-      ? window.confirm('네이버지도로 이동하시겠어요?\n(취소 시 카카오맵)')
-      : false;
     if (typeof window === 'undefined') return;
-    window.location.href = choice ? naverUrl : kakaoUrl;
+    const name = encodeURIComponent(cafe.name);
+    // 앱 딥링크 우선, 미설치 시 800ms 뒤 웹으로 폴백. 네이버지도만 지원.
+    const appUrl = `nmap://route/public?dlat=${cafe.lat}&dlng=${cafe.lng}&dname=${name}&appname=mooda.app`;
+    const webUrl = `https://map.naver.com/p/directions/-/${cafe.lng},${cafe.lat},${name},,PLACE_POI/-/transit`;
+
+    const hidden = document.visibilityState === 'hidden';
+    let handled = hidden;
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') handled = true;
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange, { once: true });
+
+    window.location.href = appUrl;
+
+    window.setTimeout(() => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      if (!handled) {
+        window.location.href = webUrl;
+      }
+    }, 800);
   }
 
   return (
@@ -419,14 +432,16 @@ export function CafeDetailClient({ cafe }: Props) {
                 <InfoLink href={`tel:${cafe.phone}`}>{cafe.phone}</InfoLink>
               </InfoItem>
             )}
-            {cafe.kakaoUrl && (
-              <InfoItem>
-                <ExternalLink size={16} color="#9ca3af" style={{ flexShrink: 0 }} />
-                <InfoLink href={cafe.kakaoUrl} target="_blank" rel="noopener noreferrer">
-                  카카오맵에서 보기
-                </InfoLink>
-              </InfoItem>
-            )}
+            <InfoItem>
+              <ExternalLink size={16} color="#9ca3af" style={{ flexShrink: 0 }} />
+              <InfoLink
+                href={`https://map.naver.com/p/search/${encodeURIComponent(cafe.name)}?c=${cafe.lng},${cafe.lat},17,0,0,0,dh`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                네이버지도에서 보기
+              </InfoLink>
+            </InfoItem>
             {cafe.instagramUrl && (
               <InfoItem>
                 <Instagram size={16} color="#9ca3af" style={{ flexShrink: 0 }} />

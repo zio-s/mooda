@@ -24,7 +24,7 @@ import {
   DetailLink,
   ExpandedSection,
   RouteSection,
-  KakaoLink,
+  NaverDirectionsLink,
   ToggleBtn,
 } from './BottomSheet.styles';
 import { PATHS } from '@/constants/paths';
@@ -129,9 +129,30 @@ export function BottomSheet({ cafe, onClose, onRequestLocation }: BottomSheetPro
     return computeOpenStatus(normalized);
   }, [c]);
 
-  const kakaoLink = c
-    ? `https://map.kakao.com/link/to/${encodeURIComponent(c.name)},${c.lat},${c.lng}`
+  // 길찾기는 네이버지도 웹으로. 모바일에선 앱 딥링크가 먼저 뜨게끔
+  // handleDirections에서 처리, 여기 링크는 웹 폴백/desktop용.
+  const naverLink = c
+    ? `https://map.naver.com/p/directions/-/${c.lng},${c.lat},${encodeURIComponent(c.name)},,PLACE_POI/-/transit`
     : '#';
+
+  const handleDirections = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!c) return;
+    // 앱 딥링크 시도 → 실패 시 웹으로 폴백. e.preventDefault로 기본 웹 이동을 막고
+    // 수동으로 순서를 제어한다.
+    e.preventDefault();
+    const name = encodeURIComponent(c.name);
+    const appUrl = `nmap://route/public?dlat=${c.lat}&dlng=${c.lng}&dname=${name}&appname=mooda.app`;
+    let handled = document.visibilityState === 'hidden';
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') handled = true;
+    };
+    document.addEventListener('visibilitychange', onVis, { once: true });
+    window.location.href = appUrl;
+    window.setTimeout(() => {
+      document.removeEventListener('visibilitychange', onVis);
+      if (!handled) window.location.href = naverLink;
+    }, 800);
+  }, [c, naverLink]);
 
   const hasRoute = route || routeLoading;
 
@@ -190,10 +211,15 @@ export function BottomSheet({ cafe, onClose, onRequestLocation }: BottomSheetPro
                 상세 보기
               </DetailLink>
             )}
-            <KakaoLink href={kakaoLink} target="_blank" rel="noopener noreferrer">
+            <NaverDirectionsLink
+              href={naverLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={handleDirections}
+            >
               <ExternalLink size={12} />
-              카카오맵
-            </KakaoLink>
+              네이버지도 길찾기
+            </NaverDirectionsLink>
             {hasRoute && (
               <ToggleBtn type="button" onClick={() => setShowRoute(!showRoute)}>
                 경로 상세

@@ -129,26 +129,6 @@ export const RouteActions = styled.div`
   padding: 8px 16px 4px;
 `;
 
-export const KakaoMapLink = styled.a`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  flex: 1;
-  padding: 8px 12px;
-  border-radius: ${theme.borderRadius.md};
-  background: ${theme.colors.kakao};
-  color: ${theme.colors.kakaoText};
-  font-size: ${theme.fontSize.sm};
-  font-weight: ${theme.fontWeight.medium};
-  text-decoration: none;
-  transition: opacity 0.15s ease;
-
-  &:hover {
-    opacity: 0.85;
-  }
-`;
-
 export const DetailBtn = styled.a`
   display: inline-flex;
   align-items: center;

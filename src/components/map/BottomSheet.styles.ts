@@ -169,22 +169,23 @@ export const DetailLink = styled(Link)`
   }
 `;
 
-export const KakaoLink = styled.a`
+// 네이버지도 길찾기 링크 — 앱 딥링크 우선, 웹 폴백. 브랜드 컬러는 naver green.
+export const NaverDirectionsLink = styled.a`
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   padding: 8px 12px;
   border-radius: ${theme.borderRadius.md};
-  background: ${theme.colors.kakao};
-  color: ${theme.colors.kakaoText};
+  background: #03c75a;
+  color: ${theme.colors.white};
   font-size: ${theme.fontSize.sm};
-  font-weight: ${theme.fontWeight.medium};
+  font-weight: ${theme.fontWeight.semibold};
   text-decoration: none;
-  transition: opacity 0.15s ease;
+  transition: background 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 
   &:hover {
-    opacity: 0.85;
+    background: #02b050;
   }
 `;
 
