@@ -1,6 +1,6 @@
 'use client';
 
-import styled from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 import Link from 'next/link';
 import { theme } from '@/styles/theme';
 
@@ -25,10 +25,115 @@ export const BackLink = styled(Link)`
 export const DetailWrapper = styled.div`
   max-width: 768px;
   margin: 0 auto;
-  padding: 16px 16px 64px;
+  padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 48px);
 `;
 
-// ─── Photo ───────────────────────────────────────────────
+export const ContentInner = styled.div`
+  padding: 20px 16px 0;
+`;
+
+// ─── Hero ─────────────────────────────────────────────────
+export const HeroShell = styled.div`
+  position: relative;
+  width: 100%;
+  height: 320px;
+  overflow: hidden;
+  background: ${theme.colors.ink100};
+
+  @media (min-width: ${theme.breakpoints.sm}) {
+    border-bottom-left-radius: ${theme.borderRadius.xl};
+    border-bottom-right-radius: ${theme.borderRadius.xl};
+  }
+`;
+
+export const HeroGradient = styled.div`
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, ${theme.colors.primaryLight2} 0%, ${theme.colors.primaryLight} 100%);
+
+  /* 빗금 텍스처 */
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.22) 0 2px,
+      transparent 2px 14px
+    );
+    mix-blend-mode: soft-light;
+    pointer-events: none;
+  }
+`;
+
+export const HeroGlyph = styled.span`
+  font-size: 72px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 10px rgba(180, 83, 9, 0.18));
+`;
+
+export const HeroOverlay = styled.div`
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  z-index: 5;
+  pointer-events: none;
+
+  & > * {
+    pointer-events: auto;
+  }
+`;
+
+export const HeroFab = styled.button<{ $active?: boolean }>`
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: ${({ $active }) => ($active ? '#ef4444' : theme.colors.ink900)};
+  box-shadow: ${theme.shadows.md};
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s ease, background 0.15s ease;
+
+  &:active {
+    transform: scale(0.94);
+  }
+`;
+
+export const HeroFabGroup = styled.div`
+  display: inline-flex;
+  gap: 8px;
+`;
+
+export const HeroCountPill = styled.div`
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: ${theme.colors.white};
+  font-size: 11.5px;
+  font-weight: 600;
+`;
+
+export const HeroPhotoFill = styled.div`
+  position: absolute;
+  inset: 0;
+`;
+
+// ─── Legacy Hero (CafeCard용, back-compat) ──────────────
 export const HeroPhoto = styled.div`
   position: relative;
   margin-bottom: 24px;
@@ -48,6 +153,44 @@ export const PhotoPlaceholder = styled.div`
   align-items: center;
   justify-content: center;
   font-size: 60px;
+`;
+
+// ─── Quick Actions ───────────────────────────────────────
+export const QuickActionGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 20px 0 24px;
+`;
+
+export const QuickActionCell = styled.button`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px 6px;
+  border-radius: 12px;
+  background: ${theme.colors.primaryLight};
+  color: ${theme.colors.primaryHover};
+  font-size: 11.5px;
+  font-weight: 600;
+  transition: background 0.15s ease, transform 0.12s ease;
+
+  &:active {
+    transform: scale(0.97);
+    background: ${theme.colors.primaryLight2};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
 `;
 
 // ─── Header Row ──────────────────────────────────────────
@@ -127,7 +270,13 @@ export const MoodTagsRow = styled.div`
   gap: 8px;
 `;
 
-export const MoodVoteButton = styled.button<{ $voted?: boolean }>`
+const shake = keyframes`
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+`;
+
+export const MoodVoteButton = styled.button<{ $voted?: boolean; $shake?: boolean }>`
   display: flex;
   align-items: center;
   gap: 6px;
@@ -138,8 +287,14 @@ export const MoodVoteButton = styled.button<{ $voted?: boolean }>`
   font-size: ${theme.fontSize.sm};
   color: ${({ $voted }) => $voted ? theme.colors.white : theme.colors.primaryText};
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
   font-weight: ${({ $voted }) => $voted ? '600' : '400'};
+
+  ${({ $shake }) =>
+    $shake &&
+    css`
+      animation: ${shake} 0.3s ease-out;
+    `}
 
   &:hover {
     border-color: ${theme.colors.primary};

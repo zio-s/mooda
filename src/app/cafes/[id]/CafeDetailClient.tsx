@@ -1,14 +1,18 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import {
+  ArrowLeft,
+  Bookmark,
   Heart,
+  Navigation,
+  Phone,
+  Share2,
   Star,
   MapPin,
-  Phone,
   ExternalLink,
   Instagram,
   Clock,
@@ -20,6 +24,8 @@ import { PATHS } from '@/constants/paths';
 import type { Cafe } from '@/types';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { OpenBadge } from '@/components/cafe/OpenBadge';
+import { computeOpenStatus, type CafeHourInput } from '@/lib/cafe/openStatus';
 import {
   useToggleVoteMutation,
   useAddFavoriteMutation,
@@ -30,17 +36,24 @@ import {
 import { ReviewForm } from '@/components/review/ReviewForm';
 import { toast } from 'sonner';
 import {
-  BackLink,
   DetailWrapper,
-  HeroPhoto,
-  PhotoPlaceholder,
+  ContentInner,
+  HeroShell,
+  HeroGradient,
+  HeroGlyph,
+  HeroOverlay,
+  HeroFab,
+  HeroFabGroup,
+  HeroCountPill,
+  HeroPhotoFill,
+  QuickActionGrid,
+  QuickActionCell,
   HeaderRow,
   HeaderLeft,
   CafeTitle,
   MetaRow,
   RatingItem,
   OpenTime,
-  FavoriteButton,
   MoodSection,
   MoodSectionTitle,
   MoodTagsRow,
@@ -111,7 +124,14 @@ export function CafeDetailClient({ cafe }: Props) {
   const [votedMoods, setVotedMoods] = useState<Set<string>>(
     new Set(cafe.myVotes ?? [])
   );
+  const [shakeMoodId, setShakeMoodId] = useState<string | null>(null);
   const [toggleVote] = useToggleVoteMutation();
+
+  useEffect(() => {
+    if (!shakeMoodId) return;
+    const t = setTimeout(() => setShakeMoodId(null), 400);
+    return () => clearTimeout(t);
+  }, [shakeMoodId]);
 
   const { data: blogData } = useGetCafeBlogsQuery(cafe.id);
   const { data: googleData } = useGetCafeGoogleReviewsQuery(cafe.id);
@@ -183,7 +203,7 @@ export function CafeDetailClient({ cafe }: Props) {
       }
       toast.success(result.voted ? '투표했습니다' : '투표를 취소했습니다');
     } catch {
-      // 롤백
+      // 롤백 + shake 피드백
       setVotedMoods((prev) => {
         const next = new Set(prev);
         if (isVoted) next.add(moodId);
@@ -193,7 +213,8 @@ export function CafeDetailClient({ cafe }: Props) {
       setMoods((prev) =>
         prev.map((m) => m.moodId === moodId ? { ...m, voteCount: m.voteCount - delta } : m)
       );
-      toast.error('오류가 발생했습니다');
+      setShakeMoodId(moodId);
+      toast.error('투표에 실패했어요. 다시 눌러주세요');
     }
   }
 
@@ -201,63 +222,159 @@ export function CafeDetailClient({ cafe }: Props) {
   const todayDay = new Date().getDay();
   const todayHours = cafe.hours.find((h) => h.dayOfWeek === todayDay);
 
+  const openStatus = useMemo(() => {
+    if (!cafe.hours || cafe.hours.length === 0) return null;
+    const normalized: CafeHourInput[] = cafe.hours.map((h) => ({
+      dayOfWeek: h.dayOfWeek,
+      openTime: h.openTime ?? null,
+      closeTime: h.closeTime ?? null,
+      isClosed: h.isClosed,
+    }));
+    return computeOpenStatus(normalized);
+  }, [cafe.hours]);
+
+  const heroPhotoUrl = cafe.mainPhoto ?? cafe.photos[0]?.url ?? null;
+  const photoCount = cafe.photos.length;
+
+  async function handleShare() {
+    const shareData = {
+      title: cafe.name,
+      text: `${cafe.name} · Mooda`,
+      url: typeof window !== 'undefined' ? window.location.href : '',
+    };
+    if (typeof navigator !== 'undefined' && 'share' in navigator && navigator.canShare?.(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {
+        // 사용자가 취소했거나 share 실패 → 클립보드 폴백
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(shareData.url);
+      toast.success('링크를 복사했어요');
+    } catch {
+      toast.error('공유에 실패했어요');
+    }
+  }
+
+  function handleDirections() {
+    const kakaoUrl = `https://map.kakao.com/link/to/${encodeURIComponent(cafe.name)},${cafe.lat},${cafe.lng}`;
+    const naverUrl = `nmap://route/public?dlat=${cafe.lat}&dlng=${cafe.lng}&dname=${encodeURIComponent(cafe.name)}&appname=mooda.app`;
+    // 아주 기본형 — 사용자가 선택할 수 있도록 프롬프트.
+    const choice = typeof window !== 'undefined'
+      ? window.confirm('네이버지도로 이동하시겠어요?\n(취소 시 카카오맵)')
+      : false;
+    if (typeof window === 'undefined') return;
+    window.location.href = choice ? naverUrl : kakaoUrl;
+  }
+
   return (
     <DetailWrapper>
-      <BackLink href={PATHS.Map}>
-        <ChevronLeft size={16} />
-        지도로 돌아가기
-      </BackLink>
-
-      {/* 대표 사진 */}
-      <HeroPhoto>
-        {cafe.mainPhoto ? (
-          <Image
-            src={cafe.mainPhoto}
-            alt={cafe.name}
-            fill
-            unoptimized
-            style={{ objectFit: 'cover' }}
-            priority
-            sizes="(max-width: 768px) 100vw, 768px"
-          />
+      {/* ── Hero ──────────────────────────────────────────────── */}
+      <HeroShell>
+        {heroPhotoUrl ? (
+          <HeroPhotoFill>
+            <Image
+              src={heroPhotoUrl}
+              alt={cafe.name}
+              fill
+              unoptimized
+              style={{ objectFit: 'cover' }}
+              priority
+              sizes="(max-width: 768px) 100vw, 768px"
+            />
+          </HeroPhotoFill>
         ) : (
-          <PhotoPlaceholder>☕</PhotoPlaceholder>
+          <HeroGradient>
+            <HeroGlyph aria-hidden>☕</HeroGlyph>
+          </HeroGradient>
         )}
-      </HeroPhoto>
+        <HeroOverlay>
+          <HeroFab
+            type="button"
+            onClick={() => router.push(PATHS.Map)}
+            aria-label="뒤로가기"
+          >
+            <ArrowLeft size={18} />
+          </HeroFab>
+          <HeroFabGroup>
+            <HeroFab type="button" onClick={handleShare} aria-label="공유">
+              <Share2 size={18} />
+            </HeroFab>
+            <HeroFab
+              type="button"
+              onClick={handleFavorite}
+              aria-label={isFav ? '저장 해제' : '저장'}
+              $active={isFav}
+            >
+              <Heart size={18} fill={isFav ? '#ef4444' : 'none'} />
+            </HeroFab>
+          </HeroFabGroup>
+        </HeroOverlay>
+        {photoCount > 1 && (
+          <HeroCountPill>1 / {photoCount}</HeroCountPill>
+        )}
+      </HeroShell>
 
-      {/* 헤더 */}
-      <HeaderRow>
-        <HeaderLeft>
-          <CafeTitle>{cafe.name}</CafeTitle>
-          <MetaRow>
-            <RatingItem>
-              <Star size={16} fill="#fbbf24" color="#fbbf24" />
-              {cafe.avgRating.toFixed(1)}
-              <span>({cafe.reviewCount}개 리뷰)</span>
-            </RatingItem>
-            {todayHours && !todayHours.isClosed && (
-              <OpenTime>
-                <Clock size={12} />
-                {todayHours.openTime} - {todayHours.closeTime}
-              </OpenTime>
-            )}
-          </MetaRow>
-        </HeaderLeft>
-        <FavoriteButton $active={isFav} onClick={handleFavorite}>
-          <Heart size={16} fill={isFav ? '#ef4444' : 'none'} />
-          {isFav ? '저장됨' : '저장'}
-        </FavoriteButton>
-      </HeaderRow>
+      <ContentInner>
+        {/* ── Meta ─────────────────────────────────────────── */}
+        <HeaderRow>
+          <HeaderLeft>
+            <CafeTitle>{cafe.name}</CafeTitle>
+            <MetaRow>
+              {openStatus && <OpenBadge status={openStatus} size="md" />}
+              <RatingItem>
+                <Star size={14} fill="#fbbf24" color="#fbbf24" />
+                {cafe.avgRating.toFixed(1)}
+                <span>({cafe.reviewCount})</span>
+              </RatingItem>
+              {todayHours && !todayHours.isClosed && todayHours.closeTime && (
+                <OpenTime>
+                  <Clock size={12} />
+                  {todayHours.closeTime}까지
+                </OpenTime>
+              )}
+            </MetaRow>
+          </HeaderLeft>
+        </HeaderRow>
 
-      {/* 분위기 태그 */}
-      {topMoods.length > 0 && (
-        <MoodSection>
+        {/* ── Quick Actions (4칸 grid, 02_components.md § Quick action) ── */}
+        <QuickActionGrid>
+          <QuickActionCell type="button" onClick={handleDirections}>
+            <Navigation aria-hidden />
+            길찾기
+          </QuickActionCell>
+          <QuickActionCell
+            type="button"
+            as={cafe.phone ? 'a' : 'button'}
+            href={cafe.phone ? `tel:${cafe.phone}` : undefined}
+            disabled={!cafe.phone}
+            onClick={cafe.phone ? undefined : () => toast.info('등록된 전화번호가 없어요')}
+          >
+            <Phone aria-hidden />
+            전화
+          </QuickActionCell>
+          <QuickActionCell type="button" onClick={handleFavorite}>
+            <Bookmark aria-hidden fill={isFav ? 'currentColor' : 'none'} />
+            {isFav ? '저장됨' : '저장'}
+          </QuickActionCell>
+          <QuickActionCell type="button" onClick={handleShare}>
+            <Share2 aria-hidden />
+            공유
+          </QuickActionCell>
+        </QuickActionGrid>
+
+        {/* 분위기 태그 */}
+        {topMoods.length > 0 && (
+          <MoodSection>
           <MoodSectionTitle>분위기 태그</MoodSectionTitle>
           <MoodTagsRow>
             {topMoods.map((mood) => (
               <MoodVoteButton
                 key={mood.moodId}
                 $voted={votedMoods.has(mood.moodId)}
+                $shake={shakeMoodId === mood.moodId}
                 onClick={() => handleVote(mood.moodId)}
               >
                 {mood.moodLabel}
@@ -507,6 +624,7 @@ export function CafeDetailClient({ cafe }: Props) {
           </TabsContent>
         )}
       </Tabs>
+      </ContentInner>
 
       {/* ── 갤러리 라이트박스 ─────────────────────────────────── */}
       {lightboxIdx !== null && (
