@@ -4,7 +4,11 @@ import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 
 export const Wrapper = styled.div`
-  min-height: 100dvh;
+  /* iOS Safari 주소창 토글로 100dvh가 재계산되면 Body 스크롤 위치가 튀는
+     현상이 있음. 고정 height + 외부 overflow:hidden로 Body(검색 결과)
+     하나만 스크롤 영역으로 일원화. */
+  height: 100dvh;
+  overflow: hidden;
   background: ${theme.colors.white};
   display: flex;
   flex-direction: column;
@@ -104,7 +108,9 @@ export const ClearButton = styled.button`
 
 export const Body = styled.div`
   flex: 1;
+  min-height: 0; /* flex item이 scroll container가 되도록 필수 */
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 `;
 
