@@ -21,9 +21,10 @@ import type { Cafe, MapBounds } from '@/types';
  */
 const PILL_MAX_LEVEL = 4;
 const DOT_MAX_LEVEL = 6;
-// Kakao MarkerClusterer의 grid 픽셀 반경. 기본값 60은 level 7에서 너무 좁아
-// 이웃 카페를 묶지 못하고 개별 DOM으로 쏟아지는 문제가 있었음 — 120으로 상향.
-const CLUSTER_GRID_SIZE = 120;
+// Kakao MarkerClusterer의 grid 픽셀 반경. zoom에 따라 실제 거리 해석이 달라짐:
+// level 7(1km 스케일)에서 80px ≈ ~80m, level 9(4km 스케일)에서는 ~320m.
+// 너무 크면(>200) 서울 도심 전체가 한 덩어리로 묶여 "100" 같은 거대 배지가 뜸.
+const CLUSTER_GRID_SIZE = 80;
 // ±10% 패딩 내 마커만 렌더 (화면 밖 마커는 DOM에 두지 않음)
 const BOUNDS_PADDING_RATIO = 0.1;
 
@@ -56,18 +57,19 @@ const NamePill = styled.div<{ $selected: boolean }>`
   ${markerBase}
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 10px;
+  gap: 5px;
+  padding: 5px 11px 5px 9px;
   border-radius: 999px;
   font-size: 11.5px;
   font-weight: 600;
+  letter-spacing: -0.01em;
   color: ${({ $selected }) =>
     $selected ? theme.colors.white : theme.colors.ink900};
   background: ${({ $selected }) =>
     $selected ? theme.colors.primary : theme.colors.white};
-  border: 1.5px solid
-    ${({ $selected }) => ($selected ? theme.colors.primary : theme.colors.ink200)};
-  box-shadow: ${theme.shadows.md};
+  /* Kakao 지도 기본 POI 레이블과 구별되도록 brand border 상시 + 강조된 shadow. */
+  border: 1.5px solid ${theme.colors.primary};
+  box-shadow: ${theme.shadows.lg};
   white-space: nowrap;
   max-width: 180px;
   overflow: hidden;
@@ -86,6 +88,19 @@ const NamePill = styled.div<{ $selected: boolean }>`
     height: 10px;
     flex-shrink: 0;
   }
+`;
+
+/**
+ * Pill 좌측 brand prefix dot — "이 핀은 Kakao POI가 아니라 Mooda가 추천한
+ * 카페"라는 신호를 시각적으로 선언. 선택 상태에서는 pill 본체가 brand bg로
+ * 채워지므로 dot은 반대로 white 로 반전.
+ */
+const PillLeadDot = styled.span<{ $selected: boolean }>`
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: ${({ $selected }) => ($selected ? theme.colors.white : theme.colors.primary)};
 `;
 
 const Dot = styled.div<{ $selected: boolean }>`
@@ -274,7 +289,11 @@ function CafeMarkersImpl({ cafes, level, bounds, selectedCafeId, onMarkerClick }
                 role="button"
                 aria-label={`${cafe.name} 선택`}
               >
-                {selected && <Star aria-hidden fill="currentColor" />}
+                {selected ? (
+                  <Star aria-hidden fill="currentColor" />
+                ) : (
+                  <PillLeadDot $selected={selected} aria-hidden />
+                )}
                 {cafe.name}
               </NamePill>
             ) : (
