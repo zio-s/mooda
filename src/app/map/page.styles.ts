@@ -5,12 +5,13 @@ import { theme } from '@/styles/theme';
 
 export const MapPageWrapper = styled.div`
   display: flex;
-  /* 모바일 브라우저 주소창을 제외한 실제 뷰포트 높이 */
-  height: calc(100vh - 56px);
-  @supports (height: 100dvh) {
-    height: calc(100dvh - 56px);
-  }
   flex-direction: column;
+  /* Header(56px) + Header safe-area-top를 함께 차감해야 notch 기기에서
+     하단이 잘리지 않음. 모바일 브라우저 주소창은 dvh로 흡수. */
+  height: calc(100vh - 56px - env(safe-area-inset-top, 0px));
+  @supports (height: 100dvh) {
+    height: calc(100dvh - 56px - env(safe-area-inset-top, 0px));
+  }
 `;
 
 // ─── Filter Bar ───────────────────────────────────────────

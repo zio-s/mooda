@@ -10,6 +10,9 @@ export const HeaderWrapper = styled.header`
   border-bottom: 1px solid ${theme.colors.border};
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(8px);
+  /* iPhone notch / Dynamic Island 기기: safe-area-inset-top을 Header가 흡수.
+     이후 MapPageWrapper 등은 Header 높이(56px)만 빼면 됨 — 중복 고려 X. */
+  padding-top: env(safe-area-inset-top, 0px);
 `;
 
 export const HeaderInner = styled.div`
