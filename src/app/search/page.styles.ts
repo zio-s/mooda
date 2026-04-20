@@ -22,10 +22,11 @@ export const Header = styled.header`
   border-bottom: 1px solid ${theme.colors.ink100};
 `;
 
+/* iOS HIG 최소 터치 타깃 44px — 검색은 primary action이라 sm(40) 대신 md(44). */
 export const BackButton = styled.button`
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   display: inline-flex;
   align-items: center;
@@ -43,9 +44,9 @@ export const InputWrap = styled.div<{ $focused: boolean }>`
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 40px;
-  padding: 0 12px;
-  border-radius: 20px;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 22px;  /* height/2 */
   background: ${theme.colors.ink100};
   border: 1.5px solid
     ${({ $focused }) => ($focused ? theme.colors.primary : 'transparent')};
@@ -70,16 +71,35 @@ export const Input = styled.input`
   }
 `;
 
+/* 시각은 20px 원 유지, hit area는 32px — 모바일 loose-touch 대응. */
 export const ClearButton = styled.button`
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: ${theme.colors.ink300};
+  background: transparent;
   color: ${theme.colors.white};
+
+  &::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: ${theme.colors.ink300};
+    position: absolute;
+    z-index: -1;
+  }
+  /* icon은 자식으로 들어오므로 ::before가 뒤로 깔리게 stacking context 필요. */
+  position: relative;
+  z-index: 0;
+
+  & > * {
+    position: relative;
+    z-index: 1;
+  }
 `;
 
 export const Body = styled.div`
