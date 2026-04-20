@@ -69,6 +69,6 @@ export const VerifiedBadge = styled.span<{ $verified: boolean }>`
   border-radius: ${theme.borderRadius.full};
   font-size: ${theme.fontSize.xs};
   font-weight: ${theme.fontWeight.medium};
-  background: ${({ $verified }) => ($verified ? '#dcfce7' : theme.colors.bgMuted)};
-  color: ${({ $verified }) => ($verified ? '#15803d' : theme.colors.textMuted)};
+  background: ${({ $verified }) => ($verified ? theme.colors.okBg : theme.colors.bgMuted)};
+  color: ${({ $verified }) => ($verified ? theme.colors.ok : theme.colors.textMuted)};
 `;

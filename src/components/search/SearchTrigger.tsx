@@ -17,6 +17,10 @@ const Pill = styled.button`
   align-items: center;
   gap: 10px;
   width: 100%;
+  /* FilterBar의 flex item으로 배치될 때 min-width:0 이어야 label ellipsis 정상
+     동작 + 320px 뷰포트에서도 자연스럽게 shrink. */
+  min-width: 0;
+  flex: 1 1 auto;
   height: 48px;
   padding: 0 16px;
   border-radius: 24px;

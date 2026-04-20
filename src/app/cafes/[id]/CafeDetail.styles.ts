@@ -231,26 +231,8 @@ export const OpenTime = styled.span`
   color: ${theme.colors.success};
 `;
 
-export const FavoriteButton = styled.button<{ $active?: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border-radius: ${theme.borderRadius.md};
-  border: 1px solid ${({ $active }) => ($active ? '#fca5a5' : theme.colors.border)};
-  background: ${({ $active }) => ($active ? '#fef2f2' : 'transparent')};
-  color: ${({ $active }) => ($active ? theme.colors.error : theme.colors.text)};
-  font-size: ${theme.fontSize.sm};
-  font-weight: ${theme.fontWeight.medium};
-  cursor: pointer;
-  transition: all 0.15s ease;
-
-  &:hover {
-    border-color: #fca5a5;
-    background: #fef2f2;
-    color: ${theme.colors.error};
-  }
-`;
+// FavoriteButton 은 Hero FAB 하트 + Quick Actions 저장 버튼으로 대체됨 (Week 3)
+// — 사용처 없어 제거.
 
 // ─── Mood Tags ───────────────────────────────────────────
 export const MoodSection = styled.div`
@@ -461,11 +443,11 @@ export const GoogleRatingBanner = styled.div`
   gap: 8px;
   margin-bottom: 16px;
   padding: 10px 14px;
-  background: #fef3c7;
+  background: ${theme.colors.primaryLight};
   border-radius: ${theme.borderRadius.md};
   font-size: ${theme.fontSize.sm};
   font-weight: ${theme.fontWeight.medium};
-  color: #92400e;
+  color: ${theme.colors.primaryHover};
 `;
 
 // ─── Gallery ─────────────────────────────────────────────

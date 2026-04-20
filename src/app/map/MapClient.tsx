@@ -257,9 +257,11 @@ export function MapClient() {
 
         <SearchTrigger />
 
-        <ChipsScroll>
-          <MoodFilterChips />
-        </ChipsScroll>
+        {filters.moods.length > 0 && (
+          <ChipsScroll>
+            <MoodFilterChips />
+          </ChipsScroll>
+        )}
 
         <AreaSelectWrap ref={areaRef}>
           <AreaSelectBtn onClick={() => setAreaOpen(!areaOpen)}>
