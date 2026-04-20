@@ -258,6 +258,26 @@ export function CafeDetailClient({ cafe }: Props) {
     }
   }
 
+  // 뒤로가기: 같은 origin에서 진입한 경우 router.back() 으로 중복 히스토리
+  // 방지, 첫 진입(공유 링크·새 탭 등)은 /map으로 push.
+  function handleBack() {
+    if (typeof window === 'undefined') return;
+    const sameOriginReferrer =
+      document.referrer &&
+      (() => {
+        try {
+          return new URL(document.referrer).origin === window.location.origin;
+        } catch {
+          return false;
+        }
+      })();
+    if (window.history.length > 1 && sameOriginReferrer) {
+      router.back();
+    } else {
+      router.push(PATHS.Map);
+    }
+  }
+
   function handleDirections() {
     if (typeof window === 'undefined') return;
     const name = encodeURIComponent(cafe.name);
@@ -306,7 +326,7 @@ export function CafeDetailClient({ cafe }: Props) {
         <HeroOverlay>
           <HeroFab
             type="button"
-            onClick={() => router.push(PATHS.Map)}
+            onClick={handleBack}
             aria-label="뒤로가기"
           >
             <ArrowLeft size={18} />
