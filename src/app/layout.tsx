@@ -5,7 +5,7 @@ import { Header } from '@/components/layout/Header';
 import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 
 export const viewport: Viewport = {
-  themeColor: '#d97706',
+  themeColor: '#b45309',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,

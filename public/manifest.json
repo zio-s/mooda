@@ -4,8 +4,8 @@
   "description": "원하는 분위기와 목적에 맞는 카페를 찾아보세요.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#d97706",
+  "background_color": "#fcfbf8",
+  "theme_color": "#b45309",
   "orientation": "portrait-primary",
   "icons": [
     {
