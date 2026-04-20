@@ -255,7 +255,9 @@ export function MapClient() {
         </Button>
         <MoodFilterSheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen} />
 
-        <SearchTrigger />
+        {/* 선택된 분위기 칩이 있을 때는 SearchTrigger를 아이콘 버튼으로 축소 →
+            좁은 뷰포트(iPhone SE 375px)에서 필터바 요소 경쟁 해결. */}
+        <SearchTrigger compact={filters.moods.length > 0} />
 
         {filters.moods.length > 0 && (
           <ChipsScroll>

@@ -10,22 +10,26 @@ type Props = {
   className?: string;
   /** Route pushed on tap. Defaults to `/search`. */
   href?: string;
+  /**
+   * true면 아이콘만 보이는 44px 원형 버튼으로 축소. FilterBar에 이미 chips
+   * 가 들어찼거나 좁은 뷰포트에서 경쟁 요소와 충돌하지 않게 해주는 fallback.
+   */
+  compact?: boolean;
 };
 
-const Pill = styled.button`
+const Pill = styled.button<{ $compact: boolean }>`
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  width: 100%;
-  /* FilterBar의 flex item으로 배치될 때 min-width:0 이어야 label ellipsis 정상
-     동작 + 320px 뷰포트에서도 자연스럽게 shrink. */
-  min-width: 0;
-  flex: 1 1 auto;
-  height: 48px;
-  padding: 0 16px;
-  border-radius: 24px;
+  width: ${({ $compact }) => ($compact ? '44px' : '100%')};
+  min-width: ${({ $compact }) => ($compact ? '44px' : '120px')};
+  flex: ${({ $compact }) => ($compact ? '0 0 auto' : '1 1 auto')};
+  height: ${({ $compact }) => ($compact ? '44px' : '48px')};
+  padding: ${({ $compact }) => ($compact ? '0' : '0 16px')};
+  justify-content: ${({ $compact }) => ($compact ? 'center' : 'flex-start')};
+  border-radius: ${({ $compact }) => ($compact ? '50%' : '24px')};
   background: ${theme.colors.white};
-  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.12);
+  box-shadow: ${theme.shadows.sm};
   cursor: pointer;
   text-align: left;
   color: ${theme.colors.ink500};
@@ -33,7 +37,6 @@ const Pill = styled.button`
 
   &:active {
     transform: scale(0.99);
-    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.1);
   }
 
   &:focus-visible {
@@ -61,17 +64,19 @@ export function SearchTrigger({
   placeholder = '성수동 조용한 카페',
   href = '/search',
   className,
+  compact = false,
 }: Props) {
   const router = useRouter();
   return (
     <Pill
       type="button"
+      $compact={compact}
       onClick={() => router.push(href)}
       aria-label="카페 검색"
       className={className}
     >
       <Search size={18} strokeWidth={2} aria-hidden />
-      <Label>{placeholder}</Label>
+      {!compact && <Label>{placeholder}</Label>}
     </Pill>
   );
 }
