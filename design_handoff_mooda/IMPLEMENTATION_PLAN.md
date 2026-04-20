@@ -27,11 +27,11 @@
 - [x] `SafeArea.tsx` (Top/Bottom/Inset/Fill) 래퍼 + globals.css에 `env(safe-area-inset-*)` 기반 CSS 변수 bridge — `02_components.md § safe-area`
 
 ### Day 3 — 검색 인풋 + 검색 화면
-- [ ] `app/search/page.tsx` 신규 (full-screen 검색) — `03_screens.md § 02 검색`
-- [ ] 홈/맵의 `SearchInput.tsx`를 **탭 시 `/search`로 push** 하는 트리거로 전환
-- [ ] 플레이스홀더 정책 확정: "성수동 조용한 카페"
-- [ ] 최근 검색 로컬스토리지 (`useRecentSearches` 훅)
-- [ ] Kakao Local 자동완성 섹션 / Mooda 등록 카페 섹션 분리
+- [x] `app/search/page.tsx` + `SearchClient.tsx` + `page.styles.ts` 신규 — safe-area 헤더, 뒤로가기, 포커스 링, clear 버튼, 16px 인풋 — `03_screens.md § 02 검색`
+- [x] `SearchTrigger.tsx` 신규 — readonly pill (h48/r24) · `/search` push · focus ring. MapClient에서 `CafeSearch` → `SearchTrigger`로 교체 (홈엔 검색 인풋 없음)
+- [x] 플레이스홀더 "성수동 조용한 카페" 고정
+- [x] `useRecentSearches` 훅 (localStorage v1, 최대 8개, 상세 이동 시에만 저장, clear/remove)
+- [x] 결과 섹션 분리 — **Mooda 등록 카페**(sparkle 아이콘 + MOODA 배지) / **Kakao Local 검색**(pin 아이콘 + 자동등록 안내 노트). 키워드 하이라이트(`<mark>`) 적용. 디바운스 200ms, AbortController로 in-flight 취소
 
 ### Day 4 — 지도 개선 1
 - [ ] "이 지역 재검색" 플로팅 칩 — `03_screens.md § 01 지도`
