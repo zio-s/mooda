@@ -18,23 +18,24 @@ const pulse = keyframes`
 `;
 
 // ─── 현재 위치 버튼 ──────────────────────────────────────
+// 40×40 iOS HIG 최소 터치 타깃 (기존 36px에서 상향, r12, shadow md)
 export const LocateBtn = styled.button<{ $locating?: boolean }>`
   position: absolute;
   bottom: 88px;          /* ZoomControl 위에 위치 */
   right: 12px;
-  z-index: 10;
-  width: 36px;
-  height: 36px;
-  border-radius: ${theme.borderRadius.md};
-  background: ${theme.colors.bg};
+  z-index: ${theme.z.mapFloatingButton};
+  width: ${theme.touch.sm};
+  height: ${theme.touch.sm};
+  border-radius: 12px;
+  background: ${theme.colors.card};
   border: 1px solid ${theme.colors.border};
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   box-shadow: ${theme.shadows.md};
-  color: ${({ $locating }) => ($locating ? theme.colors.primary : theme.colors.text)};
-  transition: all 0.2s ease;
+  color: ${({ $locating }) => ($locating ? theme.colors.primary : theme.colors.ink700)};
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 
   svg {
     animation: ${({ $locating }) => ($locating ? pulse : 'none')} 1s ease infinite;
@@ -43,7 +44,7 @@ export const LocateBtn = styled.button<{ $locating?: boolean }>`
   &:hover {
     background: ${theme.colors.primaryLight};
     border-color: ${theme.colors.primary};
-    color: ${theme.colors.primaryText};
+    color: ${theme.colors.primary};
   }
 `;
 

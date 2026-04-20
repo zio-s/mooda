@@ -34,10 +34,10 @@
 - [x] 결과 섹션 분리 — **Mooda 등록 카페**(sparkle 아이콘 + MOODA 배지) / **Kakao Local 검색**(pin 아이콘 + 자동등록 안내 노트). 키워드 하이라이트(`<mark>`) 적용. 디바운스 200ms, AbortController로 in-flight 취소
 
 ### Day 4 — 지도 개선 1
-- [ ] "이 지역 재검색" 플로팅 칩 — `03_screens.md § 01 지도`
-- [ ] 드래그 종료 debounce 300ms + geohash 버킷 — `04_state_and_api.md § RTK Query 튜닝`
-- [ ] 자동 페치 OFF, 명시 트리거로만 재요청
-- [ ] LocateBtn 36→40px
+- [x] "이 지역 재검색" 플로팅 칩 — `ResearchAreaChip.tsx` 신규. top:12 / z:mapFloatingButton / ink-900 bg · white fg · r999 · fs12.5/700 · shadow lg. 커밋된 중심에서 300m↑ 드리프트, geohash6 버킷 변경, 또는 줌 변경 시 노출. 탭 → refetch + commit 갱신.
+- [x] 드래그 종료 debounce 300ms (`useDebouncedMapBounds` / `useDebouncedMapCenter`) + geohash 버킷 (`lib/geohash.ts`, haversine 포함) — `04_state_and_api.md § RTK Query 튜닝`
+- [x] 자동 페치 OFF — `committedParams`/`committedLevel` 상태만 `useSearchCafesQuery`에 전달. debounced bounds/center 변화는 드리프트 판단 용도로만 쓰이고 재요청을 쏘지 않음. 필터 변경과 최초 bounds 도달, area preset 선택 시에만 자동 커밋.
+- [x] LocateBtn 36→40px (`theme.touch.sm`), border-radius 12, `theme.z.mapFloatingButton`
 
 ### Day 5 — 지도 개선 2 + QA
 - [ ] 마커 탭 → **bottom sheet peek** — `03_screens.md § 01 지도 · bottom sheet`

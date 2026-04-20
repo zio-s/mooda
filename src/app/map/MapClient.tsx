@@ -5,8 +5,11 @@ import { useSearchParams } from 'next/navigation';
 import { useSearchCafesQuery } from '@/store/api/cafesApi';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { toggleMoodFilter, setSelectedCafe as deselectCafe, setUserLocation, setCenter, setLevel } from '@/store/slices/mapSlice';
+import { useDebouncedMapBounds, useDebouncedMapCenter } from '@/hooks/useDebouncedMapBounds';
+import { encodeGeohash, haversineMeters } from '@/lib/geohash';
 import { CafeMapWrapper } from '@/components/map/CafeMapWrapper';
 import { BottomSheet } from '@/components/map/BottomSheet';
+import { ResearchAreaChip } from '@/components/map/ResearchAreaChip';
 import { MoodFilter, MoodFilterChips } from '@/components/filter/MoodFilter';
 import { CafeCard } from '@/components/cafe/CafeCard';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,7 +17,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { Button } from '@/components/ui/button';
 import { SearchTrigger } from '@/components/search/SearchTrigger';
 import { Filter, List, MapPin, ChevronDown } from 'lucide-react';
-import type { Cafe } from '@/types';
+import type { Cafe, SearchParams } from '@/types';
 
 // ─── 지역 바로가기 데이터 ─────────────────────────────────────────────
 const AREA_PRESETS = [
@@ -29,6 +32,9 @@ const AREA_PRESETS = [
   { label: '서대문', lat: 37.5562, lng: 126.9365, level: 5 },
   { label: '분당/판교', lat: 37.4052, lng: 127.1239, level: 5 },
 ] as const;
+
+// 드리프트 감지 임계값 — 이 거리 이상 움직이면 재검색 칩 노출
+const RESEARCH_DISTANCE_METERS = 300;
 
 import {
   MapPageWrapper,
@@ -54,7 +60,10 @@ import {
 export function MapClient() {
   const searchParamsHook = useSearchParams();
   const dispatch = useAppDispatch();
-  const { filters, bounds, center } = useAppSelector((s) => s.map);
+  const { filters } = useAppSelector((s) => s.map);
+  const debouncedBounds = useDebouncedMapBounds(300);
+  const { center: debouncedCenter, level: debouncedLevel } = useDebouncedMapCenter(300);
+
   const [selectedCafe, setSelectedCafe] = useState<Cafe | null>(null);
   const [nearbyCafe, setNearbyCafe] = useState<Cafe | null>(null);
   const [showList, setShowList] = useState(false);
@@ -62,25 +71,62 @@ export function MapClient() {
   const [areaOpen, setAreaOpen] = useState(false);
   const areaRef = useRef<HTMLDivElement>(null);
 
-  // 검색 파라미터 메모이제이션
-  const searchParams = useMemo(() => {
-    if (!bounds) return null;
+  // "commitedParams"만 RTK Query에 전달 — 매 드래그마다 새 요청을 쏘지 않음.
+  const [committedParams, setCommittedParams] = useState<SearchParams | null>(null);
+  // 커밋 시점의 zoom을 따로 기록해두고 현재 zoom과 비교해 드리프트를 감지.
+  const [committedLevel, setCommittedLevel] = useState<number | null>(null);
+
+  const commit = useCallback(
+    (params: SearchParams, level: number) => {
+      setCommittedParams(params);
+      setCommittedLevel(level);
+    },
+    [],
+  );
+
+  // 현재 debounced 상태로부터 재계산한 파라미터. bounds가 없으면 null.
+  const pendingParams: SearchParams | null = useMemo(() => {
+    if (!debouncedBounds) return null;
     return {
-      lat: center.lat,
-      lng: center.lng,
-      ...bounds,
+      lat: debouncedCenter.lat,
+      lng: debouncedCenter.lng,
+      ...debouncedBounds,
       moods: filters.moods,
       openNow: filters.openNow,
       sort: filters.sort,
     };
-  }, [center.lat, center.lng, bounds, filters.moods, filters.openNow, filters.sort]);
+  }, [
+    debouncedCenter.lat,
+    debouncedCenter.lng,
+    debouncedBounds,
+    filters.moods,
+    filters.openNow,
+    filters.sort,
+  ]);
 
-  // RTK Query: 이전 데이터를 유지하면서 background refetch
-  const { data, isLoading, isFetching, isError } = useSearchCafesQuery(searchParams!, {
-    skip: !searchParams,
-  });
+  // 최초 bounds가 잡히면 한 번 자동 커밋 — 지도 첫 로드 후 결과가 비지 않도록.
+  useEffect(() => {
+    if (committedParams || !pendingParams) return;
+    commit(pendingParams, debouncedLevel);
+  }, [committedParams, pendingParams, commit, debouncedLevel]);
 
-  const searchCafes = data?.cafes ?? [];
+  // 필터 변경은 즉시 커밋 — 기대 UX.
+  const filtersKey = useMemo(
+    () => `${filters.moods.join(',')}|${filters.openNow}|${filters.sort ?? ''}`,
+    [filters.moods, filters.openNow, filters.sort],
+  );
+  const lastFiltersKeyRef = useRef(filtersKey);
+  useEffect(() => {
+    if (lastFiltersKeyRef.current === filtersKey) return;
+    lastFiltersKeyRef.current = filtersKey;
+    if (pendingParams) commit(pendingParams, debouncedLevel);
+  }, [filtersKey, pendingParams, commit, debouncedLevel]);
+
+  const { data, isLoading, isFetching, isError } = useSearchCafesQuery(
+    committedParams as SearchParams,
+    { skip: !committedParams },
+  );
+  const searchCafes = useMemo(() => data?.cafes ?? [], [data?.cafes]);
 
   // 주변 검색으로 찾은 카페가 검색 결과에 없으면 추가
   const cafes = useMemo(() => {
@@ -89,6 +135,34 @@ export function MapClient() {
     if (exists) return searchCafes;
     return [...searchCafes, nearbyCafe];
   }, [searchCafes, nearbyCafe]);
+
+  // 드리프트 감지 — 커밋된 중심에서 300m 이상 벗어났거나 geohash 버킷이
+  // 바뀌면 칩 노출. SearchParams.lat/lng는 선택 필드라 방어적으로 읽는다.
+  const committedLat = committedParams?.lat;
+  const committedLng = committedParams?.lng;
+  const committedBucket =
+    committedLat !== undefined && committedLng !== undefined
+      ? encodeGeohash(committedLat, committedLng, 6)
+      : null;
+  const currentBucket = encodeGeohash(debouncedCenter.lat, debouncedCenter.lng, 6);
+  const drift =
+    committedLat !== undefined && committedLng !== undefined
+      ? haversineMeters({ lat: committedLat, lng: committedLng }, debouncedCenter)
+      : 0;
+  const bucketChanged =
+    committedBucket !== null && committedBucket !== currentBucket;
+  const driftFarEnough = drift >= RESEARCH_DISTANCE_METERS;
+  const zoomChanged =
+    committedLevel !== null && committedLevel !== debouncedLevel;
+  const showResearchChip =
+    Boolean(committedParams) &&
+    Boolean(pendingParams) &&
+    (driftFarEnough || bucketChanged || zoomChanged);
+
+  const handleResearchArea = useCallback(() => {
+    if (!pendingParams) return;
+    commit(pendingParams, debouncedLevel);
+  }, [pendingParams, commit, debouncedLevel]);
 
   // 드롭다운 외부 클릭 시 닫기
   useEffect(() => {
@@ -127,7 +201,7 @@ export function MapClient() {
     );
   }, [dispatch]);
 
-  // 지역 바로가기
+  // 지역 바로가기 — 중심 이동 + 즉시 커밋 (사용자의 명시 트리거)
   const handleAreaSelect = useCallback((idx: number) => {
     const area = AREA_PRESETS[idx];
     dispatch(setCenter({ lat: area.lat, lng: area.lng }));
@@ -209,6 +283,11 @@ export function MapClient() {
         {/* 지도 */}
         <MapArea $hidden={showList}>
           <CafeMapWrapper cafes={cafes} onCafeSelect={setSelectedCafe} onNearbyFound={handleNearbyFound} />
+          <ResearchAreaChip
+            visible={showResearchChip && !showList}
+            loading={isFetching}
+            onClick={handleResearchArea}
+          />
         </MapArea>
 
         {/* 카페 목록 패널 */}
