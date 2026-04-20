@@ -1,56 +1,70 @@
 'use client';
 
 import React from 'react';
-import styled, { css } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 import { theme } from '@/styles/theme';
 
-type Variant = 'default' | 'outline' | 'ghost' | 'secondary' | 'destructive' | 'link';
-type Size = 'default' | 'sm' | 'lg' | 'icon';
+// New 3-tier API (02_components.md § Button)
+type Variant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'destructive' | 'link' | 'default';
+type Size = 'lg' | 'md' | 'sm' | 'default' | 'icon';
 
 interface ButtonStyleProps {
-  $variant?: Variant;
-  $size?: Size;
+  $variant: Variant;
+  $size: Size;
+  $fullWidth?: boolean;
+  $loading?: boolean;
 }
 
 const variantStyles: Record<Variant, ReturnType<typeof css>> = {
+  primary: css`
+    background: ${theme.colors.primary};
+    color: ${theme.colors.white};
+    border: none;
+    box-shadow: ${theme.shadows.md};
+    @media (hover: hover) {
+      &:hover:not(:disabled) { background: ${theme.colors.primaryHover}; }
+    }
+  `,
+  // Legacy "default" = primary.
   default: css`
     background: ${theme.colors.primary};
     color: ${theme.colors.white};
     border: none;
+    box-shadow: ${theme.shadows.md};
     @media (hover: hover) {
-      &:hover:not(:disabled) { background: ${theme.colors.primaryDark}; }
+      &:hover:not(:disabled) { background: ${theme.colors.primaryHover}; }
     }
   `,
-  outline: css`
-    background: transparent;
-    color: ${theme.colors.text};
-    border: 1.5px solid ${theme.colors.border};
+  secondary: css`
+    background: ${theme.colors.ink100};
+    color: ${theme.colors.ink900};
+    border: none;
     @media (hover: hover) {
-      &:hover:not(:disabled) { background: ${theme.colors.bgMuted}; }
+      &:hover:not(:disabled) { background: ${theme.colors.ink200}; }
     }
   `,
   ghost: css`
     background: transparent;
-    color: ${theme.colors.text};
+    color: ${theme.colors.ink700};
     border: none;
     @media (hover: hover) {
-      &:hover:not(:disabled) { background: ${theme.colors.bgMuted}; }
+      &:hover:not(:disabled) { background: ${theme.colors.ink100}; }
     }
   `,
-  secondary: css`
-    background: #f3f4f6;
-    color: ${theme.colors.text};
-    border: none;
+  outline: css`
+    background: transparent;
+    color: ${theme.colors.ink900};
+    border: 1.5px solid ${theme.colors.border};
     @media (hover: hover) {
-      &:hover:not(:disabled) { background: #e5e7eb; }
+      &:hover:not(:disabled) { background: ${theme.colors.ink50}; }
     }
   `,
   destructive: css`
-    background: ${theme.colors.error};
-    color: white;
+    background: ${theme.colors.err};
+    color: ${theme.colors.white};
     border: none;
     @media (hover: hover) {
-      &:hover:not(:disabled) { background: #b91c1c; }
+      &:hover:not(:disabled) { background: #991b1b; }
     }
   `,
   link: css`
@@ -59,54 +73,138 @@ const variantStyles: Record<Variant, ReturnType<typeof css>> = {
     border: none;
     text-decoration: underline;
     padding: 0;
+    height: auto;
   `,
 };
 
 const sizeStyles: Record<Size, ReturnType<typeof css>> = {
-  default: css`padding: 8px 16px; font-size: 14px; height: 36px;`,
-  sm: css`padding: 6px 12px; font-size: 13px; height: 32px;`,
-  lg: css`padding: 10px 24px; font-size: 16px; height: 40px;`,
-  icon: css`width: 36px; height: 36px; padding: 0;`,
+  lg: css`
+    height: ${theme.touch.lg};
+    padding: 0 20px;
+    font-size: 15px;
+    font-weight: 700;
+    border-radius: 14px;
+  `,
+  md: css`
+    height: ${theme.touch.md};
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 12px;
+  `,
+  sm: css`
+    height: ${theme.touch.sm};
+    padding: 0 12px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 10px;
+  `,
+  default: css`
+    height: ${theme.touch.md};
+    padding: 0 16px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 12px;
+  `,
+  icon: css`
+    width: ${theme.touch.sm};
+    height: ${theme.touch.sm};
+    padding: 0;
+    border-radius: 12px;
+  `,
 };
+
+const spin = keyframes`
+  to { transform: rotate(360deg); }
+`;
 
 const StyledButton = styled.button<ButtonStyleProps>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border-radius: ${theme.borderRadius.md};
-  font-weight: ${theme.fontWeight.medium};
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
   white-space: nowrap;
   line-height: 1;
   outline: none;
   flex-shrink: 0;
+  ${({ $fullWidth }) => $fullWidth && css`width: 100%;`}
 
-  ${({ $variant = 'default' }) => variantStyles[$variant]}
-  ${({ $size = 'default' }) => sizeStyles[$size]}
+  ${({ $variant }) => variantStyles[$variant]}
+  ${({ $size }) => sizeStyles[$size]}
 
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
 
+  ${({ $loading }) => $loading && css`
+    & > :not(.btn-spinner) { opacity: 0.5; }
+  `}
+
   svg { flex-shrink: 0; width: 16px; height: 16px; }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px ${theme.colors.primaryLight};
+    outline: 1.5px solid ${theme.colors.primary};
+    outline-offset: 1px;
+  }
+`;
+
+const Spinner = styled.span`
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: ${spin} 0.7s linear infinite;
 `;
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
+  fullWidth?: boolean;
+  loading?: boolean;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
+  /** Reserved for Radix Slot integration; not wired in this build. */
   asChild?: boolean;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = 'default', size = 'default', asChild, children, ...props }, ref) => {
+  (
+    {
+      variant = 'primary',
+      size = 'md',
+      fullWidth,
+      loading,
+      leftIcon,
+      rightIcon,
+      disabled,
+      children,
+      // asChild is accepted for API compatibility but intentionally unused here.
+      asChild: _asChild,
+      ...props
+    },
+    ref,
+  ) => {
     return (
-      <StyledButton ref={ref} $variant={variant} $size={size} {...props}>
+      <StyledButton
+        ref={ref}
+        $variant={variant}
+        $size={size}
+        $fullWidth={fullWidth}
+        $loading={loading}
+        disabled={disabled || loading}
+        aria-busy={loading || undefined}
+        {...props}
+      >
+        {loading ? <Spinner className="btn-spinner" aria-hidden /> : leftIcon}
         {children}
+        {!loading && rightIcon}
       </StyledButton>
     );
-  }
+  },
 );
 Button.displayName = 'Button';

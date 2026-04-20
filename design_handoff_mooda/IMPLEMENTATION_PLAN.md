@@ -21,10 +21,10 @@
 - [x] 기존 primary-heavy 사용처 grep → `tsc --noEmit` · `next build` 통과 확인
 
 ### Day 2 — 공통 컴포넌트
-- [ ] `OpenBadge.tsx` 신규 (영업중/곧마감/영업종료) — `02_components.md § OpenBadge`
-- [ ] `Button.tsx` 3-tier 높이 (52/44/40) — `02_components.md § Button`
-- [ ] `Tag.tsx` 변형 (solid/tint/outline) — `02_components.md § Tag`
-- [ ] `SafeArea` 래퍼 혹은 global CSS에 `env(safe-area-inset-*)` 적용 — `02_components.md § safe-area`
+- [x] `OpenBadge.tsx` 신규 (영업중/곧마감/영업종료) + `lib/cafe/openStatus.ts` 헬퍼 (CafeHour 파싱, 마감 30분 전 → closing-soon, 자정 넘김 처리) — `02_components.md § OpenBadge`
+- [x] `Button.tsx` 3-tier 높이 (lg 52 / md 44 / sm 40) + `fullWidth` · `loading`(스피너) · `leftIcon` · `rightIcon`. legacy variant(outline/destructive/link) · size(default/icon) 별칭 유지 — `02_components.md § Button`
+- [x] `Tag.tsx` 변형 (solid/tint/outline) + `count` · `selected` · `onClick` 토글 — `02_components.md § Tag`
+- [x] `SafeArea.tsx` (Top/Bottom/Inset/Fill) 래퍼 + globals.css에 `env(safe-area-inset-*)` 기반 CSS 변수 bridge — `02_components.md § safe-area`
 
 ### Day 3 — 검색 인풋 + 검색 화면
 - [ ] `app/search/page.tsx` 신규 (full-screen 검색) — `03_screens.md § 02 검색`
