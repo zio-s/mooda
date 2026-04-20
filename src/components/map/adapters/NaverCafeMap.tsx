@@ -18,22 +18,19 @@ import {
   LocateBtn,
   NearbyLoadingOverlay,
 } from '../CafeMap.styles';
+import {
+  computeClusters,
+  tierForCount,
+  type ClusterEntry,
+} from '@/lib/map/cluster';
 import type { Cafe, MapBounds } from '@/types';
 import type { CafeMapAdapterProps } from './types';
 
 const NAVER_CLIENT_ID =
   process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID?.trim() ?? '';
 
-/**
- * LOD 경계 — Kakao 어댑터와 동일 철학.
- *  - Kakao level ≤ 4 (Naver zoom ≥ 16) : 이름 pill
- *  - 그 외 : dot 또는 cluster (MarkerClustering이 zoom 기반 자동 전환)
- */
 const PILL_MAX_LEVEL = 4;
-// MarkerClustering maxZoom: 이 값 이하일 때 클러스터링 활성. kakao level 5 ↔
-// naver zoom 15 매핑 기준. zoom > 15면 개별 마커 그대로 노출.
 const CLUSTER_MAX_ZOOM = 15;
-const CLUSTER_GRID_SIZE = 140;
 
 function kakaoLevelToNaverZoom(level: number): number {
   return Math.max(7, Math.min(19, 20 - level));
@@ -62,10 +59,6 @@ function escapeHtml(s: string): string {
   });
 }
 
-/**
- * Naver의 Marker icon.content는 DOM 삽입 기준점(position)을 기준으로 배치된다.
- * pill은 가변 너비라 `transform: translate(-50%, -50%)`로 중앙 정렬.
- */
 function pillMarkerHtml(cafe: Cafe, selected: boolean): string {
   const bg = selected ? BRAND : '#ffffff';
   const fg = selected ? '#ffffff' : '#1c1917';
@@ -98,60 +91,48 @@ function dotMarkerHtml(selected: boolean): string {
       cursor:pointer;transition:transform 0.12s ease;"></div>`;
 }
 
-function renderMarkerIcon(cafe: Cafe, mode: MarkerMode, selected: boolean): string {
-  return mode === 'pill' ? pillMarkerHtml(cafe, selected) : dotMarkerHtml(selected);
-}
-
-/** Cluster 아이콘 — halo 40 + inner 28 + white count, 구간별 크기 확대. */
-function clusterIconHtml(size: number, shadowSpread: number, fontSize: number): string {
+function clusterMarkerHtml(count: number): string {
+  const tier = tierForCount(count);
   return `
     <div style="
-      width:${size}px;height:${size}px;border-radius:50%;
+      width:${tier.size}px;height:${tier.size}px;border-radius:50%;
       background:${BRAND};color:#fff;
-      text-align:center;line-height:${size}px;
-      font-size:${fontSize}px;font-weight:700;
+      text-align:center;line-height:${tier.size}px;
+      font-size:${tier.font}px;font-weight:700;
       font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-      box-shadow:rgba(180,83,9,.22) 0 0 0 ${shadowSpread}px,rgba(28,25,23,.22) 0 3px 12px;
-      transform:translate(-50%,-50%);
-      pointer-events:auto;cursor:pointer;">
-      <span>0</span>
+      box-shadow:rgba(180,83,9,.22) 0 0 0 ${tier.spread}px,rgba(28,25,23,.22) 0 3px 12px;
+      transform:translate(-50%,-50%);cursor:pointer;">
+      ${count}
     </div>`;
 }
-
-const CLUSTER_TIERS = [
-  { size: 28, spread: 6, font: 12 },
-  { size: 32, spread: 7, font: 12 },
-  { size: 40, spread: 8, font: 13 },
-  { size: 48, spread: 10, font: 14 },
-];
-
-const CLUSTER_RANGES = [10, 30, 50];
 
 /* eslint-disable @typescript-eslint/no-explicit-any -- Naver SDK는 공식 타입 미제공 */
 type NaverMarker = any;
 type NaverMap = any;
-type NaverClusterer = any;
 
 export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdapterProps) {
   const dispatch = useAppDispatch();
   const { center, level, selectedCafeId, userLocation } = useAppSelector((s) => s.map);
   const [locating, setLocating] = useState(false);
   const [nearbyLoading, setNearbyLoading] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapReady, setMapReady] = useState(false);
   const [searchNearby] = useSearchNearbyMutation();
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<NaverMap | null>(null);
-  const markersRef = useRef<Map<string, NaverMarker>>(new Map());
-  const clusterRef = useRef<NaverClusterer | null>(null);
+  const singleMarkersRef = useRef<Map<string, NaverMarker>>(new Map());
+  const clusterMarkersRef = useRef<Map<string, NaverMarker>>(new Map());
   const boundsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSyncingRef = useRef(false);
-  const levelRef = useRef(level);
   const selectedIdRef = useRef(selectedCafeId);
 
   const { loading, error } = useNaverMapsLoader({
     clientId: NAVER_CLIENT_ID,
-    submodules: ['marker-tools'],
   });
+
+  useEffect(() => {
+    selectedIdRef.current = selectedCafeId;
+  }, [selectedCafeId]);
 
   // 자동 위치 요청
   useEffect(() => {
@@ -190,7 +171,7 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
     [dispatch],
   );
 
-  // ── 지도 초기화 (한 번) ──────────────────────────────────
+  // ── 지도 초기화 ──────────────────────────────────────
   useEffect(() => {
     if (loading || error) return;
     if (!containerRef.current) return;
@@ -205,6 +186,7 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
       zoomControlOptions: { position: naver.maps.Position.RIGHT_CENTER },
     });
     mapRef.current = map;
+    setMapReady(true);
 
     const idleListener = naver.maps.Event.addListener(map, 'idle', () => {
       emitBoundsUpdate(map);
@@ -243,18 +225,17 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
       naver.maps.Event.removeListener(idleListener);
       naver.maps.Event.removeListener(clickListener);
       if (boundsTimerRef.current) clearTimeout(boundsTimerRef.current);
-      if (clusterRef.current) {
-        clusterRef.current.setMap(null);
-        clusterRef.current = null;
-      }
-      markersRef.current.forEach((m) => m.setMap(null));
-      markersRef.current.clear();
+      singleMarkersRef.current.forEach((m) => m.setMap(null));
+      singleMarkersRef.current.clear();
+      clusterMarkersRef.current.forEach((m) => m.setMap(null));
+      clusterMarkersRef.current.clear();
       map.destroy();
       mapRef.current = null;
+      setMapReady(false);
     };
   }, [loading, error]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Redux center/level → Naver map 동기화 ──────────────
+  // ── Redux center/level → Naver 동기화 ──────────────
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !window.naver?.maps || isSyncingRef.current) return;
@@ -262,103 +243,101 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
     map.setZoom(kakaoLevelToNaverZoom(level), true);
   }, [center.lat, center.lng, level]);
 
-  // ── 마커 + 클러스터 관리 (cafes 목록 변경 시 rebuild) ──
-  const cafeKey = useMemo(
-    () => cafes.map((c) => c.id).sort().join('|'),
+  // ── 마커 + 자체 클러스터 관리 ──────────────────────
+  // cafes / level / selectedCafeId 변화에 반응. mapReady 게이트로 map init 이후에만 실행.
+  const cafeSnapshot = useMemo(
+    () =>
+      cafes.map((c) => c.id).sort().join('|') + '|' + cafes.length,
     [cafes],
   );
 
   useEffect(() => {
+    if (!mapReady) return;
     const map = mapRef.current;
     if (!map || !window.naver?.maps) return;
     const { naver } = window;
 
-    const mode = resolveMode(levelRef.current);
-    const existing = markersRef.current;
-    const nextIds = new Set(cafes.map((c) => c.id));
-
-    // 제거된 카페 마커 삭제
-    existing.forEach((marker, id) => {
-      if (!nextIds.has(id)) {
-        marker.setMap(null);
-        existing.delete(id);
-      }
-    });
-
-    // 생성 또는 재사용
-    const allMarkers: NaverMarker[] = [];
-    for (const cafe of cafes) {
-      const selected = cafe.id === selectedIdRef.current;
-      const content = renderMarkerIcon(cafe, mode, selected);
-      const position = new naver.maps.LatLng(cafe.lat, cafe.lng);
-
-      let marker = existing.get(cafe.id);
-      if (marker) {
-        marker.setPosition(position);
-        marker.setIcon({ content, anchor: new naver.maps.Point(0, 0) });
-      } else {
-        marker = new naver.maps.Marker({
-          position,
-          icon: { content, anchor: new naver.maps.Point(0, 0) },
-          title: cafe.name,
-        });
-        naver.maps.Event.addListener(marker, 'click', () => {
-          dispatch(setSelectedCafe(cafe.id));
-          onCafeSelect?.(cafe);
-        });
-        existing.set(cafe.id, marker);
-      }
-      allMarkers.push(marker);
-    }
-
-    // 클러스터 rebuild — MarkerClustering은 내부적으로 markers 배열을 관리.
-    // setMarkers 미지원 버전이 있어 매번 새로 인스턴스 생성.
-    if (clusterRef.current) {
-      clusterRef.current.setMap(null);
-      clusterRef.current = null;
-    }
-
-    if (naver.maps.MarkerClustering) {
-      clusterRef.current = new naver.maps.MarkerClustering({
-        minClusterSize: 2,
-        maxZoom: CLUSTER_MAX_ZOOM,
-        map,
-        markers: allMarkers,
-        disableClickZoom: false,
-        gridSize: CLUSTER_GRID_SIZE,
-        icons: CLUSTER_TIERS.map((tier) => ({
-          content: clusterIconHtml(tier.size, tier.spread, tier.font),
-          size: new naver.maps.Size(tier.size, tier.size),
-          anchor: new naver.maps.Point(tier.size / 2, tier.size / 2),
-        })),
-        indexGenerator: CLUSTER_RANGES,
-        stylingFunction: (clusterMarker: any, count: number) => {
-          const el = clusterMarker.getElement?.().querySelector?.('span');
-          if (el) el.innerText = String(count);
-        },
-      });
-    } else {
-      // 클러스터러 로드 실패 시 모든 마커 직접 표시
-      allMarkers.forEach((m) => m.setMap(map));
-    }
-  }, [cafeKey, dispatch, onCafeSelect, cafes]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── level / selectedCafeId 변경 시 아이콘만 업데이트 (rebuild X) ──
-  useEffect(() => {
-    levelRef.current = level;
-    selectedIdRef.current = selectedCafeId;
-    if (!window.naver?.maps) return;
     const mode = resolveMode(level);
-    markersRef.current.forEach((marker, id) => {
-      const cafe = cafes.find((c) => c.id === id);
-      if (!cafe) return;
-      const selected = id === selectedCafeId;
-      marker.setIcon({
-        content: renderMarkerIcon(cafe, mode, selected),
-        anchor: new window.naver.maps.Point(0, 0),
-      });
+    const naverZoom = map.getZoom();
+    const shouldCluster = naverZoom <= CLUSTER_MAX_ZOOM && mode !== 'pill';
+
+    const entries: ClusterEntry[] = shouldCluster
+      ? computeClusters(cafes, naverZoom)
+      : cafes.map((cafe) => ({ kind: 'single', cafe }) as ClusterEntry);
+
+    const nextSingleIds = new Set<string>();
+    const nextClusterKeys = new Set<string>();
+    for (const entry of entries) {
+      if (entry.kind === 'single') nextSingleIds.add(entry.cafe.id);
+      else nextClusterKeys.add(entry.key);
+    }
+
+    // 필요 없어진 single 마커 제거
+    singleMarkersRef.current.forEach((marker, id) => {
+      if (!nextSingleIds.has(id)) {
+        marker.setMap(null);
+        singleMarkersRef.current.delete(id);
+      }
     });
-  }, [level, selectedCafeId, cafes]);
+    // 필요 없어진 cluster 마커 제거
+    clusterMarkersRef.current.forEach((marker, key) => {
+      if (!nextClusterKeys.has(key)) {
+        marker.setMap(null);
+        clusterMarkersRef.current.delete(key);
+      }
+    });
+
+    // single/cluster 마커 생성 or 업데이트
+    for (const entry of entries) {
+      if (entry.kind === 'single') {
+        const cafe = entry.cafe;
+        const selected = cafe.id === selectedIdRef.current;
+        const content = mode === 'pill' ? pillMarkerHtml(cafe, selected) : dotMarkerHtml(selected);
+        const position = new naver.maps.LatLng(cafe.lat, cafe.lng);
+        const existing = singleMarkersRef.current.get(cafe.id);
+        if (existing) {
+          existing.setPosition(position);
+          existing.setIcon({ content, anchor: new naver.maps.Point(0, 0) });
+        } else {
+          const marker = new naver.maps.Marker({
+            position,
+            map,
+            icon: { content, anchor: new naver.maps.Point(0, 0) },
+            title: cafe.name,
+          });
+          naver.maps.Event.addListener(marker, 'click', () => {
+            dispatch(setSelectedCafe(cafe.id));
+            onCafeSelect?.(cafe);
+          });
+          singleMarkersRef.current.set(cafe.id, marker);
+        }
+      } else {
+        const position = new naver.maps.LatLng(entry.lat, entry.lng);
+        const content = clusterMarkerHtml(entry.size);
+        const existing = clusterMarkersRef.current.get(entry.key);
+        if (existing) {
+          existing.setPosition(position);
+          existing.setIcon({ content, anchor: new naver.maps.Point(0, 0) });
+        } else {
+          const marker = new naver.maps.Marker({
+            position,
+            map,
+            icon: { content, anchor: new naver.maps.Point(0, 0) },
+            zIndex: 100,
+          });
+          const entryForClosure = entry; // capture
+          naver.maps.Event.addListener(marker, 'click', () => {
+            // 클러스터 탭 → 한 단계 줌인 + 중심 이동
+            const currentZoom = map.getZoom();
+            const nextZoom = Math.min(19, currentZoom + 2);
+            map.setCenter(new naver.maps.LatLng(entryForClosure.lat, entryForClosure.lng));
+            map.setZoom(nextZoom, true);
+          });
+          clusterMarkersRef.current.set(entry.key, marker);
+        }
+      }
+    }
+  }, [mapReady, cafeSnapshot, level, selectedCafeId, cafes, dispatch, onCafeSelect]);
 
   const handleLocate = useCallback(() => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) return;
