@@ -21,8 +21,9 @@ const pulse = keyframes`
 // 40×40 iOS HIG 최소 터치 타깃 (기존 36px에서 상향, r12, shadow md)
 export const LocateBtn = styled.button<{ $locating?: boolean }>`
   position: absolute;
-  bottom: 88px;          /* ZoomControl 위에 위치 */
-  right: 12px;
+  /* ZoomControl 위 + iPhone home indicator 회피 */
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  right: calc(12px + env(safe-area-inset-right, 0px));
   z-index: ${theme.z.mapFloatingButton};
   width: ${theme.touch.sm};
   height: ${theme.touch.sm};

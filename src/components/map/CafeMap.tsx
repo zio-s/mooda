@@ -16,7 +16,6 @@ import { useSearchNearbyMutation } from '@/store/api/cafesApi';
 import type { Cafe, MapBounds } from '@/types';
 import { MapSkeleton } from './MapSkeleton';
 import { MapErrorWrapper, LocateBtn, NearbyLoadingOverlay, SelectedMarkerWrap } from './CafeMap.styles';
-import { PATHS } from '@/constants/paths';
 import { Navigation, Loader2 } from 'lucide-react';
 
 // ✅ 수정: .env.local의 NEXT_PUBLIC_KAKAO_MAP_APP_KEY와 일치
@@ -263,117 +262,8 @@ export function CafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapProps) {
           </CustomOverlayMap>
         )}
 
-        {/* ── 선택된 카페 리치 팝업 오버레이 ── */}
-        {selectedCafe && (
-          <CustomOverlayMap
-            position={{ lat: selectedCafe.lat, lng: selectedCafe.lng }}
-            yAnchor={1.35}
-            clickable={true}
-            zIndex={20}
-          >
-            <div
-              style={{
-                background: 'white',
-                borderRadius: '14px',
-                padding: '0',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.08)',
-                fontSize: '13px',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                position: 'relative',
-                cursor: 'default',
-                width: '220px',
-                overflow: 'hidden',
-              }}
-            >
-              {/* 사진 영역 */}
-              {selectedCafe.mainPhoto ? (
-                <div style={{
-                  height: '100px',
-                  background: `url(${selectedCafe.mainPhoto}) center/cover no-repeat`,
-                  borderRadius: '14px 14px 0 0',
-                }} />
-              ) : (
-                <div style={{
-                  height: '60px',
-                  background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                  borderRadius: '14px 14px 0 0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '24px',
-                }}>
-                  ☕
-                </div>
-              )}
-
-              {/* 닫기 버튼 */}
-              <button
-                onClick={(e) => { e.stopPropagation(); handleDeselect(); }}
-                style={{
-                  position: 'absolute', top: 6, right: 6,
-                  width: 24, height: 24, borderRadius: '50%',
-                  background: 'rgba(0,0,0,0.5)', border: 'none',
-                  color: '#fff', fontSize: '14px', lineHeight: 1,
-                  cursor: 'pointer', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                ×
-              </button>
-
-              {/* 정보 영역 */}
-              <a
-                href={PATHS.CafeDetail(selectedCafe.id)}
-                style={{ textDecoration: 'none', display: 'block', padding: '10px 12px 12px' }}
-              >
-                <div style={{
-                  fontWeight: 600, color: '#111827', fontSize: '14px',
-                  lineHeight: 1.3, marginBottom: '4px',
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  {selectedCafe.name}
-                </div>
-
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: '4px',
-                  fontSize: '12px', color: '#6b7280', marginBottom: '6px',
-                }}>
-                  <span style={{ color: '#fbbf24', fontSize: '13px' }}>★</span>
-                  <span style={{ fontWeight: 600, color: '#92400e' }}>
-                    {selectedCafe.avgRating.toFixed(1)}
-                  </span>
-                  <span>({selectedCafe.reviewCount})</span>
-                  {selectedCafe.distance !== undefined && (
-                    <>
-                      <span style={{ color: '#d1d5db' }}>·</span>
-                      <span>{selectedCafe.distance < 1000 ? `${selectedCafe.distance}m` : `${(selectedCafe.distance / 1000).toFixed(1)}km`}</span>
-                    </>
-                  )}
-                </div>
-
-                {selectedCafe.address && (
-                  <div style={{
-                    fontSize: '11px', color: '#9ca3af', lineHeight: 1.3,
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>
-                    {selectedCafe.address}
-                  </div>
-                )}
-              </a>
-
-              {/* 아래 꼬리 (화살표) */}
-              <div style={{
-                position: 'absolute', bottom: -8, left: '50%',
-                transform: 'translateX(-50%)',
-                width: 0, height: 0,
-                borderLeft: '8px solid transparent',
-                borderRight: '8px solid transparent',
-                borderTop: '8px solid white',
-                filter: 'drop-shadow(0 2px 2px rgba(0,0,0,0.1))',
-              }} />
-            </div>
-          </CustomOverlayMap>
-        )}
+        {/* 선택 정보는 BottomSheet peek에서만 표시한다 — 지도 상단 오버레이
+            (상세 페이지로 이동하는 리치 팝업)은 제거. 03_screens.md § 01 지도. */}
       </Map>
 
       {/* ── 주변 카페 검색 중 로딩 ── */}

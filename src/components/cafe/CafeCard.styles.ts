@@ -84,16 +84,15 @@ export const PhotoPlaceholder = styled.div`
   color: ${theme.colors.textMuted};
 `;
 
-export const StatusBadge = styled.span<{ $open: boolean }>`
+/**
+ * OpenBadge가 사진 위 위에 올라갈 자리. OpenBadge 자체는 별도 컴포넌트
+ * (02_components.md § OpenBadge)에서 색/아이콘을 관리한다.
+ */
+export const BadgeAnchor = styled.div`
   position: absolute;
   left: 8px;
   top: 8px;
-  border-radius: ${theme.borderRadius.full};
-  padding: 2px 8px;
-  font-size: ${theme.fontSize.xs};
-  font-weight: ${theme.fontWeight.medium};
-  background: ${({ $open }) => ($open ? '#dcfce7' : '#fee2e2')};
-  color: ${({ $open }) => ($open ? '#15803d' : '#dc2626')};
+  display: inline-flex;
 `;
 
 export const Content = styled.div`

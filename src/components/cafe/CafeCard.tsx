@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useMemo, useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { Heart, Star, MapPin } from 'lucide-react';
 import { PATHS } from '@/constants/paths';
+import { OpenBadge } from '@/components/cafe/OpenBadge';
+import { computeOpenStatus, type CafeHourInput } from '@/lib/cafe/openStatus';
 import type { Cafe } from '@/types';
 import {
   CardWrapper,
@@ -13,7 +15,7 @@ import {
   PhotoDots,
   PhotoDot,
   PhotoPlaceholder,
-  StatusBadge,
+  BadgeAnchor,
   Content,
   TitleRow,
   NameLink,
@@ -41,6 +43,21 @@ export function CafeCard({ cafe, compact = false, onFavorite, isFavorited }: Caf
   const topMoods = [...cafe.moods]
     .sort((a, b) => b.voteCount - a.voteCount)
     .slice(0, 3);
+
+  const openStatus = useMemo(() => {
+    if (!cafe.hours || cafe.hours.length === 0) {
+      if (cafe.isOpen === true) return 'open' as const;
+      if (cafe.isOpen === false) return 'closed' as const;
+      return null;
+    }
+    const normalized: CafeHourInput[] = cafe.hours.map((h) => ({
+      dayOfWeek: h.dayOfWeek,
+      openTime: h.openTime ?? null,
+      closeTime: h.closeTime ?? null,
+      isClosed: h.isClosed,
+    }));
+    return computeOpenStatus(normalized);
+  }, [cafe.hours, cafe.isOpen]);
 
   const photos = cafe.photos?.length > 0 ? cafe.photos : [];
   const hasMultiplePhotos = photos.length > 1;
@@ -97,10 +114,10 @@ export function CafeCard({ cafe, compact = false, onFavorite, isFavorited }: Caf
           ) : (
             <PhotoPlaceholder>☕</PhotoPlaceholder>
           )}
-          {cafe.isOpen !== undefined && (
-            <StatusBadge $open={!!cafe.isOpen}>
-              {cafe.isOpen ? '영업중' : '영업종료'}
-            </StatusBadge>
+          {openStatus && (
+            <BadgeAnchor>
+              <OpenBadge status={openStatus} size="sm" />
+            </BadgeAnchor>
           )}
         </PhotoArea>
       </NameLink>

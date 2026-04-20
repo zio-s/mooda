@@ -40,11 +40,11 @@
 - [x] LocateBtn 36→40px (`theme.touch.sm`), border-radius 12, `theme.z.mapFloatingButton`
 
 ### Day 5 — 지도 개선 2 + QA
-- [ ] 마커 탭 → **bottom sheet peek** — `03_screens.md § 01 지도 · bottom sheet`
-- [ ] 기존 "마커 탭 → 상세 페이지 이동" 제거
-- [ ] safe-area 최종 확인 (notch · home indicator · PWA standalone)
-- [ ] 영업중/영업종료 배지 전면 적용
-- [ ] iPhone 실기 PWA 설치 후 회귀 테스트
+- [x] 마커 탭 → **bottom sheet peek** — 기존 onCafeSelect 플로우 유지, 오버레이 제거로 인해 마커 탭은 peek만 표시
+- [x] 기존 "마커 탭 → 상세 페이지 이동" 제거 — `CafeMap.tsx`의 yAnchor 1.35 리치 팝업 (상세 페이지 `<a>` 링크 포함) 삭제. Routing은 BottomSheet의 "상세 보기" 버튼을 통한 명시적 액션으로만.
+- [x] safe-area 최종 확인 — BottomSheet `InfoSection` 하단 padding에 `env(safe-area-inset-bottom)` 추가, `LocateBtn` bottom/right도 safe-area 반영. 기존 `viewportFit: 'cover'`, `globals.css html height: -webkit-fill-available; body min-height: 100dvh`와 조합.
+- [x] 영업중/곧마감/영업종료 배지 전면 적용 — `CafeCard`의 StatusBadge(binary) → `OpenBadge`(3-state, `computeOpenStatus(cafe.hours)` 기반)으로 교체. `BottomSheet` MetaRow에도 `OpenBadge size="md"` 노출. `cafe.hours`가 없으면 레거시 `isOpen` 부울로 폴백.
+- [ ] iPhone 실기 PWA 설치 후 회귀 테스트 *(사용자 확인 필요 — 코드 준비 완료)*
 
 **Week 1 Exit 조건**: 모바일 PWA에서 검색·지도·선택까지 네이티브 느낌으로 완결.
 

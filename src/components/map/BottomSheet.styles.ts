@@ -51,7 +51,8 @@ export const HandleBar = styled.div`
 `;
 
 export const InfoSection = styled.div`
-  padding: 0 16px 14px;
+  /* 하단은 iPhone home indicator와 겹치지 않게 safe-area 반영. */
+  padding: 0 16px calc(14px + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   gap: 6px;

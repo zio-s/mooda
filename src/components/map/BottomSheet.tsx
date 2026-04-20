@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useMemo, useState, useEffect, useCallback, useRef } from 'react';
 import { Star, MapPin, X, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
 import { useAppSelector } from '@/store/hooks';
 import { useGetTransitRouteQuery } from '@/store/api/cafesApi';
 import { RouteSummaryBar, RouteSteps } from './RouteDetail';
+import { OpenBadge } from '@/components/cafe/OpenBadge';
+import { computeOpenStatus, type CafeHourInput } from '@/lib/cafe/openStatus';
 import type { Cafe } from '@/types';
 import {
   Overlay,
@@ -111,6 +113,22 @@ export function BottomSheet({ cafe, onClose, onRequestLocation }: BottomSheetPro
     ? [...c.moods].sort((a, b) => b.voteCount - a.voteCount).slice(0, 3)
     : [];
 
+  const openStatus = useMemo(() => {
+    if (!c) return null;
+    if (!c.hours || c.hours.length === 0) {
+      if (c.isOpen === true) return 'open' as const;
+      if (c.isOpen === false) return 'closed' as const;
+      return null;
+    }
+    const normalized: CafeHourInput[] = c.hours.map((h) => ({
+      dayOfWeek: h.dayOfWeek,
+      openTime: h.openTime ?? null,
+      closeTime: h.closeTime ?? null,
+      isClosed: h.isClosed,
+    }));
+    return computeOpenStatus(normalized);
+  }, [c]);
+
   const kakaoLink = c
     ? `https://map.kakao.com/link/to/${encodeURIComponent(c.name)},${c.lat},${c.lng}`
     : '#';
@@ -135,6 +153,7 @@ export function BottomSheet({ cafe, onClose, onRequestLocation }: BottomSheetPro
           </TopRow>
 
           <MetaRow>
+            {openStatus && <OpenBadge status={openStatus} size="md" />}
             <MetaItem>
               <Star size={12} fill="#fbbf24" color="#fbbf24" />
               {c?.avgRating != null ? c.avgRating.toFixed(1) : '–'}
