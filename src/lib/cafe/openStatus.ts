@@ -7,7 +7,17 @@ export type CafeHourInput = {
   isClosed: boolean;
 };
 
-const CLOSING_SOON_WINDOW_MIN = 30;
+export type OpenStatusOptions = {
+  /**
+   * 마감까지 남은 분이 이 값 이하일 때 'closing-soon' 반환. 기본 30.
+   * 제품 실험/A/B 시 호출부에서 15·45·60 등으로 조정 가능.
+   */
+  closingSoonMinutes?: number;
+  /** 테스트 편의를 위한 시간 주입. 기본 new Date(). */
+  now?: Date;
+};
+
+export const DEFAULT_CLOSING_SOON_MINUTES = 30;
 
 function parseHM(value: string): number | null {
   const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim());
@@ -21,8 +31,14 @@ function parseHM(value: string): number | null {
 
 export function computeOpenStatus(
   hours: readonly CafeHourInput[] | null | undefined,
-  now: Date = new Date(),
+  optsOrNow: OpenStatusOptions | Date = {},
 ): OpenStatus {
+  // Backward-compat: 기존 호출부는 2번째 인자로 Date 를 전달. 이를 지원.
+  const opts: OpenStatusOptions =
+    optsOrNow instanceof Date ? { now: optsOrNow } : optsOrNow;
+  const now = opts.now ?? new Date();
+  const closingSoonMin = opts.closingSoonMinutes ?? DEFAULT_CLOSING_SOON_MINUTES;
+
   if (!hours || hours.length === 0) return 'closed';
 
   const day = now.getDay();
@@ -40,7 +56,7 @@ export function computeOpenStatus(
       // Crosses midnight — the late-night portion belongs to today.
       const minutesRemaining = close - minutesNow;
       if (minutesNow < close) {
-        if (minutesRemaining <= CLOSING_SOON_WINDOW_MIN) return 'closing-soon';
+        if (minutesRemaining <= closingSoonMin) return 'closing-soon';
         return 'open';
       }
     }
@@ -58,7 +74,7 @@ export function computeOpenStatus(
     // Same-day window.
     if (minutesNow < open || minutesNow >= close) return 'closed';
     const minutesRemaining = close - minutesNow;
-    if (minutesRemaining <= CLOSING_SOON_WINDOW_MIN) return 'closing-soon';
+    if (minutesRemaining <= closingSoonMin) return 'closing-soon';
     return 'open';
   }
 
@@ -66,9 +82,8 @@ export function computeOpenStatus(
   // portion is handled by the previous-day branch above; here we only check
   // the pre-midnight portion.
   if (minutesNow >= open) {
-    // Closes after midnight → treat 23:59 as upper bound when computing remaining.
     const minutesRemaining = 24 * 60 - minutesNow + close;
-    if (minutesRemaining <= CLOSING_SOON_WINDOW_MIN) return 'closing-soon';
+    if (minutesRemaining <= closingSoonMin) return 'closing-soon';
     return 'open';
   }
 
