@@ -30,12 +30,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
+# env files — 어떤 .env 변형도 커밋하지 않음
 .env
 .env.*
 .env.local
 .env.production
-!.env.example
 
 # vercel
 .vercel

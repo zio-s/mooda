@@ -125,16 +125,3 @@ yarn db:studio        # Prisma Studio
 yarn db:migrate       # DB 마이그레이션
 ```
 
-## Environment Variables
-
-```env
-DATABASE_URL=
-NEXT_PUBLIC_KAKAO_MAP_APP_KEY=
-KAKAO_CLIENT_ID=
-KAKAO_CLIENT_SECRET=
-GOOGLE_PLACES_API_KEY=
-NAVER_CLIENT_ID=
-NAVER_CLIENT_SECRET=
-ODSAY_API_KEY=
-AUTH_SECRET=
-```
