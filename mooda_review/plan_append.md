@@ -47,11 +47,11 @@
 - [x] 목록/즐겨찾기에서 카드 전체 영역 클릭 → 상세 이동 — `e1928b3`
 
 ### C'''. 06_responsive_qa Phase 2 — 권장 잔여
-- [ ] **M5** FavoriteBtn hit area 44×44 (현재 아이콘 16px 단독)
-- [ ] **M7** MapClient EmptyState 이모지 div 인라인 스타일 제거 → styled div 규칙 적용
-- [ ] **L6** `:focus-visible` box-shadow 교체 (pill/rounded 친화)
-- [ ] M4 Header Nav 모바일 margin-left 축소 (375px 빠듯함)
-- [ ] L1 SegmentedBtn 아이콘 14→16
+- [x] **M5** FavoriteBtn hit area 44×44 — `f637075`
+- [x] **M7** MapClient EmptyState 이모지 div 인라인 스타일 제거 — `f637075`
+- [x] **L6** `:focus-visible` box-shadow 교체 — `f637075`
+- [x] M4 Header Nav 모바일 margin-left 축소 — `f637075`
+- [x] L1 SegmentedBtn 아이콘 14→16 — `f637075`
 
 ### D. 관측 지표 설계 (제품 결정)
 - [ ] 분위기 태그별 클릭률/선택률 로깅
