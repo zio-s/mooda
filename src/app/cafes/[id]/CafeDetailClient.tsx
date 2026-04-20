@@ -143,6 +143,40 @@ export function CafeDetailClient({ cafe }: Props) {
     ...(googleData?.photos?.map((p) => p.url) ?? []),
   ], [cafe.photos, googleData?.photos]);
 
+  // 라이트박스 열린 동안 body scroll lock — 배경 페이지 뒤에서 스크롤 방지.
+  useEffect(() => {
+    if (typeof document === 'undefined' || lightboxIdx === null) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [lightboxIdx]);
+
+  // ESC 닫기 + 좌우 화살표로 사진 탐색 (키보드 a11y).
+  useEffect(() => {
+    if (lightboxIdx === null || allPhotos.length === 0) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setLightboxIdx(null);
+        return;
+      }
+      if (e.key === 'ArrowLeft') {
+        setLightboxIdx((prev) =>
+          prev !== null ? (prev - 1 + allPhotos.length) % allPhotos.length : null,
+        );
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        setLightboxIdx((prev) =>
+          prev !== null ? (prev + 1) % allPhotos.length : null,
+        );
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightboxIdx, allPhotos.length]);
+
   const myExistingReview = session?.user?.id
     ? cafe.reviews.find((r) => r.userId === session.user!.id)
     : undefined;
