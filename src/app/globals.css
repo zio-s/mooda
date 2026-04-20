@@ -123,6 +123,19 @@ a:focus-visible {
   border-radius: 6px;
 }
 
+/* prefers-reduced-motion — 전역 애니메이션/트랜지션 억제.
+   사용자 OS 설정(iOS: 설정 > 손쉬운 사용 > 동작 줄이기)을 존중. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--ink-300) transparent;
