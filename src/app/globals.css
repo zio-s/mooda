@@ -57,9 +57,6 @@ html {
   -moz-osx-font-smoothing: grayscale;
   /* iOS fills viewport inc. home indicator */
   height: -webkit-fill-available;
-  /* 가로 스크롤 전면 차단 — skip-link 등의 오프스크린 요소나 내부 자식의
-     실수로 생기는 overflow가 페이지 가로 스크롤을 만들지 않게. */
-  overflow-x: hidden;
 }
 
 body {
@@ -71,7 +68,6 @@ body {
   word-break: keep-all; /* 한국어 단어 중간 줄바꿈 방지 */
   overflow-wrap: break-word;
   min-height: 100dvh;
-  overflow-x: hidden;
 }
 
 a {
