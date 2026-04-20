@@ -372,12 +372,12 @@ export function MapClient() {
               </SkeletonList>
             ) : isError ? (
               <EmptyState>
-                <div style={{ fontSize: 36 }}>😵</div>
+                <div>😵</div>
                 <p>카페 검색에 실패했습니다.<br />잠시 후 다시 시도해주세요.</p>
               </EmptyState>
             ) : cafes.length === 0 ? (
               <EmptyState>
-                <div style={{ fontSize: 36 }}>☕</div>
+                <div>☕</div>
                 <p>지도를 이동하거나<br />필터를 변경해보세요</p>
               </EmptyState>
             ) : (

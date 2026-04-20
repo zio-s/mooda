@@ -165,11 +165,16 @@ export const CafeName = styled.h3`
 export const FavoriteBtn = styled.button`
   background: none;
   border: none;
-  padding: 2px;
+  /* 시각적으로 아이콘은 16px이지만 터치 타겟은 44×44 확보 (iOS HIG).
+     padding으로 hit area 확장 → 주변 요소와 겹치지 않게 외곽 margin은 최소. */
+  width: 44px;
+  height: 44px;
+  padding: 0;
   cursor: pointer;
   flex-shrink: 0;
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
   color: ${theme.colors.textMuted};
   transition: color 0.15s ease;
 

@@ -42,8 +42,14 @@ export const Logo = styled(Link)`
 export const Nav = styled.nav`
   display: flex;
   align-items: center;
-  margin-left: 24px;
+  /* 모바일(< sm)은 HeaderRight의 auth 버튼과 공간 경쟁하는 구간이라 gap
+     최소화. sm 이상에서만 여유롭게. */
+  margin-left: 12px;
   gap: 4px;
+
+  @media (min-width: ${theme.breakpoints.sm}) {
+    margin-left: 24px;
+  }
 `;
 
 export const NavLink = styled(Link)<{ $active?: boolean }>`

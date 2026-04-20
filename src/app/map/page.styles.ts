@@ -146,6 +146,8 @@ export const EmptyState = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 32px;
+    line-height: 1;
   }
 
   p {
@@ -300,8 +302,8 @@ export const SegmentedBtn = styled.button<{ $active: boolean }>`
   transition: background 0.15s ease, color 0.15s ease;
 
   svg {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
   }
 `;
 

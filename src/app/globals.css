@@ -127,14 +127,17 @@ input, textarea, select {
   outline-offset: 2px;
 }
 
-/* 키보드 포커스 가시성 — 기본 outline 강조 */
+/* 키보드 포커스 가시성 — outline은 rounded 요소에서 각지게 보이는 단점이
+   있어 box-shadow로 ring 효과 구현. shape(border-radius)를 정확히 따라감. */
 :focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--brand);
 }
-button:focus-visible,
-a:focus-visible {
-  border-radius: 6px;
+/* 일부 브라우저는 outline 없으면 기본 포커스 상태 표시 안 함 — 색상 대비를
+   위해 outline 보조로 transparent 2px 유지(접근성 도구 detection용). */
+:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
 }
 
 /* prefers-reduced-motion — 전역 애니메이션/트랜지션 억제.
