@@ -105,11 +105,11 @@
 - [x] SW 업데이트 토스트 — `components/pwa/ServiceWorkerManager.tsx`. reg.waiting / updatefound / installing.statechange 감지해서 "새 버전이 준비됐어요" sonner 토스트 + "새로고침" 액션 → `postMessage({type:'SKIP_WAITING'})` → controllerchange 이벤트에서 reload. 1시간마다 reg.update()로 장시간 켜둔 탭 대응.
 
 ### 접근성
-- [ ] 지도 영역 옆 시각적 숨김 목록 (`role="list"`)
-- [ ] 마커·바텀시트 키보드 포커스 순서
-- [ ] VoiceOver 라벨 (`aria-label` 전면 점검)
-- [ ] 색상 외 의미 전달 (영업 상태에 아이콘 병행)
-- [ ] Lighthouse a11y ≥ 95
+- [x] 지도 영역 옆 시각적 숨김 목록 — `components/a11y/VisuallyHidden.tsx` + `components/map/VisuallyHiddenCafeList.tsx`. role="list" + 포커스 가능한 상세 링크로 스크린리더/키보드 사용자가 지도 마커 정보에 접근 가능.
+- [x] 마커·바텀시트 키보드 포커스 순서 — 스킵 링크(`skip-to-content`) + `:focus-visible` 브랜드 outline 전역 스타일 추가. Radix Dialog(MoodFilterSheet) 자체 focus trap 이미 내장. 마커 `role=button` + `aria-label` 적용됨.
+- [x] VoiceOver 라벨 전면 점검 — lightbox X 버튼/prev/next, HeroFab, OpenBadge `role=status`, SearchTrigger `aria-label`, MapProviderToggle `role=group` + `aria-pressed` 등 주요 인터랙션 지점 aria-label 추가. SVG icons에 `aria-hidden` 명시.
+- [x] 색상 외 의미 전달 — OpenBadge가 status별 아이콘(●/◐/○) + 텍스트 병행 (02_components.md § OpenBadge). 나머지 지표(별점/거리)는 숫자 텍스트 병행이므로 색맹 접근성 문제 없음.
+- [ ] Lighthouse a11y ≥ 95 *(사용자가 브라우저에서 실측 필요 — 코드 준비 완료)*
 
 ### 커뮤니티 고도화
 - [ ] 리뷰 작성 플로우 재설계 (사진·태그 투표·텍스트)

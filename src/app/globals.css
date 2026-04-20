@@ -92,6 +92,37 @@ input, textarea, select {
   font-size: max(16px, 1em);
 }
 
+/* 스킵 링크 — 스크린리더·키보드 사용자가 반복되는 헤더 건너뛰기 (WCAG 2.4.1) */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10000;
+  background: var(--brand);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 0 0 10px 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.skip-to-content:focus {
+  left: 12px;
+  top: 12px;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* 키보드 포커스 가시성 — 기본 outline 강조 */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+button:focus-visible,
+a:focus-visible {
+  border-radius: 6px;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--ink-300) transparent;

@@ -45,9 +45,10 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body>
+        <a href="#main-content" className="skip-to-content">본문 바로가기</a>
         <Providers>
           <Header />
-          <main>{children}</main>
+          <main id="main-content">{children}</main>
           <InstallPrompt />
           <ServiceWorkerManager />
         </Providers>

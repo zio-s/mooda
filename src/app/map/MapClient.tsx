@@ -11,6 +11,7 @@ import { CafeMapWrapper } from '@/components/map/CafeMapWrapper';
 import { BottomSheet } from '@/components/map/BottomSheet';
 import { ResearchAreaChip } from '@/components/map/ResearchAreaChip';
 import { MapProviderToggle } from '@/components/map/MapProviderToggle';
+import { VisuallyHiddenCafeList } from '@/components/map/VisuallyHiddenCafeList';
 import { MoodFilterChips } from '@/components/filter/MoodFilter';
 import { MoodFilterSheet } from '@/components/filter/MoodFilterSheet';
 import { CafeCard } from '@/components/cafe/CafeCard';
@@ -342,6 +343,8 @@ export function MapClient() {
         {/* 지도 */}
         <MapArea $hidden={showList}>
           <CafeMapWrapper cafes={cafes} onCafeSelect={setSelectedCafe} onNearbyFound={handleNearbyFound} />
+          {/* 스크린리더 접근성 — 지도 상 시각 마커와 동일 정보를 리스트로 병행 제공 */}
+          <VisuallyHiddenCafeList cafes={cafes} />
           <ResearchAreaChip
             visible={showResearchChip && !showList}
             loading={isFetching}

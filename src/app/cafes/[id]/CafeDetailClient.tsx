@@ -645,6 +645,8 @@ export function CafeDetailClient({ cafe }: Props) {
       {lightboxIdx !== null && (
         <GalleryOverlay onClick={() => setLightboxIdx(null)}>
           <GalleryNav
+            type="button"
+            aria-label="이전 사진"
             style={{ left: 12 }}
             onClick={(e) => {
               e.stopPropagation();
@@ -653,7 +655,7 @@ export function CafeDetailClient({ cafe }: Props) {
               );
             }}
           >
-            <ChevronLeft size={24} />
+            <ChevronLeft size={24} aria-hidden />
           </GalleryNav>
 
           <Image
@@ -667,6 +669,8 @@ export function CafeDetailClient({ cafe }: Props) {
           />
 
           <GalleryNav
+            type="button"
+            aria-label="다음 사진"
             style={{ right: 12 }}
             onClick={(e) => {
               e.stopPropagation();
@@ -675,7 +679,7 @@ export function CafeDetailClient({ cafe }: Props) {
               );
             }}
           >
-            <ChevronRight size={24} />
+            <ChevronRight size={24} aria-hidden />
           </GalleryNav>
 
           <GalleryCounter>
@@ -683,6 +687,8 @@ export function CafeDetailClient({ cafe }: Props) {
           </GalleryCounter>
 
           <button
+            type="button"
+            aria-label="사진 닫기"
             onClick={() => setLightboxIdx(null)}
             style={{
               position: 'absolute', top: 16, right: 16,
@@ -692,7 +698,7 @@ export function CafeDetailClient({ cafe }: Props) {
               cursor: 'pointer', color: 'white',
             }}
           >
-            <X size={20} />
+            <X size={20} aria-hidden />
           </button>
         </GalleryOverlay>
       )}
