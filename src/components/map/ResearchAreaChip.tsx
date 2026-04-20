@@ -15,11 +15,17 @@ const slideDown = keyframes`
   to { opacity: 1; transform: translate(-50%, 0); }
 `;
 
+/**
+ * /map 기준 FilterBar/Toolbar는 MapArea 외부(flex sibling)에 있어 실제 겹침은
+ * 없다. 지도가 전체 화면으로 embed되는 상황 대비 --research-chip-top CSS
+ * 변수로 offset 커스터마이즈 훅만 열어둔다(기본 12px).
+ */
 const Wrapper = styled.div<{ $visible: boolean }>`
   position: absolute;
-  top: 12px;
+  top: var(--research-chip-top, 12px);
   left: 50%;
   transform: translateX(-50%);
+  max-width: calc(100% - 24px);
   z-index: ${theme.z.mapFloatingButton};
   pointer-events: ${({ $visible }) => ($visible ? 'auto' : 'none')};
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};
