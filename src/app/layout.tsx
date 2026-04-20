@@ -54,7 +54,19 @@ export default function RootLayout({
             __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js');
+                  ${
+                    process.env.NODE_ENV === 'production'
+                      ? `navigator.serviceWorker.register('/sw.js');`
+                      : // Dev에서는 등록하지 않고, 과거에 등록됐던 SW/캐시를 적극 정리.
+                        `navigator.serviceWorker.getRegistrations()
+                          .then((regs) => Promise.all(regs.map((r) => r.unregister())))
+                          .then(() => {
+                            if (window.caches) {
+                              caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
+                            }
+                          })
+                          .catch(() => {});`
+                  }
                 });
               }
             `,
