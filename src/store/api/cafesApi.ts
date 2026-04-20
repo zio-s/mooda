@@ -15,6 +15,25 @@ export const cafesApi = createApi({
       keepUnusedDataFor: 120,
     }),
 
+    countCafes: builder.query<
+      { count: number },
+      {
+        moods: string[];
+        openNow?: boolean;
+        swLat?: number;
+        swLng?: number;
+        neLat?: number;
+        neLng?: number;
+      }
+    >({
+      query: (params) => ({
+        url: '/cafes/count',
+        method: 'POST',
+        body: params,
+      }),
+      keepUnusedDataFor: 30,
+    }),
+
     getCafe: builder.query<Cafe, string>({
       query: (id) => `/cafes/${id}`,
       providesTags: (_, __, id) => [{ type: 'Cafe', id }],
@@ -93,6 +112,7 @@ export const cafesApi = createApi({
 
 export const {
   useSearchCafesQuery,
+  useCountCafesQuery,
   useGetCafeQuery,
   useGetCafeBlogsQuery,
   useGetCafeGoogleReviewsQuery,

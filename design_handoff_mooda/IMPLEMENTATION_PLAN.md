@@ -53,18 +53,21 @@
 ## Week 2-3 — Core UX (FE 1 + BE 0.5 · 10영업일)
 
 ### Week 2
-- [ ] **Mood Filter bottom sheet** — `03_screens.md § 03 필터`
-  - [ ] 카테고리 탭 (분위기·씬·목적·인테리어·메뉴·편의시설)
-  - [ ] 2열 그리드, 선택 상태, 실시간 매칭 카운트
-  - [ ] sticky CTA "N곳 카페 보기"
-- [ ] **마커 LOD** — `03_screens.md § 01 지도 · 마커`
-  - [ ] 줌 ≥16: 이름 pill 마커
-  - [ ] 줌 13-15: 도트 + 별
-  - [ ] 줌 ≤12: 클러스터 숫자 배지
-  - [ ] 선택 마커 bounce 애니메이션
-- [ ] **스켈레톤 `loading.tsx`** — `03_screens.md § 04 카페 상세`
-  - [ ] 카페 상세 · 목록 · 검색 결과 각각
-- [ ] **에러 inline state** 컴포넌트 — `04_state_and_api.md § 에러`
+- [x] **Mood Filter bottom sheet** — `MoodFilterSheet.tsx` + API `/api/cafes/count` + `useCountCafesQuery` 훅 — `03_screens.md § 03 필터`
+  - [x] 카테고리 탭 (분위기·씬·목적·인테리어·메뉴·편의시설·촬영특성) · 선택 카운트 배지 · 활성 탭 brand 밑줄
+  - [x] 2열 그리드 · 52h · r14 · 1.5px border (ink-200/brand) · 선택 시 primaryLight + 체크 원 · draft 상태로 "적용" 전까지 홀드
+  - [x] 실시간 매칭 카운트 — 200ms 디바운스 후 `/api/cafes/count` (Prisma count, moods + openNow + bounds 필터 재사용)
+  - [x] sticky CTA "N곳 카페 보기" — 적용 시 draft → 기존 `toggleMoodFilter` diff로 mapSlice 커밋 + 시트 닫기
+- [x] **마커 LOD** — `03_screens.md § 01 지도 · 마커`
+  - [x] `components/map/markers/CafeMarkers.tsx` 신규 — kakao level 기반 분기. level ≤ 3: 이름 pill (r999 · 11.5/600 · brand 선택 강조), level 4-6: 22px 도트 + 선택 시 별 배지, level ≥ 7: 기존 MarkerClusterer.
+  - [x] 선택 마커 bounce 0.6s + scale 강조 (pill 1.05 / dot 1.25)
+  - [x] 뷰포트 ±10% 패딩 bounds 내 마커만 렌더 → 줌인 상태에서 불필요한 DOM 오버레이 제거
+- [x] **스켈레톤 `loading.tsx`** — `03_screens.md § 04 카페 상세`
+  - [x] `app/cafes/[id]/loading.tsx` — 320 hero + title + 4칸 quick action + vote card
+  - [x] `app/map/loading.tsx` — 필터바 + 지도 placeholder + 목록 rows 3개
+  - [x] `app/search/loading.tsx` — 헤더 + rows 6개 (가변 폭으로 자연스러움)
+  - [x] `ui/skeleton.tsx` 개편 — linear-gradient shimmer(ink-100 → ink-200) 2s, `SkeletonText`/`SkeletonBlock` 파생 컴포넌트 추가
+- [x] **에러 inline state** 컴포넌트 — `components/feedback/ErrorState.tsx` (variant banner/block + onRetry + err/errBg 색상) — `04_state_and_api.md § 에러`
 
 ### Week 3
 - [ ] **카페 상세 리디자인** — `03_screens.md § 04 카페 상세`

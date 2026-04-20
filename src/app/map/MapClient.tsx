@@ -10,10 +10,10 @@ import { encodeGeohash, haversineMeters } from '@/lib/geohash';
 import { CafeMapWrapper } from '@/components/map/CafeMapWrapper';
 import { BottomSheet } from '@/components/map/BottomSheet';
 import { ResearchAreaChip } from '@/components/map/ResearchAreaChip';
-import { MoodFilter, MoodFilterChips } from '@/components/filter/MoodFilter';
+import { MoodFilterChips } from '@/components/filter/MoodFilter';
+import { MoodFilterSheet } from '@/components/filter/MoodFilterSheet';
 import { CafeCard } from '@/components/cafe/CafeCard';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { SearchTrigger } from '@/components/search/SearchTrigger';
 import { Filter, List, MapPin, ChevronDown } from 'lucide-react';
@@ -69,6 +69,7 @@ export function MapClient() {
   const [showList, setShowList] = useState(false);
   const [selectedArea, setSelectedArea] = useState<number | null>(null);
   const [areaOpen, setAreaOpen] = useState(false);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const areaRef = useRef<HTMLDivElement>(null);
 
   // "commitedParams"만 RTK Query에 전달 — 매 드래그마다 새 요청을 쏘지 않음.
@@ -223,23 +224,14 @@ export function MapClient() {
     <MapPageWrapper>
       {/* 상단 필터 바 */}
       <FilterBar>
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Filter size={16} />
-              분위기 필터
-              {filters.moods.length > 0 && (
-                <FilterBadge>{filters.moods.length}</FilterBadge>
-              )}
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left">
-            <SheetHeader>
-              <SheetTitle>분위기 필터</SheetTitle>
-            </SheetHeader>
-            <MoodFilter />
-          </SheetContent>
-        </Sheet>
+        <Button variant="outline" size="sm" onClick={() => setFilterSheetOpen(true)}>
+          <Filter size={16} />
+          분위기 필터
+          {filters.moods.length > 0 && (
+            <FilterBadge>{filters.moods.length}</FilterBadge>
+          )}
+        </Button>
+        <MoodFilterSheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen} />
 
         <SearchTrigger />
 

@@ -54,23 +54,6 @@ const spin = keyframes`
   to { transform: rotate(360deg); }
 `;
 
-// ─── 선택된 마커 바운스 애니메이션 ──────────────────────────
-const bounce = keyframes`
-  0%, 100% { transform: translateY(0); }
-  30% { transform: translateY(-10px); }
-  50% { transform: translateY(-5px); }
-  70% { transform: translateY(-8px); }
-`;
-
-export const SelectedMarkerWrap = styled.div`
-  cursor: pointer;
-  animation: ${bounce} 0.6s ease-out;
-
-  img {
-    display: block;
-  }
-`;
-
 export const NearbyLoadingOverlay = styled.div`
   position: absolute;
   top: 12px;

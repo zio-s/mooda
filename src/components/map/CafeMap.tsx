@@ -3,9 +3,6 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 import {
   Map,
-  MapMarker,
-  CustomOverlayMap,
-  MarkerClusterer,
   ZoomControl,
   MapTypeControl,
   useKakaoLoader,
@@ -15,7 +12,8 @@ import { setCenter, setLevel, setBounds, setSelectedCafe, setUserLocation } from
 import { useSearchNearbyMutation } from '@/store/api/cafesApi';
 import type { Cafe, MapBounds } from '@/types';
 import { MapSkeleton } from './MapSkeleton';
-import { MapErrorWrapper, LocateBtn, NearbyLoadingOverlay, SelectedMarkerWrap } from './CafeMap.styles';
+import { CafeMarkers } from './markers/CafeMarkers';
+import { MapErrorWrapper, LocateBtn, NearbyLoadingOverlay } from './CafeMap.styles';
 import { Navigation, Loader2 } from 'lucide-react';
 
 // ✅ 수정: .env.local의 NEXT_PUBLIC_KAKAO_MAP_APP_KEY와 일치
@@ -29,11 +27,10 @@ interface CafeMapProps {
 
 export function CafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapProps) {
   const dispatch = useAppDispatch();
-  const { center, level, selectedCafeId, userLocation } = useAppSelector((s) => s.map);
+  const { center, level, bounds: storedBounds, selectedCafeId, userLocation } = useAppSelector((s) => s.map);
   const lastBoundsRef = useRef<MapBounds | null>(null);
   const boundsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [locating, setLocating] = useState(false);
-  const [hoveredCafe, setHoveredCafe] = useState<Cafe | null>(null);
   const [nearbyLoading, setNearbyLoading] = useState<{ lat: number; lng: number } | null>(null);
   const [searchNearby] = useSearchNearbyMutation();
 
@@ -41,8 +38,6 @@ export function CafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapProps) {
     appkey: KAKAO_APP_KEY,
     libraries: ['services', 'clusterer'],
   });
-
-  const selectedCafe = cafes.find((c) => c.id === selectedCafeId) ?? null;
 
   // ── 최초 마운트 시 자동 위치 요청 (경로 안내용) ────────────────────
   useEffect(() => {
@@ -197,70 +192,16 @@ export function CafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapProps) {
         <ZoomControl position="RIGHT" />
         <MapTypeControl position="TOPRIGHT" />
 
-        {/* ── 마커 클러스터러 (줌 아웃 시 자동 그룹핑) ── */}
-        <MarkerClusterer
-          averageCenter={true}
-          minLevel={10}
-          disableClickZoom={false}
-        >
-          {cafes.filter((c) => c.id !== selectedCafeId).map((cafe) => (
-            <MapMarker
-              key={cafe.id}
-              position={{ lat: cafe.lat, lng: cafe.lng }}
-              image={{
-                src: '/marker-normal.svg',
-                size: { width: 28, height: 36 },
-              }}
-              title={cafe.name}
-              onClick={() => handleMarkerClick(cafe)}
-              onMouseOver={() => setHoveredCafe(cafe)}
-              onMouseOut={() => setHoveredCafe((prev) => prev?.id === cafe.id ? null : prev)}
-            />
-          ))}
-        </MarkerClusterer>
-
-        {/* ── 선택된 마커 (바운스 애니메이션) ── */}
-        {selectedCafe && (
-          <CustomOverlayMap
-            position={{ lat: selectedCafe.lat, lng: selectedCafe.lng }}
-            yAnchor={1}
-            zIndex={30}
-          >
-            <SelectedMarkerWrap
-              key={selectedCafe.id}
-              onClick={() => handleMarkerClick(selectedCafe)}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/marker-selected.svg" alt="" width={36} height={46} />
-            </SelectedMarkerWrap>
-          </CustomOverlayMap>
-        )}
-
-        {/* ── 호버 툴팁 (선택되지 않은 마커) ── */}
-        {hoveredCafe && hoveredCafe.id !== selectedCafeId && (
-          <CustomOverlayMap
-            position={{ lat: hoveredCafe.lat, lng: hoveredCafe.lng }}
-            yAnchor={2.6}
-            zIndex={15}
-          >
-            <div
-              style={{
-                background: 'rgba(0,0,0,0.8)',
-                color: '#fff',
-                padding: '4px 10px',
-                borderRadius: '6px',
-                fontSize: '12px',
-                fontWeight: 500,
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                whiteSpace: 'nowrap',
-                pointerEvents: 'none',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-              }}
-            >
-              {hoveredCafe.name}
-            </div>
-          </CustomOverlayMap>
-        )}
+        {/* ── 마커 LOD (03_screens.md § 마커) ───────────────────────────
+            level ≤ 3: 이름 pill / level 4-6: 도트 / level ≥ 7: 클러스터.
+            선택된 마커는 bounce + 크기 강조 (CafeMarkers 내부). */}
+        <CafeMarkers
+          cafes={cafes}
+          level={level}
+          bounds={storedBounds}
+          selectedCafeId={selectedCafeId}
+          onMarkerClick={handleMarkerClick}
+        />
 
         {/* 선택 정보는 BottomSheet peek에서만 표시한다 — 지도 상단 오버레이
             (상세 페이지로 이동하는 리치 팝업)은 제거. 03_screens.md § 01 지도. */}
