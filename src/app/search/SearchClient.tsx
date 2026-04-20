@@ -101,9 +101,12 @@ export function SearchClient() {
     }
   }, []);
 
-  const handleChange = useCallback(
+  // 한글 IME 조합 중 불필요한 fetch 방지. "성수" 치는 중에도 매 자음/모음
+  // 마다 쿼리 나가던 문제 완화. 조합 끝나면(compositionend) 한 번 더 실행.
+  const composingRef = useRef(false);
+
+  const scheduleFetch = useCallback(
     (value: string) => {
-      setQuery(value);
       if (debounceRef.current) clearTimeout(debounceRef.current);
       const trimmed = value.trim();
       if (trimmed.length < MIN_QUERY_LEN) {
@@ -116,6 +119,27 @@ export function SearchClient() {
       }, DEBOUNCE_MS);
     },
     [fetchResults],
+  );
+
+  const handleChange = useCallback(
+    (value: string) => {
+      setQuery(value);
+      if (composingRef.current) return;
+      scheduleFetch(value);
+    },
+    [scheduleFetch],
+  );
+
+  const handleCompositionStart = useCallback(() => {
+    composingRef.current = true;
+  }, []);
+
+  const handleCompositionEnd = useCallback(
+    (e: React.CompositionEvent<HTMLInputElement>) => {
+      composingRef.current = false;
+      scheduleFetch(e.currentTarget.value);
+    },
+    [scheduleFetch],
   );
 
   const handleSelectResult = useCallback(
@@ -188,6 +212,8 @@ export function SearchClient() {
             ref={inputRef}
             value={query}
             onChange={(e) => handleChange(e.target.value)}
+            onCompositionStart={handleCompositionStart}
+            onCompositionEnd={handleCompositionEnd}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             placeholder="성수동 조용한 카페"
