@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=1200"/>
+<title>Mooda · 리뷰 + 리디자인</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap"/>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+
+<main class="page">
+
+  <!-- ═══════ HERO ═══════ -->
+  <header class="hero">
+    <div class="kicker">Design Review · PWA · Mobile Web</div>
+    <h1>Mooda 모바일 웹 리뷰<br/>&amp; 핵심 화면 리디자인</h1>
+    <p class="sub">
+      PWA로 핸드폰에 설치해서 사용할 때의 UI/UX 문제를 화면·컴포넌트 단위로 점검하고,
+      네이버지도의 정보 밀도를 참고해 <b>지도·검색·필터·상세·목록</b> 5개 핵심 화면을 다시 그렸습니다.
+      톤은 유지하면서 점진 개선하는 방향으로 — 한 가지 확실한 방향으로 밀었습니다.
+    </p>
+    <div class="hero-meta">
+      <dl><dt>스택</dt><dd>Next.js 16 · Prisma 7 · RTK Query · styled-components</dd></dl>
+      <dl><dt>타깃</dt><dd>모바일 웹 / PWA 우선</dd></dl>
+      <dl><dt>범위</dt><dd>비주얼 · UX · 성능 · 반응형 · 접근성</dd></dl>
+      <dl><dt>결과물</dt><dd>이슈 리포트 · 리디자인 5화면 · 로드맵</dd></dl>
+    </div>
+  </header>
+
+  <!-- TOC -->
+  <nav class="toc">
+    <a href="#ds"><span class="n">01</span>디자인 시스템 진단</a>
+    <a href="#visual"><span class="n">02</span>비주얼 이슈</a>
+    <a href="#ux"><span class="n">03</span>UX · 검색 · 마커</a>
+    <a href="#perf"><span class="n">04</span>성능 · 상태 · 에러</a>
+    <a href="#a11y"><span class="n">05</span>접근성 · 모바일</a>
+    <a href="#redesign"><span class="n">06</span>리디자인</a>
+    <a href="#roadmap"><span class="n">07</span>실행 로드맵</a>
+  </nav>
+
+  <!-- ═══════ 01. 디자인 시스템 진단 ═══════ -->
+  <section id="ds">
+    <div class="section-head">
+      <span class="num">01</span>
+      <h2>디자인 시스템 진단</h2>
+      <span class="count">theme.ts · globals.css · styled-components</span>
+    </div>
+
+    <p style="font-size:15px;color:var(--ink-700);max-width:780px;margin-bottom:var(--s-6);line-height:1.7;">
+      현재 <code style="background:#f5f5f4;padding:1px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:13px;">theme.ts</code>는
+      amber 계열 단일 팔레트에 의존합니다. 토큰 자체는 잘 정의돼 있지만 <b>(1) 그레이가 순수 회색(slate)</b>이라 warm한 amber와 어색하게 충돌하고,
+      <b>(2) 의미 컬러(success/warn/error)가 없어서</b> "영업중/영업종료" 같은 상태가 전부 primary 변형으로 표시됩니다.
+      <b>(3) shadcn과 styled-components가 한 프로젝트에 공존</b>해 어느 쪽이 단일 소스 오브 트루스인지 불명확합니다.
+    </p>
+
+    <div class="tokens">
+      <div class="token">
+        <div class="swatch" style="background:#d97706;"></div>
+        <div class="name">--primary (현재)</div>
+        <div class="val">#d97706 · amber-600</div>
+        <div class="note">채도가 높아 CTA 외에 쓸 때 무거움</div>
+      </div>
+      <div class="token">
+        <div class="swatch" style="background:#b45309;"></div>
+        <div class="name">--brand (제안)</div>
+        <div class="val">#b45309 · amber-700</div>
+        <div class="note">살짝 누그러뜨려 지도 핀·태그에도 잘 맞음</div>
+      </div>
+      <div class="token">
+        <div class="swatch" style="background:#fef7ed;border:1px solid #e7e5e4;"></div>
+        <div class="name">--brand-tint</div>
+        <div class="val">#fef7ed</div>
+        <div class="note">태그 배경, 액션 버튼 배경으로 사용</div>
+      </div>
+      <div class="token">
+        <div class="swatch" style="background:linear-gradient(90deg,#1c1917,#44403c,#78716c,#a8a29e,#d6d3d1,#f5f5f4);"></div>
+        <div class="name">--ink-900 ~ 50</div>
+        <div class="val">Warm gray (stone)</div>
+        <div class="note">slate 대신 stone 계열로 통일 — amber와 조화</div>
+      </div>
+      <div class="token">
+        <div class="swatch" style="background:linear-gradient(90deg,#15803d 0 33%,#b45309 33% 66%,#b91c1c 66%);"></div>
+        <div class="name">semantic</div>
+        <div class="val">ok · warn · err</div>
+        <div class="note">영업 상태, 에러 토스트, 폼 validation</div>
+      </div>
+      <div class="token">
+        <div class="swatch" style="background:#fff;border:1px solid #e7e5e4;display:flex;align-items:flex-end;padding:10px 12px;box-sizing:border-box;">
+          <div>
+            <div style="font-family:Pretendard;font-size:22px;font-weight:700;line-height:1;color:#1c1917;">Aa 로우키</div>
+            <div style="font-family:Pretendard;font-size:12px;color:#78716c;margin-top:4px;">Pretendard Variable</div>
+          </div>
+        </div>
+        <div class="name">typography</div>
+        <div class="val">Pretendard Variable</div>
+        <div class="note">현재 font-family와 동일 · 한글/영문 균형 우수</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ 02. 비주얼 이슈 ═══════ -->
+  <section id="visual">
+    <div class="section-head"><span class="num">02</span><h2>비주얼 이슈</h2><span class="count">7건</span></div>
+    <div class="issues">
+
+      <div class="issue warn">
+        <div class="sev">M</div>
+        <div class="issue-body">
+          <h3>검색 인풋이 네이티브 iOS 16px 기본 스타일에 가까워 '웹사이트처럼' 보임</h3>
+          <div class="problem">홈 헤더의 <code>SearchInput</code>은 높이 40px에 옅은 보더 하나로 끝. PWA로 설치했을 때 네이티브 앱 검색창의 '묵직한 pill' 느낌이 없어서 무의식적으로 "이거 웹 맞네"라는 신호를 줌.</div>
+          <div class="fix"><strong>개선:</strong> 높이 48px / radius 24 / 살짝의 그림자(<code>0 2px 14px rgba(0,0,0,.1)</code>) / 좌측 아이콘 + 우측 보이스/프로필 복합 엘리먼트. 네이버지도·카카오지도 공통 패턴.</div>
+        </div>
+        <div class="issue-loc">components/common/<br/>SearchInput.tsx</div>
+      </div>
+
+      <div class="issue warn">
+        <div class="sev">M</div>
+        <div class="issue-body">
+          <h3>마커가 핀 모양 단색 SVG 하나 — 정보 없이 "여기 뭔가 있음"만 전달</h3>
+          <div class="problem">지금 <code>/public/marker-normal.svg</code>는 점 하나. 지도가 줌아웃되면 점이 빽빽하게 겹치고, 어느 카페가 무엇인지 탭하기 전까지 모름. 네이버지도는 이름·가격을 핀 안에 넣어 줌 레벨에 따라 정보량을 바꿈.</div>
+          <div class="fix"><strong>개선:</strong> 줌 ≥ 16일 때 <b>이름 pill 마커</b>(로우키, 슬로우커피…), 줌 13-15일 때 <b>도트 + 평점 별</b>, 줌 ≤ 12일 때 <b>클러스터(숫자 배지)</b>로 3단계 LOD. 선택된 핀은 bounce + scale로 즉시 피드백.</div>
+        </div>
+        <div class="issue-loc">components/map/<br/>CafeMap.tsx</div>
+      </div>
+
+      <div class="issue info">
+        <div class="sev">L</div>
+        <div class="issue-body">
+          <h3>태그 뱃지 색이 전부 primary — 시각적 위계 소실</h3>
+          <div class="problem">분위기 16개 태그가 모두 같은 amber 배지로 렌더링됨. 한 카페에 4-5개가 붙으면 읽기 어렵고 어디가 주요 태그인지 모호.</div>
+          <div class="fix"><strong>개선:</strong> <b>투표수 상위 2개</b>만 solid(amber-700), 나머지는 tint(amber-50)로 톤다운. 카드 일람에서는 최대 3개까지만 노출 + "+N".</div>
+        </div>
+        <div class="issue-loc">components/ui/Tag.tsx</div>
+      </div>
+
+      <div class="issue info">
+        <div class="sev">L</div>
+        <div class="issue-body">
+          <h3>카페 상세 히어로가 비어 있을 때 placeholder가 없음</h3>
+          <div class="problem">사진 없는 카페의 상세 페이지는 히어로가 단색으로 비어 버림. 브랜드 톤과도 연결되지 않음.</div>
+          <div class="fix"><strong>개선:</strong> <code>linear-gradient(135deg, amber-200, amber-50)</code> + 큰 ☕ 글리프 + 빗금 텍스처 오버레이. 사진이 들어오면 자연스럽게 크로스페이드.</div>
+        </div>
+        <div class="issue-loc">app/cafes/[id]/page.tsx</div>
+      </div>
+
+      <div class="issue info">
+        <div class="sev">L</div>
+        <div class="issue-body">
+          <h3>그림자 토큰이 단조로움 — 모든 카드가 같은 공중부양 느낌</h3>
+          <div class="problem"><code>shadows.md</code> 하나가 헤더, 바텀시트, 마커, 카드 전반에 동일 적용. 깊이 계층이 안 느껴짐.</div>
+          <div class="fix"><strong>개선:</strong> <b>sm</b>(정적 카드) / <b>md</b>(플로팅 버튼) / <b>lg</b>(바텀시트) / <b>xl</b>(모달)로 4단계 분리. 바텀시트는 <code>0 -6px 24px</code>처럼 위로 번지는 그림자.</div>
+        </div>
+        <div class="issue-loc">styles/theme.ts</div>
+      </div>
+
+      <div class="issue info">
+        <div class="sev">L</div>
+        <div class="issue-body">
+          <h3>CTA 버튼 높이가 44px — 모바일에서 살짝 낮음</h3>
+          <div class="problem">Apple HIG 최소 터치 타깃은 44×44이지만, 시각적 무게는 52px이 '기본 CTA'로 인식됨. 현재 주요 액션 버튼이 44px이라 주변 12~14px 텍스트 대비 가볍게 보임.</div>
+          <div class="fix"><strong>개선:</strong> Primary CTA 52px / Secondary 44px / Tertiary(icon) 40px 3-tier.</div>
+        </div>
+        <div class="issue-loc">components/ui/Button.tsx</div>
+      </div>
+
+      <div class="issue info">
+        <div class="sev">L</div>
+        <div class="issue-body">
+          <h3>styled-components + shadcn(Tailwind) 혼용 — 스타일 소스 불일치</h3>
+          <div class="problem">같은 버튼을 shadcn의 <code>Button</code>으로 쓰는 곳과 <code>styled.button</code>으로 쓰는 곳이 섞여 있음. 팔레트 변경 시 두 군데를 고쳐야 함.</div>
+          <div class="fix"><strong>개선:</strong> 팔레트 · 간격 · radius · shadow는 <code>theme.ts</code>를 단일 소스로 두고, Tailwind config에서 <code>var(--brand)</code> 같은 CSS 변수를 임포트하는 식으로 통합. shadcn은 Primitive(모달, 드롭다운 등)만 사용.</div>
+        </div>
+        <div class="issue-loc">components/ui/* + <br/>styles/theme.ts</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════ 03. UX ═══════ -->
+  <section id="ux">
+    <div class="section-head"><span class="num">03</span><h2>UX · 검색 · 마커</h2><span class="count">9건</span></div>
+    <div class="issues">
+
+      <div class="issue crit">
+        <div class="sev">Crit</div>
+        <div class="issue-body">
+          <h3>검색 인풋이 지도 위의 작은 상단 바 — "뭘 검색해야 하지?" 플레이스홀더 전략 부재</h3>
+          <div class="problem">PWA에서 앱을 켰을 때 사용자는 보통 "여기 근처 조용한 곳"을 찾으려 함. 지금은 플레이스홀더가 "카페 검색"처럼 일반적이라 사용자가 지역명과 분위기를 한 번에 입력해야 할지 모름. 또 인풋 탭 → 키보드 올라옴과 동시에 지도가 키보드에 가려져 맥락이 사라짐.</div>
+          <div class="fix"><strong>개선(리디자인 반영):</strong> 인풋 탭 시 <b>full-screen 검색 화면</b>으로 전환 (네이버지도 방식). 플레이스홀더는 <i>"성수동 조용한 카페"</i>처럼 예시형. 입력 중에는 최근 검색, Kakao Local 자동완성, Mooda DB 등록 카페를 <b>3 섹션</b>으로 분리.</div>
+        </div>
+        <div class="issue-loc">components/common/<br/>SearchInput.tsx + <br/>app/search/page.tsx</div>
+      </div>
+
+      <div class="issue crit">
+        <div class="sev">Crit</div>
+        <div class="issue-body">
+          <h3>카카오맵 마커 탭 → 상세로 직행 — 비교 탐색 불가</h3>
+          <div class="problem">현재는 마커 클릭 시 카페 상세 페이지로 즉시 이동. 사용자는 지도에서 3-4개를 비교하며 고르고 싶은데, 한 번에 하나씩만 확인 가능하고 "뒤로" 누르면 지도 상태(줌/중심/필터)가 날아감.</div>
+          <div class="fix"><strong>개선:</strong> 마커 탭 → <b>바텀시트 peek</b>(40% 높이, 사진 + 이름 + 별점 + 태그 3개 + [상세보기] [길찾기]). 바텀시트 위로 드래그 시 full 상세. 지도 상태는 그대로 유지.</div>
+        </div>
+        <div class="issue-loc">components/map/<br/>CafeMap.tsx</div>
+      </div>
+
+      <div class="issue crit">
+        <div class="sev">Crit</div>
+        <div class="issue-body">
+          <h3>"이 지역 재검색" 버튼 없음 — 지도 이동 후 목록이 stale</h3>
+          <div class="problem">사용자가 지도를 드래그/줌 변경해도 결과가 자동 갱신. 의도하지 않은 리페칭이 많고, 반대로 살짝 움직였을 때도 전체 재요청됨. RTK Query 캐시가 의도와 반대로 작동.</div>
+          <div class="fix"><strong>개선:</strong> 지도 이동 뒤 중심이 <b>이전 대비 300m 이상 이동</b>하거나 줌이 바뀌면 <i>"이 지역 재검색"</i> 플로팅 칩을 중앙 상단에 표시. 탭해야만 재요청. 이동 중 자동 페치 OFF.</div>
+        </div>
+        <div class="issue-loc">store/slices/mapSlice.ts<br/>useNearbyCafes hook</div>
+      </div>
+
+      <div class="issue warn">
+        <div class="sev">M</div>
+        <div class="issue-body">
+          <h3>분위기 필터 16개 태그가 한 줄 가로 스크롤 — 전체 조망 불가</h3>
+          <div class="problem">16개는 모바일 한 화면에 안 들어가므로 가로 스크롤로 숨겨져 있음. 사용자는 뒤에 어떤 태그가 있는지 모른 채 "지금 보이는 것 중에서" 선택하게 됨.</div>
+          <div class="fix"><strong>개선:</strong> 상단 bar에는 최근/추천 5개만, "필터" 칩 탭 시 <b>full bottom sheet</b>에서 카테고리 탭(분위기 · 씬 · 목적 · 인테리어 · 메뉴 · 편의시설) + 2열 그리드로 한 번에 조망. 선택 개수와 매칭 카페 수를 실시간 표기.</div>
+        </div>
+        <div class="issue-loc">components/filter/<br/>MoodFilter.tsx</div>
+      </div>
+
+      <div class="issue warn">
+        <div class="sev">M</div>
+        <div class="issue-body">
+          <h3>네이버지도 부재 — 카카오맵만 사용</h3>
+          <div class="problem">사용자가 요청. 많은 한국 사용자가 네이버지도의 UI/데이터(대중교통 시간, 장소 리뷰)에 더 익숙. 현재는 카카오맵 JS SDK로만 렌더링.</div>
+          <div class="fix"><strong>개선(2단계):</strong> <b>단기</b>—카페 상세에서 "네이버지도에서 길찾기" 딥링크(<code>nmap://route/public?...</code>) 추가해 네이티브 앱으로 이탈 유도. <b>중기</b>—지도 API를 <code>IMapAdapter</code> 인터페이스로 추상화하고 런타임 설정으로 Kakao/Naver 전환 가능하게. 상세는 §07 로드맵.</div>
+        </div>
+        <div class="issue-loc">components/map/<br/>CafeMap.tsx + <br/>lib/maps/*</div>
+      </div>
+
+      <div class="issue warn">
+        <div class="sev">M</div>
+        <div class="issue-body">
+          <h3>지도와 목록 간 전환이 없음</h3>
+          <div class="problem">/map은 지도 뷰만 제공. 목록으로 비교하고 싶을 때 별도 검색 결과 화면으로 돌아가야 함. 사용자 멘탈 모델은 "같은 결과를 다르게 보는 것".</div>
+          <div class="fix"><strong>개선:</strong> 상단에 <b>segmented control</b>(지도 / 목록). 같은 필터·중심·줌 상태 공유. 목록에는 거리순/평점순/인기순 정렬 드롭다운.</div>
+        </div>
+        <div class="issue-loc">app/map/page.tsx</div>
+      </div>
+
+      <div class="issue warn">
+        <div class="sev">M</div>
+        <div class="issue-body">
+          <h3>리뷰 투표 UI가 태그 옆 작은 숫자 — 참여 유도가 약함</h3>
+          <div class="problem">현재 태그당 투표수가 옅게 표시되지만 "누를 수 있다"는 시각 신호가 부족. 사용자가 투표 가능 여부를 모름.</div>
+          <div class="fix"><strong>개선:</strong> 상세 페이지 상단 고정 카드 "이 카페의 분위기 — 태그를 눌러 투표해보세요"로 CTA 명시. 탭한 태그는 즉시 solid 전환 + 숫자 +1 애니메이션. 서버 응답 실패 시 롤백(옵티미스틱 업데이트).</div>
+        </div>
+        <div class="issue-loc">components/cafe/<br/>MoodVotes.tsx</div>
+      </div>
+
+      <div class="issue info">
+        <div class="sev">L</div>
+        <div class="issue-body">
+          <h3>영업중/영업종료가 텍스트로만 표시</h3>
+          <div class="problem">"22:00까지"처럼 영업 여부를 문장으로만 안내. 스캔 시 한눈에 안 들어옴.</div>
+          <div class="fix"><strong>개선:</strong> 초록 배지 <b>"영업중"</b> + 회색 <b>"영업종료"</b> 칩을 카드/상세 상단에 고정. 30분 내 마감이면 amber로 <b>"곧 마감"</b>.</div>
+        </div>
+        <div class="issue-loc">components/cafe/<br/>OpenBadge.tsx</div>
+      </div>
+
+      <div class="issue info">
+        <div class="sev">L</div>
+        <div class="issue-body">
+          <h3>전화·길찾기·저장·공유 액션이 텍스트 메뉴로 흩어짐</h3>
+          <div class="problem">카페 상세에서 주요 액션이 페이지 하단이나 서브메뉴에 섞여 있어 발견성이 낮음.</div>
+          <div class="fix"><strong>개선:</strong> 히어로 바로 아래 <b>4-칸 quick action grid</b>(길찾기·전화·저장·공유). 네이버·카카오 공통 패턴.</div>
+        </div>
+        <div class="issue-loc">app/cafes/[id]/page.tsx</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════ 04. 성능/상태 ═══════ -->
+  <section id="perf">
+    <div class="section-head"><span class="num">04</span><h2>성능 · 상태 · 에러</h2><span class="count">6건</span></div>
+    <div class="issues">
+
+      <div class="issue crit">
+        <div class="sev">Crit</div>
+        <div class="issue-body">
+          <h3>지도 bounds 변경마다 RTK Query 재요청 — 모바일 데이터 소진</h3>
+          <div class="problem"><code>useGetNearbyCafesQuery</code>가 중심 좌표·줌을 키로 받아 미세한 드래그마다 재페치. PWA 모바일에서 초당 10+ 호출이 쉽게 발생.</div>
+          <div class="fix"><strong>개선:</strong> (1) <b>geohash 6자리 버킷</b>으로 중심 좌표를 양자화해 캐시 키 안정화 · (2) 드래그 종료 후 <b>300ms debounce</b> · (3) 자동 페치 대신 "이 지역 재검색" 버튼으로 명시 트리거 · (4) <code>keepUnusedDataFor: 120</code>으로 뒤로가기 때 재요청 방지.</div>
+        </div>
+        <div class="issue-loc">store/api/cafeApi.ts</div>
+      </div>
+
+      <div class="issue crit">
+        <div class="sev">Crit</div>
+        <div class="issue-body">
+          <h3>카카오맵 JS SDK가 페이지마다 재로드됨 가능성 (SSR 경계)</h3>
+          <div class="problem">Next.js 16 App Router에서 map 컴포넌트를 Client에서 매번 마운트/언마운트하면 SDK 스크립트가 중복 삽입되거나, 핸들러가 leaked됨. <code>/map</code> → 상세 → 뒤로 시 GC 안 됨.</div>
+          <div class="fix"><strong>개선:</strong> (1) SDK 로드는 <code>app/layout.tsx</code>에서 <code>next/script strategy="afterInteractive"</code>로 전역 1회 · (2) 맵 컴포넌트는 <code>dynamic(() =&gt; import..., { ssr: false })</code>로만 로드 · (3) unmount 시 <code>kakao.maps.event.removeListener</code>로 리스너 정리 · (4) 상세로 이동 시 맵 인스턴스를 <code>useRef</code>로 유지 & <code>keepMounted</code> 패턴.</div>
+        </div>
+        <div class="issue-loc">components/map/* + <br/>app/layout.tsx</div>
+      </div>
+
+      <div class="issue warn">
+        <div class="sev">M</div>
+        <div class="issue-body">
+          <h3>에러 상태 UI가 alert/toast 수준 — PWA에서 네이티브 느낌 해침</h3>
+          <div class="problem">네트워크 실패 시 공통 에러 토스트만 띄움. 사용자가 무엇을 시도했는지 컨텍스트가 사라지고, 재시도 액션이 제공되지 않음.</div>
+          <div class="fix"><strong>개선:</strong> 위치별 <b>inline error state</b> 컴포넌트. (지도) "주변 카페를 불러오지 못했어요 [다시 시도]" 플로팅 배너 · (상세) 본문 영역에 empty state + 재시도 버튼 · (투표) 옵티미스틱 실패 시 해당 태그만 되돌리고 작은 shake 애니메이션 + 토스트.</div>
+        </div>
+        <div class="issue-loc">components/common/<br/>ErrorState.tsx (신규)</div>
+      </div>
+
+      <div class="issue warn">
+        <div class="sev">M</div>
+        <div class="issue-body">
+          <h3>로딩 상태가 전역 스피너 — 레이아웃 시프트 발생</h3>
+          <div class="problem">카페 상세 진입 시 전체를 스피너로 덮었다가 데이터가 오면 한꺼번에 렌더 → 레이아웃 점프, 뒤로 갔다 올 때 다시 로딩.</div>
+          <div class="fix"><strong>개선:</strong> (1) App Router의 <code>loading.tsx</code>로 <b>스켈레톤</b>(hero · title · tags · tabs 영역 모두 회색 블록) · (2) RTK Query <code>getCafe</code>에 <code>initialData</code>로 목록에서 미리 받은 카드 데이터 프리필 · (3) 낙관적 이동 — 카드 탭 즉시 히어로 크로스페이드.</div>
+        </div>
+        <div class="issue-loc">app/cafes/[id]/<br/>loading.tsx (신규)</div>
+      </div>
+
+      <div class="issue warn">
+        <div class="sev">M</div>
+        <div class="issue-body">
+          <h3>Redux store에 "로딩중/서버상태"가 섞여 있음</h3>
+          <div class="problem"><code>cafeSlice</code>에 <code>isLoading</code>, <code>cafes[]</code>, <code>error</code>가 들어 있는 경우 — RTK Query가 이미 관리하는 것을 중복 보관.</div>
+          <div class="fix"><strong>개선:</strong> <b>서버 상태는 RTK Query만</b>(cafes, nearby, reviews, votes). <b>UI 상태는 slice</b>(selectedMarkerId, mapCenter, activeFilters, bottomSheetHeight). 섞이면 동기화 버그의 온상.</div>
+        </div>
+        <div class="issue-loc">store/slices/* 전반</div>
+      </div>
+
+      <div class="issue info">
+        <div class="sev">L</div>
+        <div class="issue-body">
+          <h3>PWA 오프라인 경험 없음</h3>
+          <div class="problem"><code>sw.js</code>는 있지만 전략이 명시되지 않음. 터널·지하철에서 앱이 사실상 사용 불가.</div>
+          <div class="fix"><strong>개선:</strong> Workbox 전략 — 정적 에셋 <b>StaleWhileRevalidate</b>, API <b>NetworkFirst</b> (타임아웃 3s), 최근 본 카페 상세 <b>CacheFirst(7일)</b>. 오프라인 시 "저장된 카페" 화면을 fallback.</div>
+        </div>
+        <div class="issue-loc">public/sw.js + <br/>lib/workbox/*</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════ 05. 접근성/모바일 ═══════ -->
+  <section id="a11y">
+    <div class="section-head"><span class="num">05</span><h2>접근성 · 모바일 · 반응형</h2><span class="count">5건</span></div>
+    <div class="issues">
+
+      <div class="issue warn">
+        <div class="sev">M</div>
+        <div class="issue-body">
+          <h3>상단바 · 바텀시트가 safe-area-inset 미적용</h3>
+          <div class="problem">iPhone notch/홈 인디케이터 영역에 컨텐츠가 겹쳐 보임 — PWA standalone 모드에서 특히 두드러짐.</div>
+          <div class="fix"><strong>개선:</strong> <code>padding-top: env(safe-area-inset-top)</code> / <code>padding-bottom: env(safe-area-inset-bottom)</code>를 root Layout, 바텀시트, 플로팅 버튼에 적용. <code>viewport-fit=cover</code> 확인.</div>
+        </div>
+        <div class="issue-loc">app/layout.tsx + <br/>BottomSheet.tsx</div>
+      </div>
+
+      <div class="issue warn">
+        <div class="sev">M</div>
+        <div class="issue-body">
+          <h3>지도 마커가 키보드·스크린리더로 접근 불가</h3>
+          <div class="problem">Kakao Map의 마커는 Canvas 위의 이미지라 <code>Tab</code>으로 포커스 불가, VoiceOver도 못 읽음.</div>
+          <div class="fix"><strong>개선:</strong> 지도 옆/아래에 <b>시각적으로 숨겨진 목록</b>(<code>position:absolute; clip-path</code>)을 <code>role="list"</code>로 제공. 각 항목은 카페 정보 + "지도에서 보기" 버튼. 지도 영역에는 <code>aria-label="카페 지도. 목록으로 보려면 목록 버튼을 누르세요"</code>.</div>
+        </div>
+        <div class="issue-loc">components/map/<br/>CafeMap.tsx</div>
+      </div>
+
+      <div class="issue info">
+        <div class="sev">L</div>
+        <div class="issue-body">
+          <h3>터치 타깃 44px 미만 존재 — 지도 우측 줌/현재위치 버튼</h3>
+          <div class="problem">현재 LocateBtn이 36×36px. HIG 권고(44) 미달, 손가락 큰 사람은 오조작.</div>
+          <div class="fix"><strong>개선:</strong> 40×40 (기존보다 +4) + 버튼 간 8px gap 유지. 주변 여백으로 실효 터치 영역 48 확보.</div>
+        </div>
+        <div class="issue-loc">CafeMap.styles.ts</div>
+      </div>
+
+      <div class="issue info">
+        <div class="sev">L</div>
+        <div class="issue-body">
+          <h3>폼 인풋 폰트 16px 미만 → iOS가 자동 줌인</h3>
+          <div class="problem">인풋 폰트 크기가 14px이면 iOS Safari가 포커스 시 페이지를 확대해 레이아웃이 꼬임.</div>
+          <div class="fix"><strong>개선:</strong> 모든 <code>&lt;input&gt; · &lt;textarea&gt;</code>의 <code>font-size ≥ 16px</code>. 시각적 크기는 <code>transform: scale</code> 대신 <code>line-height</code>로 조정.</div>
+        </div>
+        <div class="issue-loc">SearchInput.tsx 등</div>
+      </div>
+
+      <div class="issue info">
+        <div class="sev">L</div>
+        <div class="issue-body">
+          <h3>색상 의미가 컬러 단독 전달 (색맹)</h3>
+          <div class="problem">영업중/영업종료가 초록/회색 텍스트만으로 표현되는 경우 있음. 적록색각 사용자에게 불리.</div>
+          <div class="fix"><strong>개선:</strong> 텍스트 + 아이콘(● 영업중 / ○ 영업종료) + 색 조합. 배지에 포인트 내에서 둘 다.</div>
+        </div>
+        <div class="issue-loc">OpenBadge.tsx</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════ 06. 리디자인 ═══════ -->
+  <section id="redesign">
+    <div class="section-head"><span class="num">06</span><h2>리디자인 — 5개 핵심 화면</h2><span class="count">모바일 웹 우선</span></div>
+
+    <p style="font-size:15px;color:var(--ink-700);max-width:780px;margin-bottom:var(--s-4);line-height:1.7;">
+      현재 톤을 유지하면서 위의 이슈를 직접 반영한 한 가지 방향입니다. 색·타입·인터랙션 선택 근거는 각 화면 하단 캡션을 참고.
+    </p>
+
+    <div class="canvas">
+      <div class="canvas-grid" id="canvas-grid"></div>
+    </div>
+  </section>
+
+  <!-- ═══════ 07. 로드맵 ═══════ -->
+  <section id="roadmap">
+    <div class="section-head"><span class="num">07</span><h2>실행 로드맵</h2><span class="count">3-step</span></div>
+    <div class="roadmap">
+      <div class="lane">
+        <h3>Week 1 — Quick wins</h3>
+        <div class="when">1주 · FE 1명</div>
+        <ul>
+          <li>검색 인풋 full-screen 전환 + 플레이스홀더 "성수동 조용한 카페"</li>
+          <li>마커 탭 → 바텀시트 peek (상세 이동 제거)</li>
+          <li>"이 지역 재검색" 칩 + debounce 300ms</li>
+          <li>safe-area-inset 전면 적용</li>
+          <li>영업중/곧마감/영업종료 배지 토큰화</li>
+          <li>theme.ts · shadows 4단계 · semantic 컬러 추가</li>
+          <li>CTA 52/44/40 3-tier</li>
+        </ul>
+      </div>
+      <div class="lane">
+        <h3>Week 2-3 — Core UX</h3>
+        <div class="when">2-3주 · FE 1 + BE 0.5</div>
+        <ul>
+          <li>분위기 필터 bottom sheet + 카테고리 탭</li>
+          <li>줌 레벨별 마커 LOD (이름 pill / 도트 / 클러스터)</li>
+          <li>카페 상세 히어로 + 4-칸 quick action</li>
+          <li>분위기 투표 카드 + 옵티미스틱 업데이트</li>
+          <li>지도/목록 segmented control (/map 내)</li>
+          <li>App Router <code>loading.tsx</code> 스켈레톤 전면 도입</li>
+          <li>RTK Query · slice 역할 분리 (서버/UI)</li>
+        </ul>
+      </div>
+      <div class="lane">
+        <h3>Month 2 — Platform</h3>
+        <div class="when">3-4주 · FE 1 + BE 1</div>
+        <ul>
+          <li>지도 어댑터 추상화 → Naver Map 이식 (토글 가능)</li>
+          <li>네이버지도 딥링크("길찾기 · 대중교통")</li>
+          <li>PWA 오프라인 전략 (Workbox · 최근 카페 캐싱)</li>
+          <li>접근성: 지도 보조 목록 · aria-label 정비</li>
+          <li>마커·바텀시트 키보드 플로우</li>
+          <li>오류 inline error state 컴포넌트 체계</li>
+          <li>리뷰 투표 · 커뮤니티 플로우 고도화</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="foot">Mooda · Design Review · generated for mobile-first PWA</div>
+</main>
+
+<!-- Device frames and screens -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="../ios-frame.jsx"></script>
+<script type="text/babel" src="screens.jsx"></script>
+<script type="text/babel">
+  const cells = [
+    { C: MapScreen, tag: '01 · MAP', title: '지도 메인 — 네이버맵 스타일 오버레이', desc: '검색 pill · 필터칩 · LOD 마커 · "이 지역 재검색" · 선택 마커 바텀시트 peek' },
+    { C: SearchScreen, tag: '02 · SEARCH', title: '검색 — full-screen focused', desc: '지도 오버레이 대신 전용 화면. 최근 검색 · Kakao Local 자동완성 · Mooda 등록 카페 3섹션 분리' },
+    { C: FilterScreen, tag: '03 · FILTER', title: '분위기 필터 — bottom sheet', desc: '카테고리 탭 + 2열 그리드로 16개 태그 전체 조망. 선택 개수와 매칭 카페 수 실시간 표기' },
+    { C: DetailScreen, tag: '04 · DETAIL', title: '카페 상세 — 히어로 + 투표 카드', desc: '그라디언트 placeholder · 영업중/Mooda 배지 · 4-칸 quick action · 분위기 투표 옵티미스틱 UI' },
+    { C: ListScreen, tag: '05 · LIST', title: '목록 뷰 — 같은 상태 공유', desc: '지도/목록 segmented. 영업 상태 배지 · 평점 · 대중교통 소요 · 태그 3개 + 순번 배지' },
+  ];
+  function Canvas() {
+    return cells.map((c, i) => (
+      <div key={i} className="device-cell">
+        <c.C/>
+        <div className="caption">
+          <div className="tag">{c.tag}</div>
+          <h4>{c.title}</h4>
+          <p>{c.desc}</p>
+        </div>
+      </div>
+    ));
+  }
+  ReactDOM.createRoot(document.getElementById('canvas-grid')).render(<Canvas/>);
+</script>
+</body>
+</html>
