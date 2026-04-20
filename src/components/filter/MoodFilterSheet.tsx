@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import styled, { css, keyframes } from 'styled-components';
-import { Check, X } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { MOODS, MOOD_CATEGORIES } from '@/constants/moods';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { clearMoodFilters, toggleMoodFilter } from '@/store/slices/mapSlice';
@@ -201,11 +201,8 @@ export function MoodFilterSheet({ open, onOpenChange, trigger }: Props) {
               {(countData?.count ?? 0).toLocaleString()}곳 카페 보기
             </ApplyBtn>
           </Footer>
-          <Dialog.Close asChild>
-            <CloseBtn type="button" aria-label="닫기">
-              <X size={18} />
-            </CloseBtn>
-          </Dialog.Close>
+          {/* 닫기 X 버튼은 "전체 해제"와 위치/역할이 겹치는 데다 오버레이 탭·
+              ESC·물리 back으로 이미 닫을 수 있으므로 제거. */}
         </SheetStyled>
       </Dialog.Portal>
     </Dialog.Root>
@@ -477,21 +474,3 @@ const ApplyBtn = styled.button`
   }
 `;
 
-const CloseBtn = styled.button`
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background: ${theme.colors.ink100};
-  color: ${theme.colors.ink700};
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s ease;
-
-  &:hover {
-    background: ${theme.colors.ink200};
-  }
-`;

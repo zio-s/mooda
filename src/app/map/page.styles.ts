@@ -193,8 +193,14 @@ export const AreaSelectBtn = styled.button`
 export const AreaDropdown = styled.div<{ $open: boolean }>`
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
+  /* AreaSelect 버튼이 FilterBar 우측 끝에 위치하므로 왼쪽으로 펼침 →
+     오른쪽 정렬. left:0 은 뷰포트 밖으로 dropdown을 밀어내 가로 스크롤
+     유발. */
+  right: 0;
+  left: auto;
   min-width: 140px;
+  /* 작은 화면에서도 뷰포트 밖으로 넘치지 않게 폭 상한. */
+  max-width: calc(100vw - 24px);
   background: ${theme.colors.white};
   border: 1px solid ${theme.colors.border};
   border-radius: ${theme.borderRadius.md};
