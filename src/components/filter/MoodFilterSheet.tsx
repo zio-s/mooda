@@ -46,6 +46,18 @@ export function MoodFilterSheet({ open, onOpenChange, trigger }: Props) {
     }
   }, [open, committedMoods]);
 
+  // 시트 open 동안 body scroll lock — Radix Dialog는 focus trap만 담당.
+  // 이걸 안 걸면 시트 내부 스크롤이 배경 지도로 번지고, 모바일에서 당김 제스처
+  // 때 body가 같이 움직임.
+  useEffect(() => {
+    if (typeof document === 'undefined' || !open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   // Debounce draft → count query params
   const [debouncedDraft, setDebouncedDraft] = useState<string[]>(draft);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -363,8 +375,11 @@ const TabBadge = styled.span`
 const Body = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 16px 20px 0;
+  /* bottom 0이면 마지막 Grid row가 sticky Footer 바로 아래에 붙음. */
+  padding: 16px 20px;
   -webkit-overflow-scrolling: touch;
+  /* 시트 내부에서만 스크롤이 일어나도록 — body까지 번짐 방지(2차 방어선). */
+  overscroll-behavior: contain;
 `;
 
 const Grid = styled.div`
