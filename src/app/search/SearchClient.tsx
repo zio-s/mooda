@@ -142,6 +142,24 @@ export function SearchClient() {
     [scheduleFetch],
   );
 
+  // iOS/Android 모두 enterKeyHint="search"에서 "검색" 버튼을 노출하는데,
+  // 기존에는 Enter가 no-op → 유저 피드백 공백. debounce 무시하고 즉시 fetch
+  // + 키보드 dismiss.
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key !== 'Enter') return;
+      if (composingRef.current) return; // 한글 확정 중 Enter 무시
+      e.preventDefault();
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      const trimmed = query.trim();
+      if (trimmed.length >= MIN_QUERY_LEN) {
+        fetchResults(trimmed);
+      }
+      inputRef.current?.blur();
+    },
+    [query, fetchResults],
+  );
+
   const handleSelectResult = useCallback(
     async (result: KeywordSearchResult) => {
       if (result.cafeId) {
@@ -214,6 +232,7 @@ export function SearchClient() {
             onChange={(e) => handleChange(e.target.value)}
             onCompositionStart={handleCompositionStart}
             onCompositionEnd={handleCompositionEnd}
+            onKeyDown={handleKeyDown}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             placeholder="성수동 조용한 카페"
