@@ -92,11 +92,11 @@
 ## Month 2 — Platform (FE 1 + BE 1 · 15-20영업일)
 
 ### 지도 어댑터
-- [ ] `IMapAdapter` 인터페이스 정의 (`marker`, `cluster`, `bounds`, `event`)
-- [ ] `KakaoMapAdapter` 리팩토링 (현 CafeMap 분리)
-- [ ] `NaverMapAdapter` 구현 (Naver Maps JS v3)
-- [ ] 런타임 swap — 유저 설정 또는 env 플래그
-- [ ] 네이버지도 딥링크 (`nmap://route/public?...`) 상세 페이지 버튼
+- [x] 어댑터 추상화 — 인터페이스 대신 **컴포넌트 레벨**(`CafeMapAdapterProps`)로 통합. React/SSR에 자연스럽고 imperative 핸들링 불필요. `components/map/adapters/types.ts`.
+- [x] `KakaoCafeMap` 어댑터 — 기존 `CafeMap.tsx` 로직을 `adapters/KakaoCafeMap.tsx`로 통째 이동 (behavior-preserving). `CafeMap.tsx`는 provider router.
+- [x] `NaverCafeMap` 어댑터 — Naver Maps JS v3. `useNaverMapsLoader` 훅으로 SDK 동적 로드(onload/onerror 이벤트 + 중복 주입 방지), `naver.maps.Map` 인스턴스를 ref 관리, idle/click 이벤트로 bounds/center/zoom을 Redux에 sync. 마커는 inline SVG(brand 22px dot) icon.content로 표시 + click handler → setSelectedCafe. zoom ↔ Kakao level 변환 매핑(`naverZoom = 20 − kakaoLevel`) 포함. v1은 클러스터 미구현(marker-tools submodule은 훅만 준비).
+- [x] 런타임 swap — `mapSlice.provider` ('kakao' | 'naver') + localStorage persist(`mooda:map-provider:v1`), `hydrateMapProvider` 액션으로 SSR/CSR hydration mismatch 방지. `MapProviderToggle` segmented 컨트롤을 /map Toolbar에 노출. `NEXT_PUBLIC_NAVER_MAP_CLIENT_ID` 미설정 시 Naver 버튼 disabled + title로 안내.
+- [x] 네이버지도 딥링크 (`nmap://route/public?...`) — 상세 페이지 Quick Actions 길찾기 및 BottomSheet "네이버지도 길찾기" 버튼 (별도 커밋에서 선반영, `90103cd`).
 
 ### PWA 오프라인
 - [x] Workbox **미사용**·수제 전략 — `public/sw.js` 재작성. 정적(script/style/font/image/_next/static) = Stale-While-Revalidate, `/api/cafes/*` 일반 = Network First (3s timeout + 24h TTL), `/api/cafes/{id}` = Cache First (7일 · 50 entries LRU), 네비게이션 = Network First + offline fallback. 캐시 이름 `mooda-v3-*`로 네임스페이스 + activate 시 valid 아닌 캐시 전량 purge.

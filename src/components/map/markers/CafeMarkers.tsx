@@ -19,11 +19,11 @@ import type { Cafe, MapBounds } from '@/types';
  *  줌인하면 pill로 전환된다.
  */
 const PILL_MAX_LEVEL = 4;
-const DOT_MAX_LEVEL = 4; // dot 모드 제거(pill ↔ cluster).
+const DOT_MAX_LEVEL = 2; // dot 모드 제거(pill ↔ cluster).
 // Kakao MarkerClusterer의 grid 픽셀 반경. 넓을수록 더 확실히 묶임. 140은
 // level 5(250m 스케일)에서 ~140m, level 7(1km)에서 ~1.4km 반경으로 병합 →
 // 도심 밀집 지역에서도 시각적 겹침 없이 클러스터 배지로 정돈.
-const CLUSTER_GRID_SIZE = 140;
+const CLUSTER_GRID_SIZE = 200;
 // ±10% 패딩 내 마커만 렌더 (화면 밖 마커는 DOM에 두지 않음)
 const BOUNDS_PADDING_RATIO = 0.1;
 

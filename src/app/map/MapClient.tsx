@@ -10,6 +10,7 @@ import { encodeGeohash, haversineMeters } from '@/lib/geohash';
 import { CafeMapWrapper } from '@/components/map/CafeMapWrapper';
 import { BottomSheet } from '@/components/map/BottomSheet';
 import { ResearchAreaChip } from '@/components/map/ResearchAreaChip';
+import { MapProviderToggle } from '@/components/map/MapProviderToggle';
 import { MoodFilterChips } from '@/components/filter/MoodFilter';
 import { MoodFilterSheet } from '@/components/filter/MoodFilterSheet';
 import { CafeCard } from '@/components/cafe/CafeCard';
@@ -304,30 +305,33 @@ export function MapClient() {
           </SegmentedBtn>
         </Segmented>
 
-        <SortWrap ref={sortRef}>
-          <SortBtn type="button" onClick={() => setSortOpen((v) => !v)}>
-            <ArrowDownUp aria-hidden />
-            {SORT_OPTIONS.find((o) => o.key === filters.sort)?.label ?? '거리순'}
-            <ChevronDown size={12} />
-          </SortBtn>
-          <SortMenu $open={sortOpen} role="menu">
-            {SORT_OPTIONS.map((option) => (
-              <li key={option.key}>
-                <SortOption
-                  role="menuitemradio"
-                  aria-checked={filters.sort === option.key}
-                  $active={filters.sort === option.key}
-                  onClick={() => {
-                    dispatch(setSort(option.key));
-                    setSortOpen(false);
-                  }}
-                >
-                  {option.label}
-                </SortOption>
-              </li>
-            ))}
-          </SortMenu>
-        </SortWrap>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <MapProviderToggle />
+          <SortWrap ref={sortRef}>
+            <SortBtn type="button" onClick={() => setSortOpen((v) => !v)}>
+              <ArrowDownUp aria-hidden />
+              {SORT_OPTIONS.find((o) => o.key === filters.sort)?.label ?? '거리순'}
+              <ChevronDown size={12} />
+            </SortBtn>
+            <SortMenu $open={sortOpen} role="menu">
+              {SORT_OPTIONS.map((option) => (
+                <li key={option.key}>
+                  <SortOption
+                    role="menuitemradio"
+                    aria-checked={filters.sort === option.key}
+                    $active={filters.sort === option.key}
+                    onClick={() => {
+                      dispatch(setSort(option.key));
+                      setSortOpen(false);
+                    }}
+                  >
+                    {option.label}
+                  </SortOption>
+                </li>
+              ))}
+            </SortMenu>
+          </SortWrap>
+        </div>
       </Toolbar>
 
       {/* 메인 영역 */}
