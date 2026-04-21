@@ -286,8 +286,15 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
     const container = containerRef.current;
     if (!container) return;
     // ResizeObserver 는 프레임당 여러 번 발사될 수 있음 → rAF 게이트로 throttle.
+    // BUG-MAP-A3: dynamic({ ssr: false }) 마운트 직후 한 프레임 container 가
+    // 0×0 일 수 있음. 그 상태로 refresh 하면 SDK canvas 가 유효하지 않은 크기로
+    // 갱신될 가능성이 있어 스킵.
     let scheduled = false;
-    const obs = new ResizeObserver(() => {
+    const obs = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const { width, height } = entry.contentRect;
+      if (width < 10 || height < 10) return;
       if (scheduled) return;
       scheduled = true;
       requestAnimationFrame(() => {
