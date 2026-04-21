@@ -91,8 +91,9 @@ export const HeroOverlay = styled.div`
 `;
 
 export const HeroFab = styled.button<{ $active?: boolean }>`
-  width: 40px;
-  height: 40px;
+  /* iOS HIG 최소 터치 타겟 44 — 주요 액션(뒤로·공유·♥)이라 sm(40) 탈피. */
+  width: 44px;
+  height: 44px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(8px);
