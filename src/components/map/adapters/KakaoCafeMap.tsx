@@ -40,6 +40,13 @@ export function KakaoCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
   } = useAppSelector((s) => s.map);
   const lastBoundsRef = useRef<MapBounds | null>(null);
   const boundsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mapRef = useRef<kakao.maps.Map | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  // relayout 직후 setCenter 호출 시 stale closure 회피용 — 최신 center 를 ref로.
+  const centerRef = useRef(center);
+  useEffect(() => {
+    centerRef.current = center;
+  }, [center]);
   const [locating, setLocating] = useState(false);
   const [nearbyLoading, setNearbyLoading] = useState<{ lat: number; lng: number } | null>(null);
   const [searchNearby] = useSearchNearbyMutation();
@@ -116,6 +123,62 @@ export function KakaoCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
     [dispatch],
   );
 
+  // Kakao SDK 는 <Map> 컴포넌트에 ref 못 꽂음 → onCreate 로 받은 인스턴스를
+  // mapRef 에 저장. 이후 relayout 호출에 필요.
+  const handleCreate = useCallback(
+    (map: kakao.maps.Map) => {
+      mapRef.current = map;
+      handleBoundsChange(map);
+    },
+    [handleBoundsChange],
+  );
+
+  // ── BUG-MAP-02: 탭/창 복귀 + BFCache + resize 대응 ────────
+  // Kakao SDK 는 컨테이너 크기가 바뀌어도 자동 relayout 안 됨. 탭 복귀 /
+  // BFCache 복원 / 컨테이너 리사이즈 시 map.relayout() 으로 SDK 내부 상태 +
+  // 타일을 재동기화하고, 중심점이 튈 수 있으므로 저장된 center 로 복원.
+  const refreshMapView = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    map.relayout();
+    const c = centerRef.current;
+    map.setCenter(new kakao.maps.LatLng(c.lat, c.lng));
+  }, []);
+
+  useEffect(() => {
+    const onVis = () => {
+      if (document.hidden) return;
+      refreshMapView();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [refreshMapView]);
+
+  useEffect(() => {
+    const onShow = (e: PageTransitionEvent) => {
+      if (e.persisted) refreshMapView();
+    };
+    window.addEventListener('pageshow', onShow);
+    return () => window.removeEventListener('pageshow', onShow);
+  }, [refreshMapView]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    // ResizeObserver 는 프레임당 여러 번 발사될 수 있음 → rAF 게이트로 throttle.
+    let scheduled = false;
+    const obs = new ResizeObserver(() => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        refreshMapView();
+      });
+    });
+    obs.observe(container);
+    return () => obs.disconnect();
+  }, [refreshMapView]);
+
   const handleLocate = useCallback(() => {
     if (!navigator.geolocation) return;
     setLocating(true);
@@ -190,12 +253,15 @@ export function KakaoCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
   }
 
   return (
-    <div style={{ position: 'relative', height: '100%', width: '100%' }}>
+    <div
+      ref={containerRef}
+      style={{ position: 'relative', height: '100%', width: '100%' }}
+    >
       <Map
         center={center}
         level={level}
         style={{ height: '100%', width: '100%' }}
-        onCreate={handleBoundsChange}
+        onCreate={handleCreate}
         onBoundsChanged={handleBoundsChange}
         onZoomChanged={handleBoundsChange}
         onClick={handleMapClick}

@@ -243,6 +243,44 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
     map.setZoom(kakaoLevelToNaverZoom(level), true);
   }, [center.lat, center.lng, level]);
 
+  // ── BUG-MAP-01: 탭/창 복귀 + BFCache + resize 대응 ────────
+  // 지도 canvas 는 컨테이너 크기가 바뀌어도 자동 relayout 안 됨. 다른 탭에서
+  // 돌아오거나 뒤로가기로 BFCache 복원되거나 컨테이너가 리사이즈될 때
+  // map.refresh(true)로 SDK 내부 상태 + 타일을 강제 재동기화.
+  useEffect(() => {
+    const onVis = () => {
+      if (document.hidden) return;
+      mapRef.current?.refresh(true);
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+
+  useEffect(() => {
+    const onShow = (e: PageTransitionEvent) => {
+      if (e.persisted) mapRef.current?.refresh(true);
+    };
+    window.addEventListener('pageshow', onShow);
+    return () => window.removeEventListener('pageshow', onShow);
+  }, []);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    // ResizeObserver 는 프레임당 여러 번 발사될 수 있음 → rAF 게이트로 throttle.
+    let scheduled = false;
+    const obs = new ResizeObserver(() => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        mapRef.current?.refresh(true);
+      });
+    });
+    obs.observe(container);
+    return () => obs.disconnect();
+  }, []);
+
   // ── 마커 + 자체 클러스터 관리 ──────────────────────
   // cafes / level / selectedCafeId 변화에 반응. mapReady 게이트로 map init 이후에만 실행.
   const cafeSnapshot = useMemo(
