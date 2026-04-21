@@ -109,11 +109,19 @@ export function BottomSheet({ cafe, onClose, onRequestLocation }: BottomSheetPro
 
     return () => {
       window.removeEventListener('popstate', onPop);
-      // 언마운트될 때 내가 push한 state가 남아있으면 정리.
+      // 언마운트 시 내가 push한 state가 살아있으면 replaceState로 덮어써
+      // 유령 히스토리 엔트리를 제거. back 호출은 route 이탈 유발 가능해 X.
+      // 시나리오: 시트 열림 → 부모가 cafe=null 설정(프로그램 close) → popstate
+      // 안 발사됨 → 히스토리 스택에 내가 심어둔 엔트리 남음. 이 지점에서
+      // replaceState로 현재 URL/state를 재기록해 엔트리 낭비 해소.
       if (pushedRef.current) {
         pushedRef.current = false;
-        // history.back은 SPA route 이탈 유발 가능 → state 교체로 대체
-        // (사용자가 back 누르기 전에 부모에서 cafe=null 시 정상 플로우).
+        try {
+          const url = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+          window.history.replaceState({}, '', url);
+        } catch {
+          /* replaceState 실패는 무시 */
+        }
       }
     };
   }, [cafe, onClose, clearCloseTimer]);
