@@ -107,9 +107,29 @@ export const ListPanel = styled.div<{ $visible?: boolean }>`
 `;
 
 export const ListHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 12px 16px;
   border-bottom: 1px solid ${theme.colors.borderLight};
   flex-shrink: 0;
+`;
+
+/**
+ * T7-B4: PC 에서 MapProviderToggle 을 MapArea 우하단 floating 으로 배치.
+ * Tablet/Mobile 에서는 숨기고(기존 Toolbar 내부 instance 사용) PC 에서만 렌더.
+ */
+export const MapProviderToggleFloating = styled.div`
+  display: none;
+
+  @media (min-width: ${theme.breakpoints.lg}) {
+    display: block;
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    z-index: ${theme.z.mapFloatingButton};
+  }
 `;
 
 export const ListCount = styled.p`

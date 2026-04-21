@@ -18,6 +18,7 @@ import { CafeCard } from '@/components/cafe/CafeCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { SearchTrigger } from '@/components/search/SearchTrigger';
+import { useIsDesktop } from '@/hooks/useViewport';
 import {
   AlertTriangle,
   ArrowDownUp,
@@ -74,6 +75,7 @@ import {
   SortBtn,
   SortMenu,
   SortOption,
+  MapProviderToggleFloating,
 } from './page.styles';
 
 const SORT_OPTIONS: { key: 'distance' | 'rating' | 'reviews'; label: string }[] = [
@@ -86,6 +88,7 @@ export function MapClient() {
   const searchParamsHook = useSearchParams();
   const dispatch = useAppDispatch();
   const { filters, viewMode } = useAppSelector((s) => s.map);
+  const isDesktop = useIsDesktop();
   const debouncedBounds = useDebouncedMapBounds(300);
   const { center: debouncedCenter, level: debouncedLevel } = useDebouncedMapCenter(300);
   const showList = viewMode === 'list';
@@ -295,58 +298,61 @@ export function MapClient() {
 
       </FilterBar>
 
-      {/* Segmented(지도/목록) + 정렬 — 03_screens.md § 05 목록 */}
-      <Toolbar>
-        <Segmented role="tablist" aria-label="보기 전환">
-          <SegmentedBtn
-            role="tab"
-            aria-selected={viewMode === 'map'}
-            $active={viewMode === 'map'}
-            onClick={() => dispatch(setViewMode('map'))}
-          >
-            <LucideMap aria-hidden />
-            지도
-          </SegmentedBtn>
-          <SegmentedBtn
-            role="tab"
-            aria-selected={viewMode === 'list'}
-            $active={viewMode === 'list'}
-            onClick={() => dispatch(setViewMode('list'))}
-          >
-            <List aria-hidden />
-            목록
-            {cafes.length > 0 && <SegmentedCount>{cafes.length}</SegmentedCount>}
-          </SegmentedBtn>
-        </Segmented>
+      {/* Segmented(지도/목록) + 정렬 — T7-B4: PC 에서는 Toolbar 전체 미렌더.
+          Sort 는 ListPanel 헤더로 이관, Provider 토글은 MapArea 우하단 floating. */}
+      {!isDesktop && (
+        <Toolbar>
+          <Segmented role="tablist" aria-label="보기 전환">
+            <SegmentedBtn
+              role="tab"
+              aria-selected={viewMode === 'map'}
+              $active={viewMode === 'map'}
+              onClick={() => dispatch(setViewMode('map'))}
+            >
+              <LucideMap aria-hidden />
+              지도
+            </SegmentedBtn>
+            <SegmentedBtn
+              role="tab"
+              aria-selected={viewMode === 'list'}
+              $active={viewMode === 'list'}
+              onClick={() => dispatch(setViewMode('list'))}
+            >
+              <List aria-hidden />
+              목록
+              {cafes.length > 0 && <SegmentedCount>{cafes.length}</SegmentedCount>}
+            </SegmentedBtn>
+          </Segmented>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <MapProviderToggle />
-          <SortWrap ref={sortRef}>
-            <SortBtn type="button" onClick={() => setSortOpen((v) => !v)}>
-              <ArrowDownUp aria-hidden />
-              {SORT_OPTIONS.find((o) => o.key === filters.sort)?.label ?? '거리순'}
-              <ChevronDown size={12} />
-            </SortBtn>
-            <SortMenu $open={sortOpen} role="menu">
-              {SORT_OPTIONS.map((option) => (
-                <li key={option.key}>
-                  <SortOption
-                    role="menuitemradio"
-                    aria-checked={filters.sort === option.key}
-                    $active={filters.sort === option.key}
-                    onClick={() => {
-                      dispatch(setSort(option.key));
-                      setSortOpen(false);
-                    }}
-                  >
-                    {option.label}
-                  </SortOption>
-                </li>
-              ))}
-            </SortMenu>
-          </SortWrap>
-        </div>
-      </Toolbar>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <MapProviderToggle />
+            <SortWrap ref={sortRef}>
+              <SortBtn type="button" onClick={() => setSortOpen((v) => !v)}>
+                <ArrowDownUp aria-hidden />
+                {SORT_OPTIONS.find((o) => o.key === filters.sort)?.label ?? '거리순'}
+                <ChevronDown size={12} />
+              </SortBtn>
+              <SortMenu $open={sortOpen} role="menu">
+                {SORT_OPTIONS.map((option) => (
+                  <li key={option.key}>
+                    <SortOption
+                      role="menuitemradio"
+                      aria-checked={filters.sort === option.key}
+                      $active={filters.sort === option.key}
+                      onClick={() => {
+                        dispatch(setSort(option.key));
+                        setSortOpen(false);
+                      }}
+                    >
+                      {option.label}
+                    </SortOption>
+                  </li>
+                ))}
+              </SortMenu>
+            </SortWrap>
+          </div>
+        </Toolbar>
+      )}
 
       {/* 메인 영역 */}
       <MainArea>
@@ -363,6 +369,13 @@ export function MapClient() {
             loading={isFetching}
             onClick={handleResearchArea}
           />
+          {/* T7-B4: PC 에서만 MapProviderToggle 을 MapArea 우하단 floating.
+              Tablet/Mobile 은 Toolbar 내부 instance (위) 가 담당. */}
+          {isDesktop && (
+            <MapProviderToggleFloating>
+              <MapProviderToggle />
+            </MapProviderToggleFloating>
+          )}
         </MapArea>
 
         {/* 카페 목록 패널 */}
@@ -371,6 +384,33 @@ export function MapClient() {
             <ListCount>
               {isLoading ? '검색 중...' : isError ? '검색 실패' : isFetching ? `카페 ${cafes.length}개 (업데이트 중...)` : `카페 ${cafes.length}개`}
             </ListCount>
+            {/* T7-B4: PC 에서 Sort 드롭다운을 ListHeader 로 이관 (Toolbar 제거 대응). */}
+            {isDesktop && (
+              <SortWrap ref={sortRef}>
+                <SortBtn type="button" onClick={() => setSortOpen((v) => !v)}>
+                  <ArrowDownUp aria-hidden />
+                  {SORT_OPTIONS.find((o) => o.key === filters.sort)?.label ?? '거리순'}
+                  <ChevronDown size={12} />
+                </SortBtn>
+                <SortMenu $open={sortOpen} role="menu">
+                  {SORT_OPTIONS.map((option) => (
+                    <li key={option.key}>
+                      <SortOption
+                        role="menuitemradio"
+                        aria-checked={filters.sort === option.key}
+                        $active={filters.sort === option.key}
+                        onClick={() => {
+                          dispatch(setSort(option.key));
+                          setSortOpen(false);
+                        }}
+                      >
+                        {option.label}
+                      </SortOption>
+                    </li>
+                  ))}
+                </SortMenu>
+              </SortWrap>
+            )}
           </ListHeader>
           <ListInner>
             {isLoading ? (
