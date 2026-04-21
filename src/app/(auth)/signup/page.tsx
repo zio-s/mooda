@@ -5,26 +5,29 @@ import { signIn } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Coffee } from 'lucide-react';
+import { toast } from 'sonner';
 import { PATHS } from '@/constants/paths';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Coffee } from 'lucide-react';
-import { toast } from 'sonner';
 import {
   PageWrapper,
   FormCard,
+  BrandBand,
   CardHeader,
   LogoWrapper,
   CardTitle,
   CardDesc,
   CardBody,
+  KakaoButton,
+  OrDivider,
   Form,
   Field,
   ErrorText,
   FooterText,
   FooterLink,
-} from './page.styles';
+} from '../_shared.styles';
 
 const schema = z
   .object({
@@ -74,22 +77,45 @@ export default function SignupPage() {
     }
   }
 
+  async function handleKakaoSignup() {
+    await signIn('kakao', { callbackUrl: PATHS.Map });
+  }
+
   return (
     <PageWrapper>
       <FormCard>
+        <BrandBand />
         <CardHeader>
-          <LogoWrapper>
-            <Coffee size={32} />
+          <LogoWrapper aria-hidden>
+            <Coffee size={28} />
           </LogoWrapper>
-          <CardTitle>회원가입</CardTitle>
-          <CardDesc>Mooda 계정을 만들어보세요</CardDesc>
+          <CardTitle>Mooda 시작하기</CardTitle>
+          <CardDesc>30초면 계정 생성이 완료돼요</CardDesc>
         </CardHeader>
+
         <CardBody>
+          <KakaoButton type="button" onClick={handleKakaoSignup}>
+            카카오로 빠르게 가입
+          </KakaoButton>
+
+          <OrDivider>또는</OrDivider>
+
           <Form onSubmit={handleSubmit(onSubmit)}>
             <Field>
               <Label htmlFor="name">이름</Label>
-              <Input id="name" placeholder="홍길동" {...register('name')} />
-              {errors.name && <ErrorText>{errors.name.message}</ErrorText>}
+              <Input
+                id="name"
+                placeholder="홍길동"
+                autoComplete="name"
+                aria-invalid={!!errors.name}
+                aria-describedby={errors.name ? 'name-error' : undefined}
+                {...register('name')}
+              />
+              {errors.name && (
+                <ErrorText id="name-error" role="alert">
+                  {errors.name.message}
+                </ErrorText>
+              )}
             </Field>
             <Field>
               <Label htmlFor="email">이메일</Label>
@@ -97,9 +123,16 @@ export default function SignupPage() {
                 id="email"
                 type="email"
                 placeholder="hello@example.com"
+                autoComplete="email"
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? 'email-error' : undefined}
                 {...register('email')}
               />
-              {errors.email && <ErrorText>{errors.email.message}</ErrorText>}
+              {errors.email && (
+                <ErrorText id="email-error" role="alert">
+                  {errors.email.message}
+                </ErrorText>
+              )}
             </Field>
             <Field>
               <Label htmlFor="password">비밀번호</Label>
@@ -107,9 +140,16 @@ export default function SignupPage() {
                 id="password"
                 type="password"
                 placeholder="••••••••"
+                autoComplete="new-password"
+                aria-invalid={!!errors.password}
+                aria-describedby={errors.password ? 'password-error' : undefined}
                 {...register('password')}
               />
-              {errors.password && <ErrorText>{errors.password.message}</ErrorText>}
+              {errors.password && (
+                <ErrorText id="password-error" role="alert">
+                  {errors.password.message}
+                </ErrorText>
+              )}
             </Field>
             <Field>
               <Label htmlFor="passwordConfirm">비밀번호 확인</Label>
@@ -117,14 +157,21 @@ export default function SignupPage() {
                 id="passwordConfirm"
                 type="password"
                 placeholder="••••••••"
+                autoComplete="new-password"
+                aria-invalid={!!errors.passwordConfirm}
+                aria-describedby={
+                  errors.passwordConfirm ? 'passwordConfirm-error' : undefined
+                }
                 {...register('passwordConfirm')}
               />
               {errors.passwordConfirm && (
-                <ErrorText>{errors.passwordConfirm.message}</ErrorText>
+                <ErrorText id="passwordConfirm-error" role="alert">
+                  {errors.passwordConfirm.message}
+                </ErrorText>
               )}
             </Field>
-            <Button type="submit" disabled={loading} style={{ width: '100%' }}>
-              {loading ? '가입 중...' : '회원가입'}
+            <Button type="submit" disabled={loading} fullWidth>
+              {loading ? '가입 중…' : '회원가입'}
             </Button>
           </Form>
 
