@@ -21,24 +21,20 @@ export const CardLink = styled(Link)`
 
 export const CardWrapper = styled.article`
   border-radius: ${theme.borderRadius.lg};
-  border: none;
+  border: 1px solid transparent;
   background: ${theme.colors.bgCard};
   overflow: hidden;
-  box-shadow: ${theme.shadows.card};
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: ${theme.shadows.sm};
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
   cursor: pointer;
 
-  /* pointer: fine 까지 요구해 iPad 등 터치 디바이스의 hover 에뮬레이션을
-     배제. 모바일에서 탭 → 잠깐 올라갔다 내려오는 잔상 방지. */
+  /* transform / translate / scale 제거. 호버는 shadow 강조 + 테두리로만
+     표현 → 이미지 줌 없음, 카드 들썩임 없음, jank 최소. */
   @media (hover: hover) and (pointer: fine) {
     ${CardLink}:hover & {
-      transform: translateY(-2px);
-      box-shadow: ${theme.shadows.cardHover};
+      box-shadow: ${theme.shadows.md};
+      border-color: ${theme.colors.border};
     }
-  }
-
-  ${CardLink}:active & {
-    transform: translateY(0);
   }
 `;
 
@@ -46,15 +42,17 @@ export const PhotoArea = styled.div<{ $compact?: boolean }>`
   position: relative;
   overflow: hidden;
   background: ${theme.colors.bgMuted};
-  height: ${({ $compact }) => ($compact ? '128px' : '176px')};
+  /* 고정 비율로 고정 — 이미지 소스 비율이 다양해도 카드 레이아웃이 튀지 않음.
+     16:9에 가까운 카드 썸네일 비율. $compact(즐겨찾기 카드)만 짧게. */
+  aspect-ratio: ${({ $compact }) => ($compact ? '16 / 9' : '5 / 3')};
+  width: 100%;
 
-  img {
+  /* Next/Image fill일 때 내부 img가 position:absolute + inset:0. object-fit
+     cover가 제대로 먹도록 명시. 호버 스케일 제거(위 CardWrapper와 동일 이유). */
+  & > img,
+  & > span > img {
     object-fit: cover;
-    transition: transform 0.3s ease;
-  }
-
-  ${CardWrapper}:hover & img {
-    transform: scale(1.05);
+    object-position: center;
   }
 `;
 
