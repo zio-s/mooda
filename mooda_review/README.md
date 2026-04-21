@@ -31,7 +31,8 @@
 | Phase 4 (프로필 허브) | ✅ 완료 (커밋 `9642f97`~`8929ee0`) |
 | Phase 5 (로그인/가입) | ✅ 완료 (커밋 `ee1d155`~`3a66222`) |
 | Phase 6 (이모지 제거) | ✅ 완료 (커밋 `cf6f379`~`d938024`) |
-| 🔴 BUG-MAP (지도 렌더 깨짐) | ✅ 코드 수정 완료 (커밋 `5e91180`) · 사용자 실기 QA 대기 |
+| 🟡 BUG-MAP (지도 렌더 깨짐) | ✅ 수정 `5e91180` · ✅ 로컬 Chrome 재현 없음 · ⏳ 재발 예방 A2/A3/A4 · ⏳ 실기 QA |
+| BUG-SEARCH (button 중첩 hydration) | ✅ 완료 (커밋 `605b856`) · BUG-SEARCH-02 전수 스캔 0건 |
 | P7-A (데이터 레이어 클린업) | ⏳ 대기 |
 | Phase 7 시나리오 (P7-B/C/D/E/F) | ❓ 사용자 결정 대기 |
 
@@ -41,19 +42,43 @@
 
 ## 🎯 다음 작업 (우선순위 순)
 
-### 🔴 **1순위** ✅ 완료 (커밋 `5e91180`, 2026-04-21) — BUG-MAP Hotfix
+### 🟢 **완료 기록** — BUG-SEARCH (커밋 `605b856`, 2026-04-21)
 
-- **지시 문서**: [`10_bug_map_resize.md`](./10_bug_map_resize.md)
-- **범위**: `PART 3` 의 `T-BUG-MAP-01` (NaverCafeMap) + `T-BUG-MAP-02` (KakaoCafeMap)
-- **완료 내용**:
-  - Naver/Kakao 어댑터에 `visibilitychange` + `pageshow(persisted)` + `ResizeObserver(rAF throttle)` 3개 useEffect 추가
-  - Naver: `mapRef.current?.refresh(true)` — 기존 `containerRef`/`mapRef` 재사용
-  - Kakao: `mapRef`/`containerRef`/`centerRef` 신설, `handleCreate` 에서 ref 할당, 외곽 `<div ref={containerRef}>` 래핑, `refreshMapView()` 에서 `relayout() → setCenter(centerRef.current)` 로 중심점 복원
-  - `tsc --noEmit` + `pnpm build` 통과
-- **잔여**: `T-BUG-MAP-03` (provider 토글 `key` prop 강제 리마운트) 은 실기 재현 시 착수 보류
-- **실기 QA**: 사용자가 iOS Safari / Android Chrome / 데스크톱 × Kakao/Naver 매트릭스 확인 필요 (10 리포트 PART 4)
+- `11_bug_search_nested_button.md` PART 3 의 T-BUG-SEARCH-01 + 02
+- `Row = styled.button` → `styled.div` + cursor/user-select/-webkit-tap-highlight + `:focus-visible` inset box-shadow + `[aria-disabled]` 상태 스타일
+- SearchClient 3개 `<Row>` 모두 `role="button"` + `tabIndex` + `onKeyDown(Enter/Space preventDefault)` 추가
+- Kakao 결과 Row 의 `disabled` 프로퍼티(button 전용) 는 `aria-disabled` + onClick/onKeyDown 가드 + `tabIndex={-1}` 로 등가 처리
+- `RowRemove` 는 그대로 native `<button>` 유지
+- T-BUG-SEARCH-02: `styled.button` 전수 스캔 결과 native button-in-button **0건**. CardLink(`<a>`) + FavoriteBtn(`<button>`) 은 doc 명시대로 scope 밖
+- **DoD QA (실기)**: Console hydration error 제로 / Row Enter·Space / Tab ring / iOS tap highlight 등 사용자 확인 범위
 
-### 🟡 **2순위** — P7-A 데이터 레이어 클린업 (0.5일)
+### 🟡 **2순위** — BUG-MAP 재발 예방 강화 (코드 수정, ~1시간)
+
+> 로컬 Chrome 에서는 재현 없음. 실기 실측 전에 **특정 상황 재발 가능성 낮추는 예방 패치 3건**.
+
+- **지시 문서**: [`10_bug_map_resize.md`](./10_bug_map_resize.md) `PART 8`
+- **범위**: `BUG-MAP-A2` + `BUG-MAP-A3` + `BUG-MAP-A4` (A1/A5/A6/A7 은 조사·관찰로 본 README 범위 밖)
+- **작업 요약**:
+  - **A2** `mapRef` 미할당 상태 refresh 큐잉 — `pendingRefreshRef` + map init 후 flush. Naver · Kakao 양쪽 적용
+  - **A3** ResizeObserver 가 container 0×0 에서 refresh 건너뛰도록 — `contentRect.width/height < 10` 스킵
+  - **A4** Provider 토글 시 `key={provider}` prop 으로 어댑터 강제 리마운트 (이전 T-BUG-MAP-03 승격)
+- **커밋 메시지**:
+  ```
+  fix(map): SDK 초기화 전 visibility 이벤트 큐잉 (BUG-MAP-A2)
+  fix(map): ResizeObserver 가 container 0×0 에서 refresh 건너뛰도록 (BUG-MAP-A3)
+  fix(map): provider 토글 시 key prop 으로 어댑터 강제 리마운트 (BUG-MAP-A4)
+  ```
+- **PR 분리**: 3개 커밋, 단일 PR 권장 (전부 map 경로 동일)
+- **DoD**: typecheck + build 통과, `/map` 에서 provider 토글 + 탭 전환 회귀 확인
+
+### 🟢 **완료 기록** — BUG-MAP-01/02 (커밋 `5e91180`, 2026-04-21)
+
+- `10_bug_map_resize.md` PART 3 의 T-BUG-MAP-01/02
+- Naver/Kakao 어댑터에 visibilitychange + pageshow(persisted) + ResizeObserver(rAF throttle) 3개 useEffect
+- Kakao: mapRef/containerRef/centerRef 신설, handleCreate ref 할당, 외곽 div 래핑, refreshMapView() relayout + setCenter 로 중심 복원
+- **실기 QA 대기**: iOS Safari / Android Chrome / 데스크톱 × Kakao/Naver 매트릭스 — **사용자 작업, Claude Code 범위 밖**
+
+### 🔵 **3순위** — P7-A 데이터 레이어 클린업 (0.5일)
 
 - **지시 문서**: [`09_post_phase6_qa.md`](./09_post_phase6_qa.md)
 - **범위**: `PART 4` 의 `T7-1` + `T7-2` (T7-3 은 사용자 결정 대기로 제외)
@@ -67,7 +92,7 @@
   ```
 - **T7-3** (Prisma schema `Mood.emoji` 컬럼 drop) 은 **사용자 결정 대기**. 지금 처리 금지.
 
-### ⏸ **3순위** — Phase 7 착수 (시나리오 선택 후)
+### ⏸ **4순위** — Phase 7 착수 (시나리오 선택 후)
 
 - **상태**: 시나리오(1/2/3) 를 사용자가 선택하면 Claude Design 이 `phase_3_5/PHASE_7_*.md` 를 작성합니다.
 - **Claude Code 는 현재는 진입 금지**. 1·2순위 완료 후 새 지시서가 커밋되면 그때 이어서 작업.
@@ -85,7 +110,8 @@
 | `07_comprehensive_qa_v2.md` | 전수 재점검 (N1-N17) — **처리됨** |
 | `08_next_iteration_v3.md` | v3 이후 재설계 지시 (V3-01~12) + Phase 3~6 완료 기록 |
 | `09_post_phase6_qa.md` | **Phase 6 검증 + P6-06~08 후속 + Phase 7 후보(A~F)** |
-| `10_bug_map_resize.md` | 🔴 **Critical bug 리포트 + T-BUG-MAP-01/02/03 실행 가이드** |
+| `10_bug_map_resize.md` | ✅ **Critical bug 리포트 + T-BUG-MAP-01/02/03 실행 가이드** (코드 완료, 실기 QA 대기) |
+| `11_bug_search_nested_button.md` | 🔴 **Critical bug — button 중첩 hydration + T-BUG-SEARCH-01/02 실행 가이드** |
 | `phase_3_5/README.md` | Phase 3~6 가이드 폴더 index |
 | `phase_3_5/PHASE_{3,4,5,6}_*.md` | 각 Phase 상세 가이드 (완료) |
 
@@ -111,10 +137,11 @@
 - [ ] StarRatingInput 별점 hover/tap 시 lucide Star 동작
 - [ ] 카페 이미지 없을 때 `<Coffee/>` placeholder 정상
 
-### BUG-MAP Hotfix 후 (10_bug_map_resize.md PART 4 참조)
+### BUG-MAP Hotfix 후 (10_bug_map_resize.md PART 4 + PART 8 참조)
 - [ ] `/map` → 다른 브라우저 탭 전환 → 5초 대기 → 복귀 → **전체 영역 정상 렌더**
 - [ ] `/map` → `/profile` 이동 → 뒤로가기 복귀 → **정상**
 - [ ] 카카오 · 네이버 양쪽 모두 검증
+- [ ] **재발 시 로그 포맷** (PART 8 BUG-MAP-A1): 디바이스/브라우저/재현순서/"한 번 더 전환 시 정상 여부" 기록
 
 ---
 

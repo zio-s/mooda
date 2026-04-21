@@ -91,11 +91,23 @@
 - [ ] **P7-E** 관리자 페이지 리디자인 (2일)
 - [ ] **P7-F** view-transition 페이지 전환 (0.5일)
 
-### J. 🔴 Hotfix (10 리포트 참조 — Release blocker)
-- [x] **BUG-MAP-01** `NaverCafeMap` visibilitychange + pageshow + ResizeObserver 추가 (40분) (커밋 `5e91180`)
-- [x] **BUG-MAP-02** `KakaoCafeMap` mapRef + containerRef 신설 + relayout 핸들러 추가 (1시간) (커밋 `5e91180`)
-- [ ] **BUG-MAP-03** Provider 토글 시 key prop 강제 리마운트 (옵션, 재현 시 착수)
-- [ ] 실기 매트릭스 QA — iOS Safari / Android Chrome / 데스크톱 × Kakao/Naver (사용자 실측 대기)
+### J. Hotfix (10·11 리포트 참조)
+
+#### J-1. BUG-MAP (10 리포트)
+- [x] **BUG-MAP-01** `NaverCafeMap` visibilitychange + pageshow + ResizeObserver 추가 (커밋 `5e91180`)
+- [x] **BUG-MAP-02** `KakaoCafeMap` mapRef + containerRef 신설 + relayout 핸들러 (커밋 `5e91180`)
+- [x] **BUG-MAP 로컬 Chrome 재현 없음** (사용자 확인 2026-04-21)
+- [ ] **BUG-MAP-A2** `mapRef` 미할당 상태 refresh 큐잉 (pendingRefreshRef · 30분 · Naver/Kakao 양쪽)
+- [ ] **BUG-MAP-A3** ResizeObserver 가 container 0×0 에서 refresh 건너뛰기 (15분)
+- [ ] **BUG-MAP-A4** Provider 토글 `key` prop 강제 리마운트 (20분, 기존 BUG-MAP-03 승격)
+- [ ] **BUG-MAP-A5** (조사) SW 지도 타일 캐시 정책 검토 — `public/sw.js` / Kakao·Naver 타일 URL
+- [ ] **BUG-MAP-A7** (조사) React Strict Mode 이중 useEffect 발화 여부 DevTools 로 확인
+- [ ] (실기 QA) iOS Safari / Android Chrome / 데스크톱 × Kakao/Naver — 사용자 실측 대기
+- [ ] (실기 QA) **BUG-MAP-A1** 재현 로그 수집 — 디바이스/브라우저/순서/"한 번 더 전환 시 정상 여부"
+
+#### J-2. BUG-SEARCH (11 리포트)
+- [x] **BUG-SEARCH-01** `/search` Row를 `<div role="button">` 로 전환 (40분) (커밋 `605b856`)
+- [x] **BUG-SEARCH-02** styled.button 중첩 전수 스캔 0건 확인 (20분) — native button-in-button 0건. CardLink(a)+FavoriteBtn(button) 은 doc 명시 scope 밖(분리된 a11y 채무)
 
 ---
 

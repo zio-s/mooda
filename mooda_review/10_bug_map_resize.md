@@ -1,8 +1,13 @@
-# 🔴 Critical Bug — 지도 탭/페이지 이동 후 복귀 시 렌더 깨짐
+# 🟡 지도 탭/페이지 이동 후 복귀 시 렌더 깨짐
 
 > **기준 시각**: 2026-04-21, Phase 6 완료 직후 실기 실측 중 발견
 > **영향 범위**: `/map` 핵심 경로 — 카카오맵 & 네이버지도 양쪽 모두
-> **심각도**: 🔴 **Critical · Release blocker** (앱 핵심 기능 사용 불가 상태 유발)
+> **초기 심각도**: 🔴 Critical → **현 심각도: 🟡 Medium (로컬 크롬 재현 안 됨, 특정 상황 재발 가능성)**
+> **상태 (2026-04-21 업데이트)**:
+> - ✅ BUG-MAP-01/02 코드 수정 (커밋 `5e91180`)
+> - ✅ 로컬 Chrome 서버에서 재현 없음 (사용자 확인)
+> - ⏳ **특정 상황 재발 분석 — PART 8 체크리스트**
+> - ⏳ 실기 매트릭스 QA (iOS Safari / Android Chrome / 데스크톱)
 
 ---
 
@@ -243,12 +248,156 @@ key 가 바뀌면 React 가 unmount → remount 강제 → 이전 SDK 인스턴�
 **즉시 처리 권장**. 사용자 핵심 경로에서 발생하고 **되돌리기 어려운 UX 실패** (새로고침 외 복구 수단 없음).
 
 ### 작업 순서
-1. **T-BUG-MAP-01** (Naver · 40분) — ref 이미 있으니 가장 빠름
-2. **T-BUG-MAP-02** (Kakao · 1시간) — ref 구조 변경 포함
-3. **T-BUG-MAP-03** (토글 · 20분, 옵션) — 실기 재현되면 착수
-4. 실기 매트릭스 QA (1시간)
+1. **T-BUG-MAP-01** (Naver · 40분) — ref 이미 있으니 가장 빠름 ✅ 완료 `5e91180`
+2. **T-BUG-MAP-02** (Kakao · 1시간) — ref 구조 변경 포함 ✅ 완료 `5e91180`
+3. **T-BUG-MAP-03** (토글 · 20분, 옵션) — 실기 재현되면 착수 → PART 8 BUG-MAP-A4 로 이관
+4. 실기 매트릭스 QA (1시간) — 사용자 대기
 
 **총 예상**: 2-3시간. 단독 PR 권장 (`fix(map): resize/visibility 핸들러로 탭 복귀 시 뷰 깨짐 수정`).
 
 ### Phase 7 와의 관계
 이 버그 수정은 **Phase 7 후보(P7-A~F)와 별개**. 현 상태에서 **hotfix 로 선처리** 후 Phase 7 착수 권장.
+
+---
+
+## PART 8 — 🔬 재발 분석 체크리스트 (2026-04-21 추가)
+
+> **배경**: BUG-MAP-01/02 코드 수정 후 **로컬 크롬 서버에서는 재현 안 됨**. 단, 실사용자 리포트는 특정 상황에서만 터질 가능성이 높음. 아래 7개 가설 중 **A2~A4 는 코드 수정으로 예방 강화 가능**, **A1/A5~A7 은 조사·관찰**.
+
+### 🔧 코드 수정 가능 (Claude Code 실행 가능) — "예방 강화" 패치
+
+#### **BUG-MAP-A2** — `mapRef` 미할당 상태 refresh no-op 방어 (30분)
+
+**가설**: SDK 로드 중(useKakaoLoader/Naver SDK) 유저가 탭 전환 → 복귀 시점에 `mapRef.current === null` → `refresh()` no-op → 이후 SDK 가 init 되지만 놓친 visibilitychange 를 복구 못 함.
+
+**증상**: "탭 복귀 직후에는 깨져 있다가 한 번 더 전환하면 정상" — 두 번째 visibilitychange 가 trigger 되면 그제야 refresh 성공.
+
+**파일**: `NaverCafeMap.tsx` · `KakaoCafeMap.tsx`
+
+**수정 패턴** (양쪽 동일 적용):
+```tsx
+const pendingRefreshRef = useRef(false);
+
+// visibilitychange / pageshow / ResizeObserver 핸들러 모두 같은 함수로 통합
+const requestRefresh = useCallback(() => {
+  if (mapRef.current) {
+    // Naver
+    mapRef.current.refresh(true);
+    // 또는 Kakao: refreshMapView()
+  } else {
+    // map 아직 init 전 → 플래그만 세워두고 init 완료 후 flush
+    pendingRefreshRef.current = true;
+  }
+}, []);
+
+// handleCreate (Kakao) 또는 map init 완료 지점 (Naver) 에서 flush:
+useEffect(() => {
+  if (mapReady && pendingRefreshRef.current) {
+    pendingRefreshRef.current = false;
+    mapRef.current?.refresh(true);  // 또는 refreshMapView()
+  }
+}, [mapReady]);
+```
+
+**커밋**: `fix(map): SDK 초기화 전 visibility 이벤트 큐잉 (BUG-MAP-A2)`
+
+---
+
+#### **BUG-MAP-A3** — Container 0×0 상태 refresh 스킵 (15분)
+
+**가설**: CafeMapWrapper 는 `dynamic({ ssr: false })` 로 클라 마운트 후 로드. 초기 렌더 한 프레임 중 container 크기가 0×0 일 수 있음. ResizeObserver 가 그 순간 refresh 호출하면 SDK 내부 상태가 왜곡될 가능성.
+
+**파일**: `NaverCafeMap.tsx:267-282` · `KakaoCafeMap.tsx` 동등 위치
+
+**수정 패턴**:
+```tsx
+const obs = new ResizeObserver((entries) => {
+  const entry = entries[0];
+  if (!entry) return;
+  const { width, height } = entry.contentRect;
+  // 0×0 스킵 — SDK 내부 canvas 가 유효하지 않은 크기로 갱신되는 것 방지
+  if (width < 10 || height < 10) return;
+  if (scheduled) return;
+  scheduled = true;
+  requestAnimationFrame(() => {
+    scheduled = false;
+    mapRef.current?.refresh(true);
+  });
+});
+```
+
+**커밋**: `fix(map): ResizeObserver 가 container 0×0 에서 refresh 건너뛰도록 (BUG-MAP-A3)`
+
+---
+
+#### **BUG-MAP-A4** — Provider 토글 시 `key` prop 강제 리마운트 (20분, 기존 T-BUG-MAP-03 승격)
+
+**가설**: 카카오 ↔ 네이버 토글 시 이전 어댑터가 unmount 되면서 destroy 호출 전에 새 어댑터가 mount → 이전 SDK 인스턴스가 DOM 에 일시적으로 overlap. 그 상태에서 탭 전환 → 복귀 시 어느 인스턴스가 refresh 되는지 불확정.
+
+**파일**: `src/components/map/CafeMap.tsx` (또는 어댑터 선택 스위치 위치)
+
+**수정 패턴**:
+```tsx
+const provider = useAppSelector((s) => s.map.provider);
+return provider === 'naver'
+  ? <NaverCafeMap key="naver" {...props} />
+  : <KakaoCafeMap key="kakao" {...props} />;
+```
+
+`key` 가 바뀌면 React 가 기존 tree unmount + 새 tree mount 를 **동기 순서** 로 보장 → 이전 SDK 의 `destroy()` 가 새 SDK 의 `new Map()` 전에 완료.
+
+**커밋**: `fix(map): provider 토글 시 key prop 으로 어댑터 강제 리마운트 (BUG-MAP-A4)`
+
+---
+
+### 🔬 조사·관찰 필요 (코드 수정 불확실 · 사용자 보고 의존)
+
+#### **BUG-MAP-A1** — 재현 시나리오 수집
+
+재현된 기기/브라우저/순서/타이밍을 구체적으로 잡기 전까진 나머지 가설 검증 불가.
+
+**관찰 포맷** (실기 QA 시 기록):
+```
+- 디바이스: iPhone 15 Pro (iOS 17.x) / Galaxy S22 (Android 14) / macOS Safari …
+- 브라우저: 네이티브 Safari / 카톡 인앱 WebView / Chrome …
+- 지도 provider: Kakao / Naver
+- 재현 순서:
+  1) /map 진입 → 지도 로드 완료 확인
+  2) [다른 탭 클릭 / 홈 버튼 / /profile 이동 / 앱 백그라운드 N초]
+  3) /map 복귀
+- 현상: 좌상단만 렌더 / 전체 흰 배경 / 타일만 깨짐 / 마커 위치 어긋남
+- 새로고침 시 정상: Y/N
+- 한 번 더 탭 전환 후 정상: Y/N  ← A2 가설 검증 포인트
+```
+
+#### **BUG-MAP-A5** — SW 타일 캐시 정책 검토
+
+**의심**: `public/sw.js` (또는 `mooda-v3-*` 전략) 가 지도 타일 URL 을 캐시하면, 오래된 타일이 반환되면서 새 크기의 canvas 와 미스매치 → 깨진 것처럼 보일 가능성.
+
+**조사 대상**:
+- Kakao/Naver 타일 URL 패턴 (`map*.daumcdn.net`, `nrbe.map.naver.net` 등)
+- 현재 SW 가 이 URL 을 intercept 하는지
+- 한다면 캐시 TTL 이 얼마인지
+
+**기대 결과**: 타일 URL 은 SW 캐시 배제 (`NetworkOnly`) 또는 짧은 TTL (<5분) 확인.
+
+#### **BUG-MAP-A6** — BottomSheet 열린 상태 복귀 UX 오해 여부
+
+바텀시트가 열린 채 탭 전환 → 복귀 시 지도는 정상 렌더됐지만 바텀시트가 화면 70% 차지 → 유저 눈엔 "깨진 것처럼" 보일 수 있음.
+
+**조사**: 이건 버그 아님. 설명/QA 가이드라인 보강 필요 여부만.
+
+#### **BUG-MAP-A7** — React Strict Mode 이중 useEffect 발화
+
+Next.js 개발 모드는 strict mode 로 useEffect 2회 실행. 리스너 cleanup 이 완전하지 않으면 중복 리스너 → refresh 중복 호출.
+
+**조사**:
+- 3개 useEffect cleanup 전부 `removeEventListener` 확인 (현 코드 OK)
+- React DevTools Profiler 로 Naver/KakaoCafeMap 의 useEffect 실행 횟수 확인
+
+### 📋 재발 분석 작업 순서 (권장)
+
+1. **A2·A3 먼저 코드 수정** — 로컬 재현 없이도 합리적 방어. 실기 QA 전에 묶어서 배포
+2. **A4 는 실기 재현 확인 후** — provider 토글 관련 증상이 있다면 착수
+3. **A5 는 SW 코드 리뷰** — 단독 조사. 영향 있으면 별도 hotfix
+4. **A1·A6·A7 은 실기 QA 와 병행** — 재현 로그 수집 → 위 가설 중 어디와 일치하는지 매칭
