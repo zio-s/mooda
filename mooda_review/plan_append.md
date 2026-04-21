@@ -72,6 +72,31 @@
 - [ ] **D5** 분위기 태그 "인기순" vs "카테고리별" 토글
 - [ ] **D1** Naver 어댑터 클러스터러 v2
 
+### G. Phase 3-6 실구현 완료 (Claude Design 지휘 · Claude Code 구현)
+- [x] **Phase 3** — 토큰 잔여물 제거 + Polish (T3-1~8, 커밋 `8dbc657`~`dfaec5f`)
+- [x] **Phase 4** — 프로필 허브 + Header 조건부 + `/api/users/me/stats` (T4-1~4, 커밋 `9642f97`~`8929ee0`)
+- [x] **Phase 5** — 로그인/회원가입 리디자인 + toast action (T5-1~4, 커밋 `ee1d155`~`3a66222`)
+- [x] **Phase 6** — UI 이모지 전면 제거 + 카테고리 색 시스템 (T6-1~6, 커밋 `cf6f379`~`d938024`)
+
+### H. Phase 6 후속 (P7-A 후보 · 09 리포트 PART 1 참조)
+- [ ] **P6-06** `src/types/index.ts:10-16` `Mood` 인터페이스 삭제(사용처 0) 또는 재정의
+- [ ] **P6-07** `prisma/schema.prisma:117` `Mood.emoji` 컬럼 유지/제거 결정
+- [ ] **P6-08** `prisma/seed.ts` + `scripts/seed-cafes.ts` emoji 필드 제거 + seed 일원화 (17 vs 54 불일치 해소)
+
+### I. Phase 7 후보 (09 리포트 PART 3)
+- [ ] **P7-A** Phase 6 후속 클린업 (H 섹션, 0.5일)
+- [ ] **P7-B** D2 리뷰 작성 플로우 재설계 (3-5일, **추천 1순위**)
+- [ ] **P7-C** 다크모드 토큰 분기 (1.5일)
+- [ ] **P7-D** 관측 지표 설계 (1일)
+- [ ] **P7-E** 관리자 페이지 리디자인 (2일)
+- [ ] **P7-F** view-transition 페이지 전환 (0.5일)
+
+### J. 🔴 Hotfix (10 리포트 참조 — Release blocker)
+- [x] **BUG-MAP-01** `NaverCafeMap` visibilitychange + pageshow + ResizeObserver 추가 (40분) (커밋 `5e91180`)
+- [x] **BUG-MAP-02** `KakaoCafeMap` mapRef + containerRef 신설 + relayout 핸들러 추가 (1시간) (커밋 `5e91180`)
+- [ ] **BUG-MAP-03** Provider 토글 시 key prop 강제 리마운트 (옵션, 재현 시 착수)
+- [ ] 실기 매트릭스 QA — iOS Safari / Android Chrome / 데스크톱 × Kakao/Naver (사용자 실측 대기)
+
 ---
 
-**Exit**: A+B 완료 → 릴리즈 가능. C는 스프린트 1~2일 추가 투자 시 완성도 A+ 도달. D+E+F는 릴리즈 후 지속.
+**Exit**: A+B 완료 → 릴리즈 가능. C는 스프린트 1~2일 추가 투자 시 완성도 A+ 도달. D+E+F는 릴리즈 후 지속. **G 완료 = Phase 3-6 종료**. H·I 는 다음 스프린트 결정 대기.
