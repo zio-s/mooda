@@ -27,6 +27,7 @@ import { dirname, join } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
+import { batchFetchDimensions, type RemoteImageResult } from './lib/image-size';
 
 const isSupabase = (process.env.DATABASE_URL ?? '').includes('supabase.com');
 const pool = new Pool({
@@ -40,91 +41,7 @@ const SAMPLE_ARG = process.argv.find((a) => a.startsWith('--sample='));
 const SAMPLE_SIZE = SAMPLE_ARG ? Math.max(1, parseInt(SAMPLE_ARG.split('=')[1], 10)) : 30;
 const JSON_PATH_ARG = process.argv.find((a) => a.startsWith('--json-path='));
 
-const CONCURRENCY = 5;
-const TIMEOUT_MS = 10000;
-const RANGE_BYTES = 65535;
-
-// ─── 이미지 파서 (check-photos.ts 에서 복사, T-02 진입 시 lib/ 로 통합) ──
-type ImageFormat = 'jpeg' | 'png' | 'webp' | 'gif' | 'unknown';
-
-function parseJpeg(buf: Uint8Array): { width: number; height: number } | null {
-  if (buf.length < 4 || buf[0] !== 0xff || buf[1] !== 0xd8) return null;
-  let i = 2;
-  while (i < buf.length - 8) {
-    if (buf[i] !== 0xff) return null;
-    const marker = buf[i + 1];
-    if (
-      (marker >= 0xc0 && marker <= 0xc3) ||
-      (marker >= 0xc5 && marker <= 0xc7) ||
-      (marker >= 0xc9 && marker <= 0xcb) ||
-      (marker >= 0xcd && marker <= 0xcf)
-    ) {
-      const height = (buf[i + 5] << 8) | buf[i + 6];
-      const width = (buf[i + 7] << 8) | buf[i + 8];
-      if (width > 0 && height > 0) return { width, height };
-      return null;
-    }
-    if (marker === 0xd8 || marker === 0xd9 || (marker >= 0xd0 && marker <= 0xd7)) {
-      i += 2;
-      continue;
-    }
-    const segLen = (buf[i + 2] << 8) | buf[i + 3];
-    if (segLen < 2) return null;
-    i += 2 + segLen;
-  }
-  return null;
-}
-
-function parsePng(buf: Uint8Array): { width: number; height: number } | null {
-  if (buf.length < 24) return null;
-  const sig = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-  for (let i = 0; i < 8; i++) if (buf[i] !== sig[i]) return null;
-  const width = (buf[16] << 24) | (buf[17] << 16) | (buf[18] << 8) | buf[19];
-  const height = (buf[20] << 24) | (buf[21] << 16) | (buf[22] << 8) | buf[23];
-  if (width <= 0 || height <= 0) return null;
-  return { width, height };
-}
-
-function parseWebp(buf: Uint8Array): { width: number; height: number } | null {
-  if (buf.length < 30) return null;
-  if (buf[0] !== 0x52 || buf[1] !== 0x49 || buf[2] !== 0x46 || buf[3] !== 0x46) return null;
-  if (buf[8] !== 0x57 || buf[9] !== 0x45 || buf[10] !== 0x42 || buf[11] !== 0x50) return null;
-  const chunkType = String.fromCharCode(buf[12], buf[13], buf[14], buf[15]);
-  if (chunkType === 'VP8 ') {
-    const width = ((buf[27] << 8) | buf[26]) & 0x3fff;
-    const height = ((buf[29] << 8) | buf[28]) & 0x3fff;
-    if (width > 0 && height > 0) return { width, height };
-  } else if (chunkType === 'VP8L') {
-    const b0 = buf[21], b1 = buf[22], b2 = buf[23], b3 = buf[24];
-    const width = 1 + (((b1 & 0x3f) << 8) | b0);
-    const height = 1 + (((b3 & 0x0f) << 10) | (b2 << 2) | ((b1 >> 6) & 0x03));
-    return { width, height };
-  } else if (chunkType === 'VP8X') {
-    const width = 1 + (buf[24] | (buf[25] << 8) | (buf[26] << 16));
-    const height = 1 + (buf[27] | (buf[28] << 8) | (buf[29] << 16));
-    return { width, height };
-  }
-  return null;
-}
-
-function parseGif(buf: Uint8Array): { width: number; height: number } | null {
-  if (buf.length < 10) return null;
-  if (buf[0] !== 0x47 || buf[1] !== 0x49 || buf[2] !== 0x46) return null;
-  const width = buf[6] | (buf[7] << 8);
-  const height = buf[8] | (buf[9] << 8);
-  if (width <= 0 || height <= 0) return null;
-  return { width, height };
-}
-
-function parseImageSize(
-  buf: Uint8Array,
-): { width: number; height: number; format: ImageFormat } | null {
-  const j = parseJpeg(buf); if (j) return { ...j, format: 'jpeg' };
-  const p = parsePng(buf); if (p) return { ...p, format: 'png' };
-  const w = parseWebp(buf); if (w) return { ...w, format: 'webp' };
-  const g = parseGif(buf); if (g) return { ...g, format: 'gif' };
-  return null;
-}
+// 이미지 해상도 파서 + fetch 는 ./lib/image-size 공용 모듈 사용
 
 // ─── 프록시 → 원본 추출 ─────────────────────────────────────────────────
 /**
@@ -158,82 +75,8 @@ function extractOriginFromProxy(proxyUrl: string): string | null {
   }
 }
 
-// ─── fetch 해상도 ───────────────────────────────────────────────────────
-interface DimResult {
-  url: string;
-  status: number | 'network_error' | 'timeout';
-  contentType: string | null;
-  contentLength: number | null;
-  width: number | null;
-  height: number | null;
-  format: ImageFormat;
-  error?: string;
-}
-
-async function fetchDimension(url: string): Promise<DimResult> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { Range: `bytes=0-${RANGE_BYTES}` },
-    });
-    const contentType = res.headers.get('content-type');
-    if (!res.ok && res.status !== 206) {
-      return {
-        url, status: res.status, contentType, contentLength: null,
-        width: null, height: null, format: 'unknown', error: `http_${res.status}`,
-      };
-    }
-    if (!contentType?.startsWith('image/')) {
-      return {
-        url, status: res.status, contentType, contentLength: null,
-        width: null, height: null, format: 'unknown', error: 'not_image',
-      };
-    }
-    const rangeHeader = res.headers.get('content-range');
-    const totalLength = rangeHeader?.match(/\/(\d+)$/)?.[1];
-    const cl = totalLength
-      ? parseInt(totalLength, 10)
-      : res.headers.get('content-length')
-        ? parseInt(res.headers.get('content-length')!, 10)
-        : null;
-
-    const buffer = new Uint8Array(await res.arrayBuffer());
-    const parsed = parseImageSize(buffer);
-    if (!parsed) {
-      return {
-        url, status: res.status, contentType, contentLength: cl,
-        width: null, height: null, format: 'unknown', error: 'parse_failed',
-      };
-    }
-    return {
-      url, status: res.status, contentType, contentLength: cl,
-      ...parsed,
-    };
-  } catch (err) {
-    const isAbort = (err as Error).name === 'AbortError';
-    return {
-      url,
-      status: isAbort ? 'timeout' : 'network_error',
-      contentType: null, contentLength: null,
-      width: null, height: null, format: 'unknown',
-      error: isAbort ? 'timeout' : 'network_error',
-    };
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-async function batchFetch(urls: string[]): Promise<DimResult[]> {
-  const results: DimResult[] = [];
-  for (let i = 0; i < urls.length; i += CONCURRENCY) {
-    const batch = urls.slice(i, i + CONCURRENCY);
-    const br = await Promise.all(batch.map(fetchDimension));
-    results.push(...br);
-  }
-  return results;
-}
+// batchFetchDimensions — lib 에서 가져다 쓴다. 기존 시그니처와 호환.
+const batchFetch = (urls: string[]) => batchFetchDimensions(urls, 5, { timeoutMs: 10000 });
 
 function pickSample<T>(items: T[], n: number): T[] {
   if (items.length <= n) return items.slice();
@@ -244,8 +87,8 @@ function pickSample<T>(items: T[], n: number): T[] {
 
 // ─── 메인 ───────────────────────────────────────────────────────────────
 interface Comparison {
-  proxy: DimResult;
-  origin: DimResult | null;
+  proxy: RemoteImageResult;
+  origin: RemoteImageResult | null;
   originUrl: string | null;
   improvement: {
     widthDelta: number | null;

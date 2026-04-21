@@ -31,6 +31,7 @@ import { dirname, join } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
+import { batchFetchDimensions, type ImageFormat, type RemoteImageResult } from './lib/image-size';
 
 // ─── 연결 ──────────────────────────────────────────────────────────────
 const isSupabase = (process.env.DATABASE_URL ?? '').includes('supabase.com');
@@ -51,8 +52,6 @@ const JSON_PATH_ARG = process.argv.find((a) => a.startsWith('--json-path='));
 
 const HEAD_CONCURRENCY = 5;
 const HEAD_TIMEOUT_MS = 5000;
-const DIM_TIMEOUT_MS = 10000;
-const DIM_RANGE_BYTES = 65535; // 64KB prefix — 이미지 메타는 헤더에 있음
 
 // ─── 타입 ───────────────────────────────────────────────────────────────
 interface Distribution {
@@ -79,17 +78,6 @@ interface HeadCheckReport {
   okNotImage: number;
   statusDistribution: Record<string, number>;
   failureSamples: Array<{ url: string; status: number | string; contentType: string | null }>;
-}
-
-type ImageFormat = 'jpeg' | 'png' | 'webp' | 'gif' | 'unknown';
-
-interface DimResult {
-  url: string;
-  width: number | null;
-  height: number | null;
-  format: ImageFormat;
-  contentLength: number | null;
-  error?: string;
 }
 
 interface DimReport {
@@ -190,156 +178,7 @@ function categorizeStatus(r: HeadResult): string {
   return String(r.status);
 }
 
-// ─── 이미지 해상도 파서 (의존성 0) ────────────────────────────────────
-// JPEG SOF markers (C0-C3, C5-C7, C9-CB, CD-CF) 에서 width/height 추출.
-// PNG IHDR bytes 16-23. WebP VP8/VP8L/VP8X 청크. GIF logical screen descriptor.
-// Range 요청 64KB 만으로 대부분 이미지 메타 확보 가능.
-
-function parseJpeg(buf: Uint8Array): { width: number; height: number } | null {
-  if (buf.length < 4 || buf[0] !== 0xff || buf[1] !== 0xd8) return null;
-  let i = 2;
-  while (i < buf.length - 8) {
-    if (buf[i] !== 0xff) return null;
-    const marker = buf[i + 1];
-    // SOF markers: C0-C3, C5-C7, C9-CB, CD-CF (baseline / progressive / arithmetic 등)
-    if (
-      (marker >= 0xc0 && marker <= 0xc3) ||
-      (marker >= 0xc5 && marker <= 0xc7) ||
-      (marker >= 0xc9 && marker <= 0xcb) ||
-      (marker >= 0xcd && marker <= 0xcf)
-    ) {
-      const height = (buf[i + 5] << 8) | buf[i + 6];
-      const width = (buf[i + 7] << 8) | buf[i + 8];
-      if (width > 0 && height > 0) return { width, height };
-      return null;
-    }
-    // SOI/EOI/RSTn 은 segment length 없음
-    if (marker === 0xd8 || marker === 0xd9 || (marker >= 0xd0 && marker <= 0xd7)) {
-      i += 2;
-      continue;
-    }
-    const segLen = (buf[i + 2] << 8) | buf[i + 3];
-    if (segLen < 2) return null;
-    i += 2 + segLen;
-  }
-  return null;
-}
-
-function parsePng(buf: Uint8Array): { width: number; height: number } | null {
-  if (buf.length < 24) return null;
-  const sig = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-  for (let i = 0; i < 8; i++) if (buf[i] !== sig[i]) return null;
-  // IHDR chunk: length(4) + "IHDR"(4) at bytes 8-15, width(4) bytes 16-19, height(4) bytes 20-23
-  const width = (buf[16] << 24) | (buf[17] << 16) | (buf[18] << 8) | buf[19];
-  const height = (buf[20] << 24) | (buf[21] << 16) | (buf[22] << 8) | buf[23];
-  if (width <= 0 || height <= 0) return null;
-  return { width, height };
-}
-
-function parseWebp(buf: Uint8Array): { width: number; height: number } | null {
-  if (buf.length < 30) return null;
-  // RIFF....WEBP
-  if (buf[0] !== 0x52 || buf[1] !== 0x49 || buf[2] !== 0x46 || buf[3] !== 0x46) return null;
-  if (buf[8] !== 0x57 || buf[9] !== 0x45 || buf[10] !== 0x42 || buf[11] !== 0x50) return null;
-  const chunkType = String.fromCharCode(buf[12], buf[13], buf[14], buf[15]);
-  if (chunkType === 'VP8 ') {
-    // Simple lossy: width/height little-endian at offset 26/28 (14bit each)
-    const width = ((buf[27] << 8) | buf[26]) & 0x3fff;
-    const height = ((buf[29] << 8) | buf[28]) & 0x3fff;
-    if (width > 0 && height > 0) return { width, height };
-  } else if (chunkType === 'VP8L') {
-    // Lossless: 14bit width-1, 14bit height-1 packed at offset 21-24
-    const b0 = buf[21], b1 = buf[22], b2 = buf[23], b3 = buf[24];
-    const width = 1 + (((b1 & 0x3f) << 8) | b0);
-    const height = 1 + (((b3 & 0x0f) << 10) | (b2 << 2) | ((b1 >> 6) & 0x03));
-    return { width, height };
-  } else if (chunkType === 'VP8X') {
-    // Extended: width-1 LE 3bytes at offset 24, height-1 LE 3bytes at offset 27
-    const width = 1 + (buf[24] | (buf[25] << 8) | (buf[26] << 16));
-    const height = 1 + (buf[27] | (buf[28] << 8) | (buf[29] << 16));
-    return { width, height };
-  }
-  return null;
-}
-
-function parseGif(buf: Uint8Array): { width: number; height: number } | null {
-  if (buf.length < 10) return null;
-  if (buf[0] !== 0x47 || buf[1] !== 0x49 || buf[2] !== 0x46) return null;
-  // Logical screen descriptor: width at 6-7, height at 8-9 (little-endian)
-  const width = buf[6] | (buf[7] << 8);
-  const height = buf[8] | (buf[9] << 8);
-  if (width <= 0 || height <= 0) return null;
-  return { width, height };
-}
-
-function parseImageSize(
-  buf: Uint8Array,
-): { width: number; height: number; format: ImageFormat } | null {
-  const jpeg = parseJpeg(buf);
-  if (jpeg) return { ...jpeg, format: 'jpeg' };
-  const png = parsePng(buf);
-  if (png) return { ...png, format: 'png' };
-  const webp = parseWebp(buf);
-  if (webp) return { ...webp, format: 'webp' };
-  const gif = parseGif(buf);
-  if (gif) return { ...gif, format: 'gif' };
-  return null;
-}
-
-async function fetchDimension(url: string): Promise<DimResult> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), DIM_TIMEOUT_MS);
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { Range: `bytes=0-${DIM_RANGE_BYTES}` },
-    });
-    if (!res.ok && res.status !== 206) {
-      return { url, width: null, height: null, format: 'unknown', contentLength: null, error: `http_${res.status}` };
-    }
-    const contentType = res.headers.get('content-type') ?? '';
-    if (!contentType.startsWith('image/')) {
-      return { url, width: null, height: null, format: 'unknown', contentLength: null, error: 'not_image' };
-    }
-    // Content-Range 헤더로 전체 크기 확보 (206 Partial 일 때)
-    const rangeHeader = res.headers.get('content-range');
-    const totalLength = rangeHeader?.match(/\/(\d+)$/)?.[1];
-    const cl = totalLength
-      ? parseInt(totalLength, 10)
-      : res.headers.get('content-length')
-        ? parseInt(res.headers.get('content-length')!, 10)
-        : null;
-
-    const buffer = new Uint8Array(await res.arrayBuffer());
-    const parsed = parseImageSize(buffer);
-    if (!parsed) {
-      return { url, width: null, height: null, format: 'unknown', contentLength: cl, error: 'parse_failed' };
-    }
-    return { url, ...parsed, contentLength: cl };
-  } catch (err) {
-    const isAbort = (err as Error).name === 'AbortError';
-    return {
-      url,
-      width: null,
-      height: null,
-      format: 'unknown',
-      contentLength: null,
-      error: isAbort ? 'timeout' : 'network_error',
-    };
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-async function batchFetchDimensions(urls: string[]): Promise<DimResult[]> {
-  const results: DimResult[] = [];
-  for (let i = 0; i < urls.length; i += HEAD_CONCURRENCY) {
-    const batch = urls.slice(i, i + HEAD_CONCURRENCY);
-    const batchResults = await Promise.all(batch.map(fetchDimension));
-    results.push(...batchResults);
-  }
-  return results;
-}
+// ─── 이미지 해상도 파서 + fetch 는 ./lib/image-size 공용 모듈 사용 ────
 
 function median(values: number[]): number {
   if (values.length === 0) return 0;
@@ -527,7 +366,7 @@ async function main() {
     let failed = 0;
     const formatDist: Record<ImageFormat, number> = { jpeg: 0, png: 0, webp: 0, gif: 0, unknown: 0 };
     const sizeBucket = { under50KB: 0, between50And200KB: 0, between200And1MB: 0, over1MB: 0, unknown: 0 };
-    const thumbnailSamples: DimResult[] = [];
+    const thumbnailSamples: RemoteImageResult[] = [];
 
     for (const r of dimResults) {
       formatDist[r.format] = (formatDist[r.format] ?? 0) + 1;
