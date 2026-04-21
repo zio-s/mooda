@@ -14,7 +14,7 @@ import { MapProviderToggle } from '@/components/map/MapProviderToggle';
 import { VisuallyHiddenCafeList } from '@/components/map/VisuallyHiddenCafeList';
 import { MoodFilterChips } from '@/components/filter/MoodFilter';
 import { MoodFilterSheet } from '@/components/filter/MoodFilterSheet';
-import { CafeCard } from '@/components/cafe/CafeCard';
+import { CafeListCard } from '@/components/cafe/CafeListCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { SearchTrigger } from '@/components/search/SearchTrigger';
@@ -436,7 +436,7 @@ export function MapClient() {
             ) : (
               <CardList>
                 {cafes.map((cafe) => (
-                  <CafeCard key={cafe.id} cafe={cafe} />
+                  <CafeListCard key={cafe.id} cafe={cafe} />
                 ))}
               </CardList>
             )}
