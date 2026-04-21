@@ -32,8 +32,8 @@
 | Phase 5 (로그인/가입) | ✅ 완료 (커밋 `ee1d155`~`3a66222`) |
 | Phase 6 (이모지 제거) | ✅ 완료 (커밋 `cf6f379`~`d938024`) |
 | 🟢 BUG-MAP (지도 렌더 깨짐) | ✅ 수정 `5e91180` · ✅ 예방 A2 `e8a6b19` · A3 `63f4841` · A4 `22b0f71` · ⏳ 실기 QA |
-| BUG-SEARCH (button 중첩 hydration) | ✅ 완료 (커밋 `605b856`) · BUG-SEARCH-02 전수 스캔 0건 |
-| P7-A (데이터 레이어 클린업) | ⏳ 대기 |
+| 🟢 BUG-SEARCH (button 중첩 hydration) | ✅ 완료 (커밋 `605b856`, `818389a`) · 전수 스캔 0건 |
+| 🟢 P7-A (데이터 레이어 클린업) | ✅ 완료 · P6-06 `d50e4df` + P6-08 `64acbf6` · T7-3(schema drop) 사용자 결정 대기 |
 | Phase 7 시나리오 (P7-B/C/D/E/F) | ❓ 사용자 결정 대기 |
 
 **체감 점수**: A (94/100). UI 레벨 마감, 데이터 레이어 잔재 + hotfix 남음.
@@ -42,7 +42,23 @@
 
 ## 🎯 다음 작업 (우선순위 순)
 
-### 🟢 **완료 기록** — BUG-SEARCH (커밋 `605b856`, 2026-04-21)
+### 🟢 **완료 기록** — P7-A 데이터 레이어 클린업 (2026-04-21)
+
+- **T7-1 / P6-06** (`d50e4df`) `src/types/index.ts` 의 `Mood` 인터페이스 삭제(사용처 0) + `CafeMood.moodCategory` 를 `MoodCategory` 로 좁힘. 구성 5 사이트 `as MoodCategory` narrow
+- **T7-2 / P6-08** (`64acbf6`) SSoT `src/constants/moods-data.ts` 신설 (lucide-react 비의존 · 순수 데이터). `constants/moods.ts` 가 re-export. `prisma/seed.ts` + `scripts/seed-cafes.ts` 의 로컬 MOODS(17+53건) 를 import 로 대체, `sortOrder` 는 배열 index+1 로 파생, emoji 필드 제거(70건)
+- **T7-4 DoD 재스캔**: `prisma/` + `scripts/` + `src/` 의 active emoji 참조 0건. `schema.prisma` 의 `emoji String?` (T7-3) 과 `migrations/*.sql` (히스토리) 만 남음
+- **T7-3 (Prisma schema `emoji` 컬럼 drop)** 은 사용자 결정 대기 — 운영 DB 영향 범위라 진행 금지
+
+### ⏸ **2순위** — Phase 7 본 착수 (시나리오 선택 후)
+
+- **상태**: 사용자가 시나리오 1/2/3 을 선택해야 Claude Design 이 `phase_3_5/PHASE_7_*.md` 작성
+- **Claude Code 는 진입 금지** — P7-A 완료 후 새 지시서가 커밋되면 그때 착수
+
+---
+
+## 📜 완료 기록
+
+### 🟢 BUG-SEARCH (커밋 `605b856`, `818389a`, 2026-04-21)
 
 - `11_bug_search_nested_button.md` PART 3 의 T-BUG-SEARCH-01 + 02
 - `Row = styled.button` → `styled.div` + cursor/user-select/-webkit-tap-highlight + `:focus-visible` inset box-shadow + `[aria-disabled]` 상태 스타일
@@ -52,7 +68,7 @@
 - T-BUG-SEARCH-02: `styled.button` 전수 스캔 결과 native button-in-button **0건**. CardLink(`<a>`) + FavoriteBtn(`<button>`) 은 doc 명시대로 scope 밖
 - **DoD QA (실기)**: Console hydration error 제로 / Row Enter·Space / Tab ring / iOS tap highlight 등 사용자 확인 범위
 
-### 🟢 **완료 기록** — BUG-MAP 재발 예방 A2/A3/A4 (2026-04-21)
+### 🟢 BUG-MAP 재발 예방 A2/A3/A4 (2026-04-21)
 
 - **A2** (`e8a6b19`) SDK 초기화 전 visibility 이벤트 큐잉 — `pendingRefreshRef` + `requestRefresh` 통합 콜백. Naver 는 map init 지점 / Kakao 는 handleCreate 에서 flush
 - **A3** (`63f4841`) ResizeObserver 가 container 0×0 에서 refresh 건너뛰도록 — `entry.contentRect.width/height < 10` 스킵
@@ -60,31 +76,12 @@
 - typecheck + build 통과
 - **잔여**: A1/A5/A6/A7 은 조사·관찰 영역 (사용자 보고/로그 의존)
 
-### 🟢 **완료 기록** — BUG-MAP-01/02 (커밋 `5e91180`, 2026-04-21)
+### 🟢 BUG-MAP-01/02 (커밋 `5e91180`, 2026-04-21)
 
 - `10_bug_map_resize.md` PART 3 의 T-BUG-MAP-01/02
 - Naver/Kakao 어댑터에 visibilitychange + pageshow(persisted) + ResizeObserver(rAF throttle) 3개 useEffect
 - Kakao: mapRef/containerRef/centerRef 신설, handleCreate ref 할당, 외곽 div 래핑, refreshMapView() relayout + setCenter 로 중심 복원
 - **실기 QA 대기**: iOS Safari / Android Chrome / 데스크톱 × Kakao/Naver 매트릭스 — **사용자 작업, Claude Code 범위 밖**
-
-### 🔵 **3순위** — P7-A 데이터 레이어 클린업 (0.5일)
-
-- **지시 문서**: [`09_post_phase6_qa.md`](./09_post_phase6_qa.md)
-- **범위**: `PART 4` 의 `T7-1` + `T7-2` (T7-3 은 사용자 결정 대기로 제외)
-  - **T7-1** `src/types/index.ts` 의 `Mood` 인터페이스 삭제 (사용처 0 건 확인됨) + `CafeMood.moodCategory` 타입을 `moods.ts` 의 `MoodCategory` 로 좁힘
-  - **T7-2** `prisma/seed.ts` 의 MOOD 배열을 `scripts/seed-cafes.ts` 와 일원화 + emoji 필드 제거 + 카테고리 7개 반영
-- **PR 분리**: 커밋 2개 (types · seed 독립).
-- **커밋 메시지 예시**:
-  ```
-  refactor(types): Mood 인터페이스 제거 + CafeMood.moodCategory 타입 좁힘 (P6-06)
-  chore(seed): MOOD seed 일원화 + emoji 필드 제거 (P6-08)
-  ```
-- **T7-3** (Prisma schema `Mood.emoji` 컬럼 drop) 은 **사용자 결정 대기**. 지금 처리 금지.
-
-### ⏸ **4순위** — Phase 7 착수 (시나리오 선택 후)
-
-- **상태**: 시나리오(1/2/3) 를 사용자가 선택하면 Claude Design 이 `phase_3_5/PHASE_7_*.md` 를 작성합니다.
-- **Claude Code 는 현재는 진입 금지**. 1·2순위 완료 후 새 지시서가 커밋되면 그때 이어서 작업.
 
 ---
 

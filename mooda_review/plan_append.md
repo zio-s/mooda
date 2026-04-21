@@ -79,12 +79,12 @@
 - [x] **Phase 6** — UI 이모지 전면 제거 + 카테고리 색 시스템 (T6-1~6, 커밋 `cf6f379`~`d938024`)
 
 ### H. Phase 6 후속 (P7-A 후보 · 09 리포트 PART 1 참조)
-- [ ] **P6-06** `src/types/index.ts:10-16` `Mood` 인터페이스 삭제(사용처 0) 또는 재정의
-- [ ] **P6-07** `prisma/schema.prisma:117` `Mood.emoji` 컬럼 유지/제거 결정
-- [ ] **P6-08** `prisma/seed.ts` + `scripts/seed-cafes.ts` emoji 필드 제거 + seed 일원화 (17 vs 54 불일치 해소)
+- [x] **P6-06** `src/types/index.ts:10-16` `Mood` 인터페이스 삭제(사용처 0) 또는 재정의 (커밋 `d50e4df`)
+- [ ] **P6-07** `prisma/schema.prisma:117` `Mood.emoji` 컬럼 유지/제거 결정 (= T7-3 · 사용자 결정 대기)
+- [x] **P6-08** `prisma/seed.ts` + `scripts/seed-cafes.ts` emoji 필드 제거 + seed 일원화 (17 vs 54 불일치 해소) (커밋 `64acbf6`) — SSoT `src/constants/moods-data.ts` 로 3중 중복 제거
 
 ### I. Phase 7 후보 (09 리포트 PART 3)
-- [ ] **P7-A** Phase 6 후속 클린업 (H 섹션, 0.5일)
+- [x] **P7-A** Phase 6 후속 클린업 (H 섹션, 0.5일) — P6-06 `d50e4df` + P6-08 `64acbf6`. T7-4 재스캔 active emoji 0건
 - [ ] **P7-B** D2 리뷰 작성 플로우 재설계 (3-5일, **추천 1순위**)
 - [ ] **P7-C** 다크모드 토큰 분기 (1.5일)
 - [ ] **P7-D** 관측 지표 설계 (1일)
