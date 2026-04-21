@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { cache } from 'react';
 import type { Metadata } from 'next';
+import type { MoodCategory } from '@/constants/moods';
 import { CafeDetailClient } from './CafeDetailClient';
 
 interface Props {
@@ -101,7 +102,7 @@ export default async function CafeDetailPage({ params }: Props) {
       moodId: cm.moodId,
       moodKey: cm.mood.key,
       moodLabel: cm.mood.label,
-      moodCategory: cm.mood.category,
+      moodCategory: cm.mood.category as MoodCategory,
       voteCount: cm.voteCount,
     })),
     reviews: cafe.reviews.map((r) => ({

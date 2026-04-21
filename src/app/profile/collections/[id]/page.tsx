@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { redirect, notFound } from 'next/navigation';
 import { PATHS } from '@/constants/paths';
 import { prisma } from '@/lib/prisma';
+import type { MoodCategory } from '@/constants/moods';
 import { CollectionDetailClient } from './CollectionDetailClient';
 
 interface Props {
@@ -40,7 +41,7 @@ export default async function CollectionDetailPage({ params }: Props) {
       moodId: cm.moodId,
       moodKey: cm.mood.key,
       moodLabel: cm.mood.label,
-      moodCategory: cm.mood.category,
+      moodCategory: cm.mood.category as MoodCategory,
       voteCount: cm.voteCount,
     })),
     hours: [],

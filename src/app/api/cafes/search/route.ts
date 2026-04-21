@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { redis, CACHE_TTL } from '@/lib/redis';
+import type { MoodCategory } from '@/constants/moods';
 import { z } from 'zod';
 
 const searchSchema = z.object({
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
           moodId: cm.moodId,
           moodKey: cm.mood.key,
           moodLabel: cm.mood.label,
-          moodCategory: cm.mood.category,
+          moodCategory: cm.mood.category as MoodCategory,
           voteCount: cm.voteCount,
         })),
       };

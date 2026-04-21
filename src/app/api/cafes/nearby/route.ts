@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { searchCafesByCategory } from '@/lib/kakao';
+import type { MoodCategory } from '@/constants/moods';
 
 export async function GET(request: NextRequest) {
   try {
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
           moodId: cm.moodId,
           moodKey: cm.mood.key,
           moodLabel: cm.mood.label,
-          moodCategory: cm.mood.category,
+          moodCategory: cm.mood.category as MoodCategory,
           voteCount: cm.voteCount,
         })),
         hours: [],

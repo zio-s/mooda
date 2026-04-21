@@ -1,3 +1,5 @@
+import type { MoodCategory } from '@/constants/moods';
+
 export interface User {
   id: string;
   email: string;
@@ -7,19 +9,13 @@ export interface User {
   createdAt: string;
 }
 
-export interface Mood {
-  id: string;
-  key: string;
-  label: string;
-  category: 'atmosphere' | 'purpose' | 'photo';
-  emoji?: string;
-}
-
 export interface CafeMood {
   moodId: string;
   moodKey: string;
   moodLabel: string;
-  moodCategory: string;
+  // SSoT: MOOD_CATEGORIES (constants/moods.ts). Prisma Mood.category 는 seed
+  // 가 통제하는 7개 키 중 하나 — 구성 시점에 `as MoodCategory` 로 narrow.
+  moodCategory: MoodCategory;
   voteCount: number;
 }
 
