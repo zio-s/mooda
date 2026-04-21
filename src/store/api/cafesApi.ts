@@ -4,7 +4,7 @@ import type { Cafe, SearchParams, SearchResult, TransitRoute, GoogleReviewsRespo
 export const cafesApi = createApi({
   reducerPath: 'cafesApi',
   baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
-  tagTypes: ['Cafe', 'Favorite'],
+  tagTypes: ['Cafe', 'Favorite', 'MyStats'],
   endpoints: (builder) => ({
     searchCafes: builder.query<SearchResult, SearchParams>({
       query: (params) => ({
@@ -66,7 +66,18 @@ export const cafesApi = createApi({
         method: 'POST',
         body,
       }),
-      invalidatesTags: (_, __, { cafeId }) => [{ type: 'Cafe', id: cafeId }],
+      invalidatesTags: (_, __, { cafeId }) => [
+        { type: 'Cafe', id: cafeId },
+        'MyStats',
+      ],
+    }),
+
+    getMyStats: builder.query<
+      { reviewCount: number; favoriteCount: number; collectionCount: number },
+      void
+    >({
+      query: () => '/users/me/stats',
+      providesTags: ['MyStats'],
     }),
 
     getFavorites: builder.query<Cafe[], void>({
@@ -80,7 +91,7 @@ export const cafesApi = createApi({
         method: 'POST',
         body: { cafeId },
       }),
-      invalidatesTags: ['Favorite'],
+      invalidatesTags: ['Favorite', 'MyStats'],
     }),
 
     removeFavorite: builder.mutation<{ success: boolean }, string>({
@@ -88,7 +99,7 @@ export const cafesApi = createApi({
         url: `/users/me/favorites?cafeId=${cafeId}`,
         method: 'DELETE',
       }),
-      invalidatesTags: ['Favorite'],
+      invalidatesTags: ['Favorite', 'MyStats'],
     }),
 
     getTransitRoute: builder.query<
@@ -118,6 +129,7 @@ export const {
   useGetCafeGoogleReviewsQuery,
   useToggleVoteMutation,
   useCreateReviewMutation,
+  useGetMyStatsQuery,
   useGetFavoritesQuery,
   useAddFavoriteMutation,
   useRemoveFavoriteMutation,
