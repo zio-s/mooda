@@ -75,8 +75,10 @@ export const Divider = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-  color: ${theme.colors.textMuted};
+  /* textMuted(ink500)는 선 배경 위에서 대비 낮음 — ink700으로 상향해 WCAG AA. */
+  color: ${theme.colors.ink700};
   font-size: ${theme.fontSize.xs};
+  font-weight: ${theme.fontWeight.medium};
 
   &::before,
   &::after {

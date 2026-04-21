@@ -45,10 +45,16 @@ export const MenuCard = styled(Link)`
   border: 1px solid ${theme.colors.border};
   background: ${theme.colors.bgCard};
   text-decoration: none;
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.2s ease, transform 0.1s ease, background 0.1s ease;
 
   &:hover {
     box-shadow: ${theme.shadows.md};
+  }
+
+  /* 탭 시 피드백 — 살짝 축소 + 배경 변경. 모바일에서 터치 반응 명확. */
+  &:active {
+    transform: scale(0.99);
+    background: ${theme.colors.ink50};
   }
 `;
 
