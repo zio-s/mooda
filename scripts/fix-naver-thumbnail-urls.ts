@@ -50,6 +50,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import Redis from 'ioredis';
 import { batchFetchDimensions, type RemoteImageResult } from './lib/image-size';
+import { extractNaverProxyOrigin } from './lib/naver-proxy';
 
 // ─── 연결 ──────────────────────────────────────────────────────────────
 const isSupabase = (process.env.DATABASE_URL ?? '').includes('supabase.com');
@@ -71,27 +72,8 @@ const BATCH_SIZE = BATCH_ARG ? parseInt(BATCH_ARG.split('=')[1], 10) : 100;
 const SKIP_REDIS = process.argv.includes('--no-redis');
 const JSON_PATH_ARG = process.argv.find((a) => a.startsWith('--json-path='));
 
-// ─── 프록시 → 원본 추출 ─────────────────────────────────────────────────
-function extractOrigin(proxyUrl: string): string | null {
-  try {
-    const u = new URL(proxyUrl);
-    if (u.hostname !== 'search.pstatic.net') return null;
-    const src = u.searchParams.get('src');
-    if (!src) return null;
-    try {
-      const decoded = decodeURIComponent(src);
-      // 이중 인코딩 대비 (% 문자가 또 있으면 한 번 더)
-      if (decoded !== src && /%[0-9A-Fa-f]{2}/.test(decoded)) {
-        return decodeURIComponent(decoded);
-      }
-      return decoded;
-    } catch {
-      return src;
-    }
-  } catch {
-    return null;
-  }
-}
+// 프록시 → 원본 추출은 ./lib/naver-proxy 에서.
+const extractOrigin = extractNaverProxyOrigin;
 
 // ─── 타입 ──────────────────────────────────────────────────────────────
 interface ProxyRow {

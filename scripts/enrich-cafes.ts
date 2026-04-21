@@ -19,6 +19,8 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
+import { batchFetchDimensions } from './lib/image-size';
+import { extractNaverProxyOrigin, isBlockedHost } from './lib/naver-proxy';
 
 const isSupabase = (process.env.DATABASE_URL ?? '').includes('supabase.com');
 const pool = new Pool({
@@ -39,6 +41,10 @@ const LIMIT = LIMIT_ARG ? parseInt(LIMIT_ARG.split('=')[1]) : undefined;
 
 // 블로그 캐시 유효 기간: 7일
 const BLOG_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+// 이미지 검증 임계 — UI 렌더 시 최소 품질 보장 (T-SCRIPT-05)
+const MIN_IMAGE_WIDTH = 400;
+const MIN_IMAGE_HEIGHT = 300;
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
@@ -136,7 +142,15 @@ async function main() {
 
     const parts: string[] = [];
 
-    // ── 이미지 수집 ──────────────────────────────────────────────────────
+    // ── 이미지 수집 (T-SCRIPT-05 개정) ──────────────────────────────────
+    //
+    // 변경 요약 vs 구 버전:
+    //   1. img.link 가 search.pstatic.net 프록시(150px 썸네일) 면
+    //      extractNaverProxyOrigin 으로 원본 URL 추출
+    //   2. 원본 URL 병렬 HEAD + 해상도 실측 (Range 64KB) → 200 + image/* 만 통과
+    //   3. MIN_IMAGE_WIDTH/HEIGHT 임계 미달 · BLOCKED_HOSTS 드롭
+    //   4. createMany 대신 개별 create — width/height/fileSize/sourceType 채움
+    //   5. @@unique([cafeId, url]) 충돌 은 무시 (이미 있음)
     if (DO_IMAGES) {
       const hasPhotos = cafe._count.photos > 0;
 
@@ -148,31 +162,78 @@ async function main() {
           const images = await fetchCafeImages(cafe.name, neighborhood);
           await sleep(150);
 
-          // 유효한 이미지만 (thumbnail이 실제 URL인 것)
-          const valid = images.filter(
-            (img) => img.thumbnail && img.thumbnail.startsWith('http')
-          );
-
-          if (valid.length > 0) {
-            // 기존 사진 있으면 삭제 후 재저장 (--force 시)
-            if (FORCE && hasPhotos) {
-              await prisma.cafePhoto.deleteMany({ where: { cafeId: cafe.id } });
-            }
-
-            await prisma.cafePhoto.createMany({
-              data: valid.slice(0, 3).map((img, idx) => ({
-                cafeId: cafe.id,
-                url: img.link,             // 원본 고해상도 URL
+          // 1차 필터: link 가 실제 URL + blocklist 도메인 제외
+          // 프록시인 경우 원본 URL 을 최종 url 로 씀 (프록시는 썸네일이므로 안 저장).
+          const candidates = images
+            .filter((img) => img.link && img.link.startsWith('http'))
+            .map((img) => {
+              const origin = extractNaverProxyOrigin(img.link) ?? img.link;
+              return {
+                url: origin,
+                // 구 URL 이 프록시였다면 originalUrl 로 감사용 보존. 아니면 null.
+                originalUrl: origin === img.link ? null : img.link,
                 caption: img.title.replace(/<[^>]+>/g, '').slice(0, 100) || null,
-                isMain: idx === 0,
-              })),
-              skipDuplicates: true,
+              };
+            })
+            .filter((c) => !isBlockedHost(c.url));
+
+          if (candidates.length === 0) {
+            parts.push(`📷 이미지 없음 (blocklist 후)`);
+          } else {
+            // 2차 필터: 실제 HEAD + 해상도 — 200 OK + image/* + 최소 해상도
+            const dims = await batchFetchDimensions(
+              candidates.map((c) => c.url),
+              5,
+              { timeoutMs: 8000 },
+            );
+            const dimByUrl = new Map(dims.map((d) => [d.url, d]));
+
+            const validated = candidates.filter((c) => {
+              const d = dimByUrl.get(c.url);
+              if (!d || typeof d.status !== 'number') return false;
+              if (d.status < 200 || d.status >= 400) return false;
+              if (!d.width || !d.height) return false;
+              if (d.width < MIN_IMAGE_WIDTH || d.height < MIN_IMAGE_HEIGHT) return false;
+              return true;
             });
 
-            imgSaved++;
-            parts.push(`📷 ${valid.slice(0, 3).length}장 저장`);
-          } else {
-            parts.push(`📷 이미지 없음`);
+            if (validated.length === 0) {
+              parts.push(`📷 검증 실패 (${candidates.length}건)`);
+            } else {
+              if (FORCE && hasPhotos) {
+                await prisma.cafePhoto.deleteMany({ where: { cafeId: cafe.id } });
+              }
+
+              const toInsert = validated.slice(0, 3);
+              let inserted = 0;
+              for (let idx = 0; idx < toInsert.length; idx++) {
+                const c = toInsert[idx];
+                const d = dimByUrl.get(c.url)!;
+                try {
+                  await prisma.cafePhoto.create({
+                    data: {
+                      cafeId: cafe.id,
+                      url: c.url,
+                      originalUrl: c.originalUrl,
+                      sourceType: 'naver',
+                      width: d.width,
+                      height: d.height,
+                      fileSize: d.contentLength,
+                      caption: c.caption,
+                      isMain: idx === 0 && inserted === 0,
+                    },
+                  });
+                  inserted++;
+                } catch (err) {
+                  // @@unique([cafeId, url]) 충돌 은 "이미 저장됨" 이니 무시
+                  if (!(err instanceof Error) || !/Unique constraint/i.test(err.message)) {
+                    throw err;
+                  }
+                }
+              }
+              if (inserted > 0) imgSaved++;
+              parts.push(`📷 ${inserted}/${toInsert.length}장 저장 (검증 ${validated.length}/${candidates.length})`);
+            }
           }
         } catch (err) {
           parts.push(`📷 오류`);

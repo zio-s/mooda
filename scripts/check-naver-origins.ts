@@ -28,6 +28,7 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import { batchFetchDimensions, type RemoteImageResult } from './lib/image-size';
+import { extractNaverProxyOrigin } from './lib/naver-proxy';
 
 const isSupabase = (process.env.DATABASE_URL ?? '').includes('supabase.com');
 const pool = new Pool({
@@ -43,37 +44,8 @@ const JSON_PATH_ARG = process.argv.find((a) => a.startsWith('--json-path='));
 
 // 이미지 해상도 파서 + fetch 는 ./lib/image-size 공용 모듈 사용
 
-// ─── 프록시 → 원본 추출 ─────────────────────────────────────────────────
-/**
- * 네이버 검색 이미지 프록시 URL 패턴:
- *   https://search.pstatic.net/common/?type=b150&src=<URL-encoded 원본>
- *   https://search.pstatic.net/sunny/?type=b150&src=<URL-encoded 원본>
- *
- * src= 파라미터를 디코드하면 진짜 원본 URL 복구 가능.
- * type=b150 / b300 / f150 등 접두어는 프록시 변환 크기 지정.
- */
-function extractOriginFromProxy(proxyUrl: string): string | null {
-  try {
-    const url = new URL(proxyUrl);
-    if (url.hostname !== 'search.pstatic.net') return null;
-    const src = url.searchParams.get('src');
-    if (!src) return null;
-    // src 는 이미 decodeURIComponent 된 상태로 URL 객체가 돌려줌
-    // 하지만 가끔 이중 인코딩 대비해 한 번 더 확인
-    try {
-      const decoded = decodeURIComponent(src);
-      // 이중 인코딩된 경우 decoded 에 %xx 가 다시 있음
-      if (decoded !== src && /%[0-9A-Fa-f]{2}/.test(decoded)) {
-        return decodeURIComponent(decoded);
-      }
-      return decoded;
-    } catch {
-      return src;
-    }
-  } catch {
-    return null;
-  }
-}
+// 프록시 → 원본 추출은 ./lib/naver-proxy 에서.
+const extractOriginFromProxy = extractNaverProxyOrigin;
 
 // batchFetchDimensions — lib 에서 가져다 쓴다. 기존 시그니처와 호환.
 const batchFetch = (urls: string[]) => batchFetchDimensions(urls, 5, { timeoutMs: 10000 });
