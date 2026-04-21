@@ -287,3 +287,20 @@
 4. Phase 3-6 — 전환·다크모드. 5-6일. 완성도 최대화.
 
 어느 쪽으로 가실지 알려주시면 해당 Phase에 대한 **MD 구현 가이드**를 바로 만들어 Claude Code에 넘기실 수 있게 해드리겠습니다.
+
+---
+
+## Phase 3 완료 (2026-04-21)
+- 하드코딩 컬러 8곳 → theme 토큰 전환. `theme.colors.star`/`starEmpty` 신규.
+- CafeCard 호버 스케일 제거 + `aspect-ratio` 기반 이미지 안정화.
+- InstallPrompt 경로 제한(`/`, `/profile`) + Coffee 아이콘 + 그라데이션 토큰화.
+- MenuCard `:active` + Divider 대비 개선(WCAG AA).
+- N8 autocomplete off · N15 Separator 토큰 · N16 OptionalText ink500.
+
+**검증**: `git grep -nE "#(d97706|ef4444|9ca3af|d1d5db|fbbf24|f59e0b|f3f4f6)" src/ ':!src/styles/theme.ts'` → 0건.
+
+## Phase 4 완료 (2026-04-21)
+- `/api/users/me/stats` 신설 — reviewCount/favoriteCount/collectionCount. SWR 5분 · mutation 시 RTK `MyStats` tag invalidate.
+- ProfilePageClient 통계 허브화 — Avatar 72, 3-column StatCardLink, MenuIconBox(primary/err), DangerButton 로그아웃.
+- Header 몰입형 경로(`/map`·`/search`·`/cafes/*`)에서 null 반환 + 모바일 SearchIconLink.
+- 회귀 QA 5경로 통과 예정(사용자 실측).
