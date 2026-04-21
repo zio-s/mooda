@@ -35,6 +35,14 @@ export const FilterBar = styled.div`
     gap: 8px;
     padding: 8px 12px;
   }
+
+  /* Phase 7-B T7-B3: PC ≥1024 에서 한 줄 완전 강제. 넘치면 ChipsScroll 이
+     자체 overflow-x 로 흡수하고, FilterBar 자체는 overflow: hidden 으로 감싼다. */
+  @media (min-width: ${theme.breakpoints.lg}) {
+    gap: 10px;
+    padding: 10px 20px;
+    overflow: hidden;
+  }
 `;
 
 export const FilterBadge = styled.span`

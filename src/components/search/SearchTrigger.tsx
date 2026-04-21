@@ -48,9 +48,22 @@ const Pill = styled.button<{ $compact: boolean }>`
     color: ${theme.colors.ink700};
     flex-shrink: 0;
   }
+
+  /* Phase 7-B T7-B3: PC ≥1024 에서는 compact prop 무시 + FilterBar 한 줄
+     inline 확장. flex:1 min-width 200 max-width 520 으로 FilterBar 중앙 확보. */
+  @media (min-width: ${theme.breakpoints.lg}) {
+    width: auto;
+    min-width: 200px;
+    max-width: 520px;
+    flex: 1 1 auto;
+    height: 44px;
+    padding: 0 16px;
+    justify-content: flex-start;
+    border-radius: 24px;
+  }
 `;
 
-const Label = styled.span`
+const Label = styled.span<{ $compact: boolean }>`
   flex: 1;
   font-size: 14.5px;
   font-weight: 500;
@@ -58,6 +71,12 @@ const Label = styled.span`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: ${({ $compact }) => ($compact ? 'none' : 'inline')};
+
+  /* PC 에서는 compact 여부와 무관하게 Label 강제 표시 */
+  @media (min-width: ${theme.breakpoints.lg}) {
+    display: inline;
+  }
 `;
 
 export function SearchTrigger({
@@ -76,7 +95,7 @@ export function SearchTrigger({
       className={className}
     >
       <Search size={18} strokeWidth={2} aria-hidden />
-      {!compact && <Label>{placeholder}</Label>}
+      <Label $compact={compact}>{placeholder}</Label>
     </Pill>
   );
 }
