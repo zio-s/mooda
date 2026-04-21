@@ -28,6 +28,16 @@ export default auth((request) => {
   return NextResponse.next();
 });
 
+/**
+ * matcher 범위 정리:
+ *  - /profile/:path*  → /profile, /profile/favorites, /profile/collections,
+ *                       /profile/collections/[id] 전부 포함 (constants/paths.ts)
+ *  - /admin/:path*    → /admin, /admin/cafes, /admin/reports 전부 포함
+ *  - /api/*는 각 route handler 내부에서 session 체크 → middleware 미적용.
+ *
+ * QA v2 § N17에서 제기된 "/favorites, /collections 경로 보호 누락"은 실경로가
+ * /profile 하위라 이미 커버됨.
+ */
 export const config = {
   matcher: ['/profile/:path*', '/admin/:path*'],
 };
