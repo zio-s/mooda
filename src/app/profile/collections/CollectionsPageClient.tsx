@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FolderOpen, ChevronRight, Plus } from 'lucide-react';
 import { PATHS } from '@/constants/paths';
+import { theme } from '@/styles/theme';
 import { CreateCollectionDialog } from '@/components/collection/CreateCollectionDialog';
 import {
   PageContainer,
@@ -44,7 +45,7 @@ export function CollectionsPageClient({ collections }: Props) {
 
       {collections.length === 0 ? (
         <EmptyState>
-          <FolderOpen size={40} color="#9ca3af" style={{ margin: '0 auto 12px' }} />
+          <FolderOpen size={40} color={theme.colors.ink400} style={{ margin: '0 auto 12px' }} />
           <p>아직 컬렉션이 없습니다.</p>
           <button
             onClick={() => setDialogOpen(true)}
@@ -52,9 +53,9 @@ export function CollectionsPageClient({ collections }: Props) {
               marginTop: 12,
               padding: '8px 20px',
               borderRadius: 8,
-              border: '1.5px solid #d97706',
+              border: `1.5px solid ${theme.colors.primary}`,
               background: 'transparent',
-              color: '#92400e',
+              color: theme.colors.onPrimaryTint,
               fontSize: 14,
               fontWeight: 500,
               cursor: 'pointer',
@@ -67,12 +68,12 @@ export function CollectionsPageClient({ collections }: Props) {
         <CollectionList>
           {collections.map((col) => (
             <CollectionCard key={col.id} href={PATHS.CollectionDetail(col.id)}>
-              <FolderOpen size={20} color="#d97706" />
+              <FolderOpen size={20} color={theme.colors.primary} />
               <CollectionInfo>
                 <CollectionName>{col.name}</CollectionName>
                 <CollectionCount>카페 {col._count.items}개</CollectionCount>
               </CollectionInfo>
-              <ChevronRight size={16} color="#9ca3af" />
+              <ChevronRight size={16} color={theme.colors.ink400} />
             </CollectionCard>
           ))}
         </CollectionList>

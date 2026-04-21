@@ -5,6 +5,7 @@ import { CafeCard } from '@/components/cafe/CafeCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { Heart } from 'lucide-react';
+import { theme } from '@/styles/theme';
 import {
   PageContainer,
   PageTitle,
@@ -33,7 +34,7 @@ export default function FavoritesPage() {
         </CafeGrid>
       ) : !cafes?.length ? (
         <EmptyState>
-          <Heart size={40} color="#d1d5db" style={{ margin: '0 auto 12px' }} />
+          <Heart size={40} color={theme.colors.ink300} style={{ margin: '0 auto 12px' }} />
           <p>즐겨찾기한 카페가 없습니다.</p>
         </EmptyState>
       ) : (
