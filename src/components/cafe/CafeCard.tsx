@@ -6,6 +6,7 @@ import { Heart, Star, MapPin } from 'lucide-react';
 import { PATHS } from '@/constants/paths';
 import { OpenBadge } from '@/components/cafe/OpenBadge';
 import { computeOpenStatus, type CafeHourInput } from '@/lib/cafe/openStatus';
+import { theme } from '@/styles/theme';
 import type { Cafe } from '@/types';
 import {
   CardLink,
@@ -181,8 +182,8 @@ export function CafeCard({ cafe, compact = false, onFavorite, isFavorited }: Caf
               >
                 <Heart
                   size={16}
-                  fill={isFavorited ? '#ef4444' : 'none'}
-                  color={isFavorited ? '#ef4444' : 'currentColor'}
+                  fill={isFavorited ? theme.colors.err : 'none'}
+                  color={isFavorited ? theme.colors.err : 'currentColor'}
                   aria-hidden
                 />
               </FavoriteBtn>
@@ -191,7 +192,7 @@ export function CafeCard({ cafe, compact = false, onFavorite, isFavorited }: Caf
 
           <MetaRow>
             <MetaItem>
-              <Star size={12} fill="#fbbf24" color="#fbbf24" aria-hidden />
+              <Star size={12} fill={theme.colors.star} color={theme.colors.star} aria-hidden />
               {cafe.avgRating.toFixed(1)}
               <span>({cafe.reviewCount})</span>
             </MetaItem>

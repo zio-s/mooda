@@ -181,7 +181,7 @@ export const FavoriteBtn = styled.button`
   transition: color 0.15s ease;
 
   &:hover {
-    color: #f87171;
+    color: ${theme.colors.err};
   }
 `;
 

@@ -26,6 +26,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OpenBadge } from '@/components/cafe/OpenBadge';
 import { computeOpenStatus, type CafeHourInput } from '@/lib/cafe/openStatus';
+import { theme } from '@/styles/theme';
 import {
   useToggleVoteMutation,
   useAddFavoriteMutation,
@@ -375,7 +376,7 @@ export function CafeDetailClient({ cafe }: Props) {
               aria-label={isFav ? '저장 해제' : '저장'}
               $active={isFav}
             >
-              <Heart size={18} fill={isFav ? '#ef4444' : 'none'} />
+              <Heart size={18} fill={isFav ? theme.colors.err : 'none'} />
             </HeroFab>
           </HeroFabGroup>
         </HeroOverlay>
@@ -392,7 +393,7 @@ export function CafeDetailClient({ cafe }: Props) {
             <MetaRow>
               {openStatus && <OpenBadge status={openStatus} size="md" />}
               <RatingItem>
-                <Star size={14} fill="#fbbf24" color="#fbbf24" />
+                <Star size={14} fill={theme.colors.star} color={theme.colors.star} />
                 {cafe.avgRating.toFixed(1)}
                 <span>({cafe.reviewCount})</span>
               </RatingItem>
@@ -477,17 +478,17 @@ export function CafeDetailClient({ cafe }: Props) {
         <TabsContent value="info" style={{ marginTop: 16 }}>
           <InfoList>
             <InfoItem>
-              <MapPin size={16} color="#9ca3af" style={{ flexShrink: 0, marginTop: 2 }} />
+              <MapPin size={16} color={theme.colors.ink400} style={{ flexShrink: 0, marginTop: 2 }} />
               <span>{cafe.address}</span>
             </InfoItem>
             {cafe.phone && (
               <InfoItem>
-                <Phone size={16} color="#9ca3af" style={{ flexShrink: 0 }} />
+                <Phone size={16} color={theme.colors.ink400} style={{ flexShrink: 0 }} />
                 <InfoLink href={`tel:${cafe.phone}`}>{cafe.phone}</InfoLink>
               </InfoItem>
             )}
             <InfoItem>
-              <ExternalLink size={16} color="#9ca3af" style={{ flexShrink: 0 }} />
+              <ExternalLink size={16} color={theme.colors.ink400} style={{ flexShrink: 0 }} />
               <InfoLink
                 href={`https://map.naver.com/p/search/${encodeURIComponent(cafe.name)}?c=${cafe.lng},${cafe.lat},17,0,0,0,dh`}
                 target="_blank"
@@ -498,7 +499,7 @@ export function CafeDetailClient({ cafe }: Props) {
             </InfoItem>
             {cafe.instagramUrl && (
               <InfoItem>
-                <Instagram size={16} color="#9ca3af" style={{ flexShrink: 0 }} />
+                <Instagram size={16} color={theme.colors.ink400} style={{ flexShrink: 0 }} />
                 <InfoLink href={cafe.instagramUrl} target="_blank" rel="noopener noreferrer">
                   인스타그램
                 </InfoLink>
@@ -562,8 +563,8 @@ export function CafeDetailClient({ cafe }: Props) {
                             <Star
                               key={i}
                               size={12}
-                              fill={i < review.rating ? '#fbbf24' : 'none'}
-                              color={i < review.rating ? '#fbbf24' : '#d1d5db'}
+                              fill={i < review.rating ? theme.colors.star : 'none'}
+                              color={i < review.rating ? theme.colors.star : theme.colors.starEmpty}
                             />
                           ))}
                         </StarRow>
@@ -623,7 +624,7 @@ export function CafeDetailClient({ cafe }: Props) {
             <>
               {googleData.googleRating && (
                 <GoogleRatingBanner>
-                  <Star size={16} fill="#fbbf24" color="#fbbf24" />
+                  <Star size={16} fill={theme.colors.star} color={theme.colors.star} />
                   Google 평점 {googleData.googleRating.toFixed(1)}
                   {googleData.googleTotalRatings && (
                     <span style={{ fontWeight: 400, color: '#a16207' }}>
@@ -647,7 +648,7 @@ export function CafeDetailClient({ cafe }: Props) {
                           as="div"
                           style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 14, color: '#9ca3af', background: '#f3f4f6',
+                            fontSize: 14, color: theme.colors.ink400, background: theme.colors.ink100,
                           }}
                         >
                           {review.authorName.charAt(0)}
@@ -661,8 +662,8 @@ export function CafeDetailClient({ cafe }: Props) {
                               <Star
                                 key={j}
                                 size={11}
-                                fill={j < review.rating ? '#fbbf24' : 'none'}
-                                color={j < review.rating ? '#fbbf24' : '#d1d5db'}
+                                fill={j < review.rating ? theme.colors.star : 'none'}
+                                color={j < review.rating ? theme.colors.star : theme.colors.starEmpty}
                               />
                             ))}
                           </StarRow>

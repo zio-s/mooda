@@ -67,6 +67,10 @@ export const theme = {
     warning: '#b45309',
     warningBg: '#fed7aa',
 
+    // 별점 전용 — warn(#b45309)보다 밝은 amber-500. 별 채우기/미채움.
+    star: '#f59e0b',
+    starEmpty: '#e7e5e4', // = ink200
+
     // Map overlays
     mapDim: '#e8e6e0',
 

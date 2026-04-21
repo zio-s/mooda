@@ -98,7 +98,7 @@ export const HeroFab = styled.button<{ $active?: boolean }>`
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  color: ${({ $active }) => ($active ? '#ef4444' : theme.colors.ink900)};
+  color: ${({ $active }) => ($active ? theme.colors.err : theme.colors.ink900)};
   box-shadow: ${theme.shadows.md};
   display: inline-flex;
   align-items: center;
