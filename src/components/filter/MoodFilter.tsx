@@ -42,7 +42,6 @@ export function MoodFilter() {
                   $selected={selected}
                   onClick={() => dispatch(toggleMoodFilter(mood.key))}
                 >
-                  <span>{mood.emoji}</span>
                   <span>{mood.label}</span>
                 </MoodButton>
               );
@@ -77,7 +76,7 @@ export function MoodFilterChips() {
         if (!mood) return null;
         return (
           <Chip key={key} onClick={() => dispatch(toggleMoodFilter(key))}>
-            {mood.emoji} {mood.label} ×
+            {mood.label} ×
           </Chip>
         );
       })}

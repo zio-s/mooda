@@ -180,7 +180,6 @@ export function MoodFilterSheet({ open, onOpenChange, trigger }: Props) {
                     $selected={selected}
                     onClick={() => toggleDraft(mood.key)}
                   >
-                    <CellIcon aria-hidden>{mood.emoji}</CellIcon>
                     <CellLabel>{mood.label}</CellLabel>
                     {selected && (
                       <CellCheck aria-hidden>

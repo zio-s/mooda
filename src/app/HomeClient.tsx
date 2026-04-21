@@ -133,7 +133,7 @@ export function HomeClient() {
                   <MoodTagsRow>
                     {moods.map((mood) => (
                       <MoodTagLink key={mood.key} href={`${PATHS.Map}?moods=${mood.key}`}>
-                        <MoodTagEmoji>{mood.emoji}</MoodTagEmoji>
+                        {/* emoji 필드 제거 (Phase 6) — T6-4에서 아이콘 대체 */}
                         {mood.label}
                       </MoodTagLink>
                     ))}
