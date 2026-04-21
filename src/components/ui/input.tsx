@@ -26,6 +26,12 @@ const StyledInput = styled.input`
     box-shadow: 0 0 0 3px ${theme.colors.primaryLight};
   }
 
+  /* aria-invalid=true 시 error 톤. 폼 검증에서 자주 쓰임. */
+  &[aria-invalid='true'] {
+    border-color: ${theme.colors.err};
+    box-shadow: 0 0 0 3px ${theme.colors.errBg};
+  }
+
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
