@@ -184,7 +184,12 @@ export function CafeDetailClient({ cafe }: Props) {
 
   // ── 즐겨찾기 토글 ─────────────────────────────────────────────────────────
   async function handleFavorite() {
-    if (!session) { toast.error('로그인이 필요합니다'); return; }
+    if (!session) {
+      toast.error('로그인이 필요합니다', {
+        action: { label: '로그인', onClick: () => router.push(PATHS.Login) },
+      });
+      return;
+    }
     // 낙관적 업데이트
     setIsFav((prev) => !prev);
     try {
@@ -204,7 +209,12 @@ export function CafeDetailClient({ cafe }: Props) {
 
   // ── 분위기 투표 토글 ──────────────────────────────────────────────────────
   async function handleVote(moodId: string) {
-    if (!session) { toast.error('로그인이 필요합니다'); return; }
+    if (!session) {
+      toast.error('로그인이 필요합니다', {
+        action: { label: '로그인', onClick: () => router.push(PATHS.Login) },
+      });
+      return;
+    }
 
     const isVoted = votedMoods.has(moodId);
     const delta = isVoted ? -1 : 1;
