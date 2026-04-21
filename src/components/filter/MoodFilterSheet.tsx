@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import styled, { css, keyframes } from 'styled-components';
 import { Check } from 'lucide-react';
-import { MOODS, MOOD_CATEGORIES } from '@/constants/moods';
+import { MOODS, MOOD_CATEGORIES, CATEGORY_META } from '@/constants/moods';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { clearMoodFilters, toggleMoodFilter } from '@/store/slices/mapSlice';
 import { useCountCafesQuery } from '@/store/api/cafesApi';
@@ -153,6 +153,7 @@ export function MoodFilterSheet({ open, onOpenChange, trigger }: Props) {
               const selectedInCat = draft.filter(
                 (k) => moodsByCategory[cat]?.some((m) => m.key === k),
               ).length;
+              const Icon = CATEGORY_META[cat].icon;
               return (
                 <TabBtn
                   key={cat}
@@ -161,6 +162,7 @@ export function MoodFilterSheet({ open, onOpenChange, trigger }: Props) {
                   $active={activeCategory === cat}
                   onClick={() => setActiveCategory(cat)}
                 >
+                  <Icon size={14} aria-hidden />
                   {MOOD_CATEGORIES[cat]}
                   {selectedInCat > 0 && <TabBadge>{selectedInCat}</TabBadge>}
                 </TabBtn>
@@ -171,6 +173,7 @@ export function MoodFilterSheet({ open, onOpenChange, trigger }: Props) {
             <Grid>
               {currentMoods.map((mood) => {
                 const selected = draft.includes(mood.key);
+                const meta = CATEGORY_META[mood.category as keyof typeof CATEGORY_META];
                 return (
                   <Cell
                     key={mood.key}
@@ -178,6 +181,11 @@ export function MoodFilterSheet({ open, onOpenChange, trigger }: Props) {
                     role="checkbox"
                     aria-checked={selected}
                     $selected={selected}
+                    $bg={meta.bg}
+                    $fg={meta.fg}
+                    $border={meta.border}
+                    $activeBg={meta.activeBg}
+                    $activeFg={meta.activeFg}
                     onClick={() => toggleDraft(mood.key)}
                   >
                     <CellLabel>{mood.label}</CellLabel>
@@ -340,13 +348,18 @@ const Tabs = styled.div`
 const TabBtn = styled.button<{ $active: boolean }>`
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 14px 6px;
+  gap: 5px;
+  padding: 14px 8px;
   font-size: 13.5px;
   font-weight: ${({ $active }) => ($active ? 700 : 500)};
   color: ${({ $active }) => ($active ? theme.colors.ink900 : theme.colors.ink500)};
   white-space: nowrap;
   position: relative;
+  transition: color 0.15s ease;
+
+  svg {
+    flex-shrink: 0;
+  }
 
   ${({ $active }) =>
     $active &&
@@ -394,7 +407,14 @@ const Grid = styled.div`
   gap: 10px;
 `;
 
-const Cell = styled.button<{ $selected: boolean }>`
+const Cell = styled.button<{
+  $selected: boolean;
+  $bg: string;
+  $fg: string;
+  $border: string;
+  $activeBg: string;
+  $activeFg: string;
+}>`
   position: relative;
   display: flex;
   align-items: center;
@@ -403,22 +423,18 @@ const Cell = styled.button<{ $selected: boolean }>`
   padding: 0 14px;
   border-radius: 14px;
   border: 1.5px solid
-    ${({ $selected }) => ($selected ? theme.colors.primary : theme.colors.ink200)};
-  background: ${({ $selected }) =>
-    $selected ? theme.colors.primaryLight : theme.colors.white};
-  color: ${theme.colors.ink900};
+    ${({ $selected, $activeBg, $border }) => ($selected ? $activeBg : $border)};
+  background: ${({ $selected, $bg, $activeBg }) =>
+    $selected ? $activeBg : $bg};
+  color: ${({ $selected, $fg, $activeFg }) => ($selected ? $activeFg : $fg)};
   font-weight: 500;
   text-align: left;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+  transition: background 0.15s ease, border-color 0.15s ease,
+    color 0.15s ease, transform 0.12s ease;
 
   &:active {
     transform: scale(0.98);
   }
-`;
-
-const CellIcon = styled.span`
-  font-size: 20px;
-  flex-shrink: 0;
 `;
 
 const CellLabel = styled.span`
@@ -429,16 +445,14 @@ const CellLabel = styled.span`
   white-space: nowrap;
 `;
 
+/* 체크 아이콘은 선택된 Cell의 activeFg 색을 상속(currentColor). 카테고리별
+   색과 조화되도록 별도 bg 없이 inline으로 표현. */
 const CellCheck = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  background: ${theme.colors.primary};
-  color: ${theme.colors.white};
   flex-shrink: 0;
+  color: inherit;
 `;
 
 const Hint = styled.p`
