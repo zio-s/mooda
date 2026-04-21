@@ -6,11 +6,11 @@ import { theme } from '@/styles/theme';
 export const MapPageWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  /* Header(56px) + Header safe-area-top를 함께 차감해야 notch 기기에서
-     하단이 잘리지 않음. 모바일 브라우저 주소창은 dvh로 흡수. */
-  height: calc(100vh - 56px - env(safe-area-inset-top, 0px));
+  /* Header(48px · Phase 7-B 축소) + Header safe-area-top를 함께 차감해야 notch
+     기기에서 하단이 잘리지 않음. 모바일 브라우저 주소창은 dvh로 흡수. */
+  height: calc(100vh - 48px - env(safe-area-inset-top, 0px));
   @supports (height: 100dvh) {
-    height: calc(100dvh - 56px - env(safe-area-inset-top, 0px));
+    height: calc(100dvh - 48px - env(safe-area-inset-top, 0px));
   }
 `;
 

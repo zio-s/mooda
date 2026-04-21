@@ -28,13 +28,15 @@ import {
 } from './Header.styles';
 
 /**
- * 몰입형 뷰(지도/검색/카페 상세)에서는 공용 Header를 숨긴다. 각 뷰가 자체
- * 상단 UI(FilterBar · 검색 헤더 · Hero FAB)로 네비게이션을 제공하기 때문.
+ * Phase 7-B 에서 Phase 4 의 "몰입 경로(Header 전면 숨김)" 결정을 철회.
+ * 홈 복귀 경로 + 브랜드 앵커는 모든 뷰포트 필수라는 판단.
+ * 대신 Header 높이를 56 → 48 로 축소해 세로 공간 손실 최소화.
+ * /search 만 자체 전용 상단 UI(검색 input + 뒤로가기) 를 가지므로 계속 숨김.
  */
-const IMMERSIVE_PREFIXES = ['/map', '/search', '/cafes/'];
+const HIDDEN_PREFIXES = ['/search'];
 function shouldHideHeader(pathname: string): boolean {
-  return IMMERSIVE_PREFIXES.some(
-    (prefix) => pathname === prefix.replace(/\/$/, '') || pathname.startsWith(prefix),
+  return HIDDEN_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 }
 

@@ -5,7 +5,7 @@ import { theme } from '@/styles/theme';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const Wrapper = styled.div`
-  height: calc(100dvh - 56px);
+  height: calc(100dvh - 48px);
   display: flex;
   flex-direction: column;
   background: ${theme.colors.bg};

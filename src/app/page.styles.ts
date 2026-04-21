@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { theme } from '@/styles/theme';
 
 export const PageWrapper = styled.div`
-  min-height: calc(100vh - 56px);
+  min-height: calc(100vh - 48px);
 `;
 
 // ─── Hero ─────────────────────────────────────────────────
