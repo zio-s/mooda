@@ -1,6 +1,7 @@
 'use client';
 
 import { Footprints, TrainFront, Bus, Clock, ArrowRightLeft, MapPin, Navigation } from 'lucide-react';
+import { theme } from '@/styles/theme';
 import type { TransitRoute, TransitSegment } from '@/types';
 import {
   RouteWrap,
@@ -149,7 +150,7 @@ function SegmentStep({ segment, isLast }: { segment: TransitSegment; isLast: boo
   if (segment.type === 'walk') {
     return (
       <StepItem>
-        <StepIcon $color="#9ca3af">
+        <StepIcon $color={theme.colors.ink400}>
           <Footprints />
         </StepIcon>
         {!isLast && <StepConnector $color="#e5e7eb" />}

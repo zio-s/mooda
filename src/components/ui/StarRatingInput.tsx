@@ -45,14 +45,14 @@ const StarBtn = styled.button<{
   line-height: 1;
   cursor: ${({ $readOnly }) => ($readOnly ? 'default' : 'pointer')};
   font-size: ${({ $size }) => SIZE_PX[$size]};
-  color: ${({ $filled }) => ($filled ? '#fbbf24' : '#d1d5db')};
+  color: ${({ $filled }) => ($filled ? theme.colors.star : theme.colors.starEmpty)};
   transition: color 0.1s ease, transform 0.1s ease;
   display: flex;
   align-items: center;
 
   &:not([disabled]):hover {
     transform: scale(1.15);
-    color: #fbbf24;
+    color: ${theme.colors.star};
   }
 
   &:focus-visible {
