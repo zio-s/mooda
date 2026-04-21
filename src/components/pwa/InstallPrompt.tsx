@@ -11,12 +11,53 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-// 설치 배너를 허용하는 경로. /map, /cafes/[id], /search 같은 몰입형 뷰에서는
-// 하단 배너가 지도/바텀시트와 경쟁해 방해가 됨.
+/**
+ * ─── PWA 설치 배너 노출 / 비노출 조건 (2026-04-21 기준) ──────────────────
+ *
+ * 🟢 노출 — 아래 조건 전부(AND) 충족 시:
+ *   1. PWA 미설치 상태 (`display-mode: standalone` 아님)
+ *   2. 사용자가 닫은 적 없음 (`localStorage.pwa-dismissed` 미설정)
+ *   3. 현재 경로가 ALLOWED 목록에 매칭 + HIDDEN 목록에 미매칭
+ *   4. 플랫폼별 이벤트:
+ *        - Android Chrome: `beforeinstallprompt` 이벤트 수신됨
+ *        - iOS Safari: UA 에서 iPhone/iPad/iPod + Safari 감지됨
+ *
+ * 🔴 비노출 — 아래 중 하나라도(OR) 해당 시:
+ *   1. 이미 PWA 로 실행 중 (`display-mode: standalone`)
+ *   2. `localStorage.pwa-dismissed === '1'` (과거 × 클릭)
+ *   3. 경로가 HIDDEN 에 해당 (`/map` · `/admin/*` · `/login` · `/signup`)
+ *      - `/map`: BottomSheet / CafeOverlayCard 와 하단 UI 경쟁 회피
+ *      - `/admin/*`: 관리자 도구 — PWA 권유 대상 아님
+ *      - `/login`·`/signup`: 인증 플로우 중단 방지
+ *   4. 경로가 ALLOWED 에 미매칭 (기타 내부/디버그 경로)
+ *   5. Chrome `beforeinstallprompt` 미발동 (installability criteria 불충족)
+ *   6. iOS 비Safari (Chrome for iOS / 인앱 브라우저 / 기타 WebView)
+ *
+ * 🔁 재노출 수단:
+ *   - DevTools → Application → Local Storage → `pwa-dismissed` 항목 삭제
+ *   - 또는 브라우저 데이터 초기화
+ *   - (추가 TTL/자동만료는 현재 미적용 — 필요 시 확장)
+ * ────────────────────────────────────────────────────────────────────────
+ */
+
+/**
+ * 배너 노출 화이트리스트 — 이 경로들에서만 배너 노출. 각 항목은 exact-match
+ * 또는 `${p}/...` 하위 경로까지 포함. (예: `/profile` 은 `/profile` 과
+ * `/profile/favorites` 둘 다 매칭, `/profileSettings` 같은 유사 경로는 미매칭.)
+ */
+const ALLOWED_PATHS = ['/', '/profile', '/cafes', '/search'] as const;
+
+/** 명시적 숨김 경로 — ALLOWED 보다 우선 적용. 이유는 상단 JSDoc 참조. */
+const HIDDEN_PATHS = ['/map', '/admin', '/login', '/signup'] as const;
+
+function matchesPathRoot(pathname: string, root: string): boolean {
+  if (root === '/') return pathname === '/';
+  return pathname === root || pathname.startsWith(`${root}/`);
+}
+
 function isAllowedPath(pathname: string): boolean {
-  if (pathname === '/') return true;
-  if (pathname.startsWith('/profile')) return true;
-  return false;
+  if (HIDDEN_PATHS.some((p) => matchesPathRoot(pathname, p))) return false;
+  return ALLOWED_PATHS.some((p) => matchesPathRoot(pathname, p));
 }
 
 export function InstallPrompt() {
