@@ -312,3 +312,17 @@
 - 회원가입 리디자인: 동일 카드 톤 + 카카오 가입 옵션(OrDivider 또는) + 이메일 폼 기본 펼침 + autoComplete/aria-invalid 전체 필드 적용.
 - 기존 login/signup 개별 page.styles.ts 삭제(shared로 통합).
 - QA v2 N13 처리: CafeDetail의 `'로그인이 필요합니다'` toast에 로그인 action 버튼 연결.
+
+## Phase 6 완료 (2026-04-20) — 이모지 0건 달성
+- T6-1: `constants/moods.ts` 54개 무드에서 `emoji` 필드 제거, `CATEGORY_META`(icon + bg/fg/border/activeBg/activeFg) 추가.
+- T6-2: `MoodFilterSheet` 재설계 — CategoryTabs에 lucide 아이콘 + 카테고리 색, Cell이모지 삭제, 선택 시 Check 아이콘.
+- T6-3: `MoodFilterButton`/칩 류 이모지 제거(배지·라벨 모두 텍스트 only).
+- T6-4: HomeClient HOW_IT_WORKS 🎯🗺️✨ → `Filter`/`Map`/`Coffee` + 인기 무드 이모지 제거.
+- T6-5: 플레이스홀더/배너 이모지 일괄 교체
+  - PhotoPlaceholder/HeroGlyph ☕ → `<Coffee/>`, ink100 bg + ink300 stroke
+  - error/cafe 상세 error 😵·☕ → `<AlertTriangle/>`(err 컬러)
+  - MapClient EmptyState(error/empty) → `<AlertTriangle/>`/`<Coffee/>`
+  - MapSkeleton/Kakao·Naver 지도 에러 배너 🗺️ → `<Map/>` 또는 `<AlertTriangle/>`
+  - MoodFilterSheet Hint 💡 → `<Lightbulb/>`
+  - StarRatingInput ★ → lucide `<Star fill/>`
+- T6-6 검증: `git grep -nP "[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]" src/ :!app/icon.tsx :!apple-icon.tsx :!moods.ts` → **0건**. `pnpm exec tsc --noEmit` 통과, `pnpm build` 통과(앱 아이콘 제외).
