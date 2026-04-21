@@ -3,6 +3,7 @@
 import { Heart, FolderOpen, ChevronRight } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PATHS } from '@/constants/paths';
+import { theme } from '@/styles/theme';
 import {
   PageContainer,
   ProfileHeader,
@@ -39,14 +40,14 @@ export function ProfilePageClient({ user }: Props) {
 
       <MenuList>
         <MenuCard href={PATHS.Favorites}>
-          <Heart size={20} color="#ef4444" />
+          <Heart size={20} color={theme.colors.err} />
           <MenuLabel>즐겨찾기</MenuLabel>
-          <ChevronRight size={16} color="#9ca3af" />
+          <ChevronRight size={16} color={theme.colors.ink400} />
         </MenuCard>
         <MenuCard href={PATHS.Collections}>
-          <FolderOpen size={20} color="#d97706" />
+          <FolderOpen size={20} color={theme.colors.primary} />
           <MenuLabel>컬렉션</MenuLabel>
-          <ChevronRight size={16} color="#9ca3af" />
+          <ChevronRight size={16} color={theme.colors.ink400} />
         </MenuCard>
       </MenuList>
     </PageContainer>
