@@ -246,11 +246,6 @@ export const MoodTagLink = styled(Link)`
   }
 `;
 
-export const MoodTagEmoji = styled.span`
-  font-size: 15px;
-  line-height: 1;
-`;
-
 // ─── How It Works ─────────────────────────────────────────
 export const HowSection = styled.section`
   background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
@@ -300,7 +295,7 @@ export const HowIconWrap = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  color: ${theme.colors.primary};
   flex-shrink: 0;
 
   @media (min-width: ${theme.breakpoints.sm}) {

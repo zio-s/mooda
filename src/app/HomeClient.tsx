@@ -2,7 +2,7 @@
 
 import { PATHS } from '@/constants/paths';
 import { MOODS, MOOD_CATEGORIES } from '@/constants/moods';
-import { ArrowRight, Map, Sparkles } from 'lucide-react';
+import { ArrowRight, Coffee, Filter, Map, Sparkles, type LucideIcon } from 'lucide-react';
 import {
   PageWrapper,
   HeroSection,
@@ -30,7 +30,6 @@ import {
   CategoryBadge,
   MoodTagsRow,
   MoodTagLink,
-  MoodTagEmoji,
   HowSection,
   HowGrid,
   HowItem,
@@ -48,26 +47,31 @@ import {
 
 const CATEGORY_ORDER = ['atmosphere', 'purpose', 'photo'] as const;
 
-const HOW_IT_WORKS = [
+const HOW_IT_WORKS: ReadonlyArray<{
+  step: string;
+  Icon: LucideIcon;
+  title: string;
+  desc: string;
+}> = [
   {
     step: 'STEP 01',
-    icon: '🎯',
+    Icon: Filter,
     title: '분위기 선택',
     desc: '조용한, 로맨틱, 빈티지 등 원하는 분위기나 목적을 선택하세요. 16가지 태그 중 복수 선택도 가능해요.',
   },
   {
     step: 'STEP 02',
-    icon: '🗺️',
+    Icon: Map,
     title: '지도로 탐색',
     desc: '실시간 지도에서 주변 카페를 한눈에 확인하세요. 지도를 움직이면 해당 영역 카페가 자동으로 표시돼요.',
   },
   {
     step: 'STEP 03',
-    icon: '✨',
+    Icon: Coffee,
     title: '카페 발견',
     desc: '블로그 후기, 별점, 운영시간까지. 딱 맞는 카페를 찾아 바로 길 안내를 받을 수 있어요.',
   },
-] as const;
+];
 
 export function HomeClient() {
   return (
@@ -153,7 +157,9 @@ export function HomeClient() {
           <HowGrid>
             {HOW_IT_WORKS.map((item, i) => (
               <HowItem key={i}>
-                <HowIconWrap>{item.icon}</HowIconWrap>
+                <HowIconWrap>
+                  <item.Icon size={22} aria-hidden />
+                </HowIconWrap>
                 <HowContent>
                   <HowStepLabel>{item.step}</HowStepLabel>
                   <HowTitle>{item.title}</HowTitle>
