@@ -1,5 +1,7 @@
 'use client';
 
+import { theme } from '@/styles/theme';
+
 export default function GlobalError({
   error,
   reset,
@@ -15,14 +17,14 @@ export default function GlobalError({
     }}>
       <span style={{ fontSize: 48 }}>😵</span>
       <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>문제가 발생했습니다</h2>
-      <p style={{ color: '#6b7280', fontSize: 14, margin: 0 }}>
+      <p style={{ color: theme.colors.ink500, fontSize: 14, margin: 0 }}>
         {error.message || '알 수 없는 오류가 발생했습니다.'}
       </p>
       <button
         onClick={reset}
         style={{
           marginTop: 8, padding: '10px 24px', borderRadius: 8,
-          background: '#d97706', color: 'white', border: 'none',
+          background: theme.colors.primary, color: theme.colors.white, border: 'none',
           fontSize: 14, fontWeight: 500, cursor: 'pointer',
         }}
       >

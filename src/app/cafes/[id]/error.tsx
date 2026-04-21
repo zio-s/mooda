@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { theme } from '@/styles/theme';
 
 export default function CafeDetailError({
   error,
@@ -17,7 +18,7 @@ export default function CafeDetailError({
     }}>
       <span style={{ fontSize: 48 }}>☕</span>
       <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>카페 정보를 불러올 수 없습니다</h2>
-      <p style={{ color: '#6b7280', fontSize: 14, margin: 0 }}>
+      <p style={{ color: theme.colors.ink500, fontSize: 14, margin: 0 }}>
         {error.message || '잠시 후 다시 시도해주세요.'}
       </p>
       <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
@@ -25,7 +26,7 @@ export default function CafeDetailError({
           onClick={reset}
           style={{
             padding: '10px 24px', borderRadius: 8,
-            background: '#d97706', color: 'white', border: 'none',
+            background: theme.colors.primary, color: theme.colors.white, border: 'none',
             fontSize: 14, fontWeight: 500, cursor: 'pointer',
           }}
         >
@@ -35,7 +36,7 @@ export default function CafeDetailError({
           href="/map"
           style={{
             padding: '10px 24px', borderRadius: 8,
-            background: '#f3f4f6', color: '#374151', border: 'none',
+            background: theme.colors.ink100, color: theme.colors.ink700, border: 'none',
             fontSize: 14, fontWeight: 500, textDecoration: 'none',
           }}
         >

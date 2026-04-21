@@ -20,11 +20,13 @@ interface Props {
   searchCount: number;
 }
 
+// 관리자 대시보드 카테고리별 색상. cafe만 brand와 맞추고 나머지는 통계 시각화
+// 구분용 별도 hue (의도적 하드코딩).
 const STAT_COLORS = {
-  cafe: '#d97706',
-  review: '#eab308',
-  user: '#3b82f6',
-  search: '#a855f7',
+  cafe: '#b45309',   // = theme.colors.primary
+  review: '#eab308', // amber-500 (리뷰)
+  user: '#3b82f6',   // blue-500 (유저)
+  search: '#a855f7', // purple-500 (검색)
 };
 
 export function AdminPageClient({ cafeCount, reviewCount, userCount, searchCount }: Props) {

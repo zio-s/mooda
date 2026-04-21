@@ -73,7 +73,7 @@ export const HeroTitle = styled.h1`
 `;
 
 export const HeroHighlight = styled.span`
-  background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+  background: linear-gradient(135deg, ${theme.colors.primary} 0%, #d97706 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
