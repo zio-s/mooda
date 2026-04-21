@@ -100,8 +100,8 @@ export function HomeClient() {
           </HeroCta>
           <HeroStats>
             <StatItem>
-              <StatNumber>200+</StatNumber>
-              <StatLabel>등록 카페</StatLabel>
+              <StatNumber>서울</StatNumber>
+              <StatLabel>주요 지역</StatLabel>
             </StatItem>
             <StatDivider />
             <StatItem>
