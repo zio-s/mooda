@@ -56,8 +56,6 @@ export const MoodButton = styled.button<{ $selected?: boolean }>`
   }
 `;
 
-export const MoodEmoji = styled.span``;
-
 export const ClearRow = styled.div`
   display: flex;
   align-items: center;
