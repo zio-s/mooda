@@ -28,7 +28,9 @@ export const CardWrapper = styled.article`
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   cursor: pointer;
 
-  @media (hover: hover) {
+  /* pointer: fine 까지 요구해 iPad 등 터치 디바이스의 hover 에뮬레이션을
+     배제. 모바일에서 탭 → 잠깐 올라갔다 내려오는 잔상 방지. */
+  @media (hover: hover) and (pointer: fine) {
     ${CardLink}:hover & {
       transform: translateY(-2px);
       box-shadow: ${theme.shadows.cardHover};
