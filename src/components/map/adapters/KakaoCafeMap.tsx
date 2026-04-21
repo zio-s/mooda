@@ -24,7 +24,7 @@ import {
   LocateBtn,
   NearbyLoadingOverlay,
 } from '../CafeMap.styles';
-import { Navigation, Loader2 } from 'lucide-react';
+import { Navigation, Loader2, AlertTriangle } from 'lucide-react';
 import type { CafeMapAdapterProps } from './types';
 
 const KAKAO_APP_KEY = process.env.NEXT_PUBLIC_KAKAO_MAP_APP_KEY ?? '';
@@ -182,7 +182,7 @@ export function KakaoCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
   if (error) {
     return (
       <MapErrorWrapper>
-        <span style={{ fontSize: 32 }}>🗺️</span>
+        <AlertTriangle size={32} strokeWidth={1.5} aria-hidden />
         <p>지도를 불러올 수 없습니다.</p>
         <p style={{ fontSize: 12 }}>카카오 API 키를 확인해주세요.</p>
       </MapErrorWrapper>

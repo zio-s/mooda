@@ -4,7 +4,7 @@ import { theme } from '@/styles/theme';
 
 /**
  * 카드 전체가 하나의 링크로 동작하도록 CardLink로 감싼다. 내부의 인터랙티브
- * 요소(♥ 버튼 등)는 e.preventDefault + e.stopPropagation으로 네비게이션을
+ * 요소(Heart 버튼 등)는 e.preventDefault + e.stopPropagation으로 네비게이션을
  * 막고 자신의 핸들러만 실행.
  */
 export const CardLink = styled(Link)`
@@ -116,10 +116,11 @@ export const PhotoCountPill = styled.span`
 export const PhotoPlaceholder = styled.div`
   display: flex;
   height: 100%;
+  width: 100%;
   align-items: center;
   justify-content: center;
-  font-size: 36px;
-  color: ${theme.colors.textMuted};
+  background: ${theme.colors.ink100};
+  color: ${theme.colors.ink300};
 `;
 
 /**

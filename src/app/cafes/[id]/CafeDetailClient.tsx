@@ -7,6 +7,7 @@ import { useSession } from 'next-auth/react';
 import {
   ArrowLeft,
   Bookmark,
+  Coffee,
   Heart,
   Navigation,
   Phone,
@@ -365,7 +366,9 @@ export function CafeDetailClient({ cafe }: Props) {
           </HeroPhotoFill>
         ) : (
           <HeroGradient>
-            <HeroGlyph aria-hidden>☕</HeroGlyph>
+            <HeroGlyph aria-hidden>
+              <Coffee size={48} strokeWidth={1.5} />
+            </HeroGlyph>
           </HeroGradient>
         )}
         <HeroOverlay>

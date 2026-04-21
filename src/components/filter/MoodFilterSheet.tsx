@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import styled, { css, keyframes } from 'styled-components';
-import { Check } from 'lucide-react';
+import { Check, Lightbulb } from 'lucide-react';
 import { MOODS, MOOD_CATEGORIES, CATEGORY_META } from '@/constants/moods';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { clearMoodFilters, toggleMoodFilter } from '@/store/slices/mapSlice';
@@ -199,8 +199,11 @@ export function MoodFilterSheet({ open, onOpenChange, trigger }: Props) {
               })}
             </Grid>
             <Hint>
-              💡 여러 카테고리에서 선택 가능해요. 선택한 태그 중 하나라도 매칭되는
-              카페가 나옵니다.
+              <Lightbulb size={14} strokeWidth={1.75} aria-hidden />
+              <span>
+                여러 카테고리에서 선택 가능해요. 선택한 태그 중 하나라도 매칭되는
+                카페가 나옵니다.
+              </span>
             </Hint>
           </Body>
           <Footer>
@@ -456,6 +459,9 @@ const CellCheck = styled.span`
 `;
 
 const Hint = styled.p`
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   margin: 16px 0 20px;
   padding: 12px 14px;
   border-radius: 12px;
@@ -463,6 +469,12 @@ const Hint = styled.p`
   color: ${theme.colors.ink500};
   font-size: 12px;
   line-height: 1.5;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: ${theme.colors.ink400};
+  }
 `;
 
 const Footer = styled.div`

@@ -146,7 +146,7 @@ export const EmptyState = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 32px;
+    color: ${theme.colors.ink500};
     line-height: 1;
   }
 

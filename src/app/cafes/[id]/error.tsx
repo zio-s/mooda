@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { AlertTriangle } from 'lucide-react';
 import { theme } from '@/styles/theme';
 
 export default function CafeDetailError({
@@ -16,7 +17,7 @@ export default function CafeDetailError({
       justifyContent: 'center', minHeight: '60vh', gap: 16, padding: 24,
       textAlign: 'center', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
     }}>
-      <span style={{ fontSize: 48 }}>☕</span>
+      <AlertTriangle size={48} color={theme.colors.err} strokeWidth={1.5} aria-hidden />
       <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>카페 정보를 불러올 수 없습니다</h2>
       <p style={{ color: theme.colors.ink500, fontSize: 14, margin: 0 }}>
         {error.message || '잠시 후 다시 시도해주세요.'}

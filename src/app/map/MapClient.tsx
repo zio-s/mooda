@@ -18,7 +18,16 @@ import { CafeCard } from '@/components/cafe/CafeCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { SearchTrigger } from '@/components/search/SearchTrigger';
-import { Filter, List, Map as LucideMap, MapPin, ChevronDown, ArrowDownUp } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowDownUp,
+  ChevronDown,
+  Coffee,
+  Filter,
+  List,
+  Map as LucideMap,
+  MapPin,
+} from 'lucide-react';
 import type { Cafe, SearchParams } from '@/types';
 
 // ─── 지역 바로가기 데이터 ─────────────────────────────────────────────
@@ -372,12 +381,16 @@ export function MapClient() {
               </SkeletonList>
             ) : isError ? (
               <EmptyState>
-                <div>😵</div>
+                <div>
+                  <AlertTriangle size={32} strokeWidth={1.5} aria-hidden />
+                </div>
                 <p>카페 검색에 실패했습니다.<br />잠시 후 다시 시도해주세요.</p>
               </EmptyState>
             ) : cafes.length === 0 ? (
               <EmptyState>
-                <div>☕</div>
+                <div>
+                  <Coffee size={32} strokeWidth={1.5} aria-hidden />
+                </div>
                 <p>지도를 이동하거나<br />필터를 변경해보세요</p>
               </EmptyState>
             ) : (

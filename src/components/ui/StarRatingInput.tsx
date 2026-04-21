@@ -3,12 +3,13 @@
 import { useState, useCallback } from 'react';
 import type { KeyboardEvent } from 'react';
 import styled from 'styled-components';
+import { Star } from 'lucide-react';
 import { theme } from '@/styles/theme';
 
 // ─── 상수 ──────────────────────────────────────────────────────────────────────
 const STAR_LABELS = ['', '별로예요', '그저 그래요', '괜찮아요', '좋아요', '최고예요'] as const;
 
-const SIZE_PX = { sm: '18px', md: '24px', lg: '32px' } as const;
+const SIZE_PX = { sm: 18, md: 24, lg: 32 } as const;
 
 // ─── Styled ───────────────────────────────────────────────────────────────────
 const Wrapper = styled.div`
@@ -37,18 +38,20 @@ const StarsRow = styled.div`
 const StarBtn = styled.button<{
   $filled: boolean;
   $readOnly: boolean;
-  $size: keyof typeof SIZE_PX;
 }>`
   background: none;
   border: none;
   padding: 3px;
   line-height: 1;
   cursor: ${({ $readOnly }) => ($readOnly ? 'default' : 'pointer')};
-  font-size: ${({ $size }) => SIZE_PX[$size]};
   color: ${({ $filled }) => ($filled ? theme.colors.star : theme.colors.starEmpty)};
   transition: color 0.1s ease, transform 0.1s ease;
   display: flex;
   align-items: center;
+
+  svg {
+    fill: ${({ $filled }) => ($filled ? 'currentColor' : 'transparent')};
+  }
 
   &:not([disabled]):hover {
     transform: scale(1.15);
@@ -155,7 +158,6 @@ export function StarRatingInput({
             type="button"
             $filled={star <= display}
             $readOnly={readOnly}
-            $size={size}
             disabled={readOnly}
             aria-label={`${star}점`}
             aria-pressed={value >= star}
@@ -164,7 +166,7 @@ export function StarRatingInput({
             onMouseLeave={() => !readOnly && setHovered(0)}
             onKeyDown={(e) => handleKeyDown(e, star)}
           >
-            ★
+            <Star size={SIZE_PX[size]} strokeWidth={1.5} aria-hidden />
           </StarBtn>
         ))}
         {showLabel && !readOnly && (

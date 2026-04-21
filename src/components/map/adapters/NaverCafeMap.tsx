@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Navigation } from 'lucide-react';
+import { Navigation, AlertTriangle } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import {
   setBounds,
@@ -358,7 +358,7 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
   if (!NAVER_CLIENT_ID) {
     return (
       <MapErrorWrapper>
-        <span style={{ fontSize: 32 }}>🗺️</span>
+        <AlertTriangle size={32} strokeWidth={1.5} aria-hidden />
         <p>네이버지도를 사용하려면 API 키가 필요해요.</p>
         <p style={{ fontSize: 12 }}>NEXT_PUBLIC_NAVER_MAP_CLIENT_ID 환경변수를 확인해주세요.</p>
       </MapErrorWrapper>
@@ -369,7 +369,7 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
   if (error) {
     return (
       <MapErrorWrapper>
-        <span style={{ fontSize: 32 }}>🗺️</span>
+        <AlertTriangle size={32} strokeWidth={1.5} aria-hidden />
         <p>네이버지도를 불러올 수 없습니다.</p>
         <p style={{ fontSize: 12 }}>잠시 후 다시 시도해주세요.</p>
       </MapErrorWrapper>

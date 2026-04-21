@@ -22,7 +22,9 @@ export const SkeletonContent = styled.div`
 `;
 
 export const SkeletonIcon = styled.div`
-  font-size: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 8px;
 `;
 

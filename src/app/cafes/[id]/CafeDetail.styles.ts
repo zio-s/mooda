@@ -70,8 +70,10 @@ export const HeroGradient = styled.div`
 `;
 
 export const HeroGlyph = styled.span`
-  font-size: 72px;
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: ${theme.colors.ink300};
   filter: drop-shadow(0 4px 10px rgba(180, 83, 9, 0.18));
 `;
 
@@ -91,7 +93,7 @@ export const HeroOverlay = styled.div`
 `;
 
 export const HeroFab = styled.button<{ $active?: boolean }>`
-  /* iOS HIG 최소 터치 타겟 44 — 주요 액션(뒤로·공유·♥)이라 sm(40) 탈피. */
+  /* iOS HIG 최소 터치 타겟 44 — 주요 액션(뒤로·공유·Heart)이라 sm(40) 탈피. */
   width: 44px;
   height: 44px;
   border-radius: 999px;

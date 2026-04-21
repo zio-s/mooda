@@ -10,6 +10,14 @@ export const MapErrorWrapper = styled.div`
   gap: 8px;
   color: ${theme.colors.textMuted};
   font-size: ${theme.fontSize.sm};
+
+  svg {
+    color: ${theme.colors.err};
+  }
+
+  p {
+    margin: 0;
+  }
 `;
 
 const pulse = keyframes`

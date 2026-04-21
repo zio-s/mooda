@@ -1,3 +1,5 @@
+import { Map as MapIcon } from 'lucide-react';
+import { theme } from '@/styles/theme';
 import {
   SkeletonWrapper,
   SkeletonContent,
@@ -9,7 +11,9 @@ export function MapSkeleton() {
   return (
     <SkeletonWrapper>
       <SkeletonContent>
-        <SkeletonIcon>🗺️</SkeletonIcon>
+        <SkeletonIcon aria-hidden>
+          <MapIcon size={36} strokeWidth={1.5} color={theme.colors.ink300} />
+        </SkeletonIcon>
         <SkeletonText>지도 불러오는 중...</SkeletonText>
       </SkeletonContent>
     </SkeletonWrapper>

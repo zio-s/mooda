@@ -1,5 +1,6 @@
 'use client';
 
+import { AlertTriangle } from 'lucide-react';
 import { theme } from '@/styles/theme';
 
 export default function GlobalError({
@@ -15,7 +16,7 @@ export default function GlobalError({
       justifyContent: 'center', minHeight: '60vh', gap: 16, padding: 24,
       textAlign: 'center', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
     }}>
-      <span style={{ fontSize: 48 }}>😵</span>
+      <AlertTriangle size={48} color={theme.colors.err} strokeWidth={1.5} aria-hidden />
       <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>문제가 발생했습니다</h2>
       <p style={{ color: theme.colors.ink500, fontSize: 14, margin: 0 }}>
         {error.message || '알 수 없는 오류가 발생했습니다.'}

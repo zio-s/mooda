@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
-import { Heart, Star, MapPin } from 'lucide-react';
+import { Coffee, Heart, Star, MapPin } from 'lucide-react';
 import { PATHS } from '@/constants/paths';
 import { OpenBadge } from '@/components/cafe/OpenBadge';
 import { computeOpenStatus, type CafeHourInput } from '@/lib/cafe/openStatus';
@@ -157,7 +157,9 @@ export function CafeCard({ cafe, compact = false, onFavorite, isFavorited }: Caf
               sizes="(max-width: 768px) 100vw, 33vw"
             />
           ) : (
-            <PhotoPlaceholder>☕</PhotoPlaceholder>
+            <PhotoPlaceholder aria-hidden>
+              <Coffee size={32} color={theme.colors.ink300} strokeWidth={1.5} />
+            </PhotoPlaceholder>
           )}
           {openStatus && (
             <BadgeAnchor>
@@ -174,7 +176,7 @@ export function CafeCard({ cafe, compact = false, onFavorite, isFavorited }: Caf
                 type="button"
                 aria-label={isFavorited ? '즐겨찾기 해제' : '즐겨찾기 추가'}
                 onClick={(e) => {
-                  // 카드 전체가 링크이므로 ♥ 버튼은 상세 이동을 막고 자기 로직만.
+                  // 카드 전체가 링크이므로 Heart 버튼은 상세 이동을 막고 자기 로직만.
                   e.preventDefault();
                   e.stopPropagation();
                   onFavorite(cafe.id, !!isFavorited);
