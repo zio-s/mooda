@@ -31,7 +31,7 @@
 | Phase 4 (프로필 허브) | ✅ 완료 (커밋 `9642f97`~`8929ee0`) |
 | Phase 5 (로그인/가입) | ✅ 완료 (커밋 `ee1d155`~`3a66222`) |
 | Phase 6 (이모지 제거) | ✅ 완료 (커밋 `cf6f379`~`d938024`) |
-| 🟡 BUG-MAP (지도 렌더 깨짐) | ✅ 수정 `5e91180` · ✅ 로컬 Chrome 재현 없음 · ⏳ 재발 예방 A2/A3/A4 · ⏳ 실기 QA |
+| 🟢 BUG-MAP (지도 렌더 깨짐) | ✅ 수정 `5e91180` · ✅ 예방 A2 `e8a6b19` · A3 `63f4841` · A4 `22b0f71` · ⏳ 실기 QA |
 | BUG-SEARCH (button 중첩 hydration) | ✅ 완료 (커밋 `605b856`) · BUG-SEARCH-02 전수 스캔 0건 |
 | P7-A (데이터 레이어 클린업) | ⏳ 대기 |
 | Phase 7 시나리오 (P7-B/C/D/E/F) | ❓ 사용자 결정 대기 |
@@ -52,24 +52,13 @@
 - T-BUG-SEARCH-02: `styled.button` 전수 스캔 결과 native button-in-button **0건**. CardLink(`<a>`) + FavoriteBtn(`<button>`) 은 doc 명시대로 scope 밖
 - **DoD QA (실기)**: Console hydration error 제로 / Row Enter·Space / Tab ring / iOS tap highlight 등 사용자 확인 범위
 
-### 🟡 **2순위** — BUG-MAP 재발 예방 강화 (코드 수정, ~1시간)
+### 🟢 **완료 기록** — BUG-MAP 재발 예방 A2/A3/A4 (2026-04-21)
 
-> 로컬 Chrome 에서는 재현 없음. 실기 실측 전에 **특정 상황 재발 가능성 낮추는 예방 패치 3건**.
-
-- **지시 문서**: [`10_bug_map_resize.md`](./10_bug_map_resize.md) `PART 8`
-- **범위**: `BUG-MAP-A2` + `BUG-MAP-A3` + `BUG-MAP-A4` (A1/A5/A6/A7 은 조사·관찰로 본 README 범위 밖)
-- **작업 요약**:
-  - **A2** `mapRef` 미할당 상태 refresh 큐잉 — `pendingRefreshRef` + map init 후 flush. Naver · Kakao 양쪽 적용
-  - **A3** ResizeObserver 가 container 0×0 에서 refresh 건너뛰도록 — `contentRect.width/height < 10` 스킵
-  - **A4** Provider 토글 시 `key={provider}` prop 으로 어댑터 강제 리마운트 (이전 T-BUG-MAP-03 승격)
-- **커밋 메시지**:
-  ```
-  fix(map): SDK 초기화 전 visibility 이벤트 큐잉 (BUG-MAP-A2)
-  fix(map): ResizeObserver 가 container 0×0 에서 refresh 건너뛰도록 (BUG-MAP-A3)
-  fix(map): provider 토글 시 key prop 으로 어댑터 강제 리마운트 (BUG-MAP-A4)
-  ```
-- **PR 분리**: 3개 커밋, 단일 PR 권장 (전부 map 경로 동일)
-- **DoD**: typecheck + build 통과, `/map` 에서 provider 토글 + 탭 전환 회귀 확인
+- **A2** (`e8a6b19`) SDK 초기화 전 visibility 이벤트 큐잉 — `pendingRefreshRef` + `requestRefresh` 통합 콜백. Naver 는 map init 지점 / Kakao 는 handleCreate 에서 flush
+- **A3** (`63f4841`) ResizeObserver 가 container 0×0 에서 refresh 건너뛰도록 — `entry.contentRect.width/height < 10` 스킵
+- **A4** (`22b0f71`) Provider 토글 시 `key={"naver"|"kakao"}` prop 으로 어댑터 강제 리마운트 (기존 T-BUG-MAP-03 승격). 이전 SDK destroy 가 새 SDK new Map() 전에 완료되도록 동기 순서 보장
+- typecheck + build 통과
+- **잔여**: A1/A5/A6/A7 은 조사·관찰 영역 (사용자 보고/로그 의존)
 
 ### 🟢 **완료 기록** — BUG-MAP-01/02 (커밋 `5e91180`, 2026-04-21)
 

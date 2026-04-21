@@ -97,9 +97,9 @@
 - [x] **BUG-MAP-01** `NaverCafeMap` visibilitychange + pageshow + ResizeObserver 추가 (커밋 `5e91180`)
 - [x] **BUG-MAP-02** `KakaoCafeMap` mapRef + containerRef 신설 + relayout 핸들러 (커밋 `5e91180`)
 - [x] **BUG-MAP 로컬 Chrome 재현 없음** (사용자 확인 2026-04-21)
-- [ ] **BUG-MAP-A2** `mapRef` 미할당 상태 refresh 큐잉 (pendingRefreshRef · 30분 · Naver/Kakao 양쪽)
-- [ ] **BUG-MAP-A3** ResizeObserver 가 container 0×0 에서 refresh 건너뛰기 (15분)
-- [ ] **BUG-MAP-A4** Provider 토글 `key` prop 강제 리마운트 (20분, 기존 BUG-MAP-03 승격)
+- [x] **BUG-MAP-A2** `mapRef` 미할당 상태 refresh 큐잉 (pendingRefreshRef · 30분 · Naver/Kakao 양쪽) (커밋 `e8a6b19`)
+- [x] **BUG-MAP-A3** ResizeObserver 가 container 0×0 에서 refresh 건너뛰기 (15분) (커밋 `63f4841`)
+- [x] **BUG-MAP-A4** Provider 토글 `key` prop 강제 리마운트 (20분, 기존 BUG-MAP-03 승격) (커밋 `22b0f71`)
 - [ ] **BUG-MAP-A5** (조사) SW 지도 타일 캐시 정책 검토 — `public/sw.js` / Kakao·Naver 타일 URL
 - [ ] **BUG-MAP-A7** (조사) React Strict Mode 이중 useEffect 발화 여부 DevTools 로 확인
 - [ ] (실기 QA) iOS Safari / Android Chrome / 데스크톱 × Kakao/Naver — 사용자 실측 대기
