@@ -134,7 +134,7 @@ export function CafeDetailClient({ cafe }: Props) {
   }, [shakeMoodId]);
 
   const { data: blogData } = useGetCafeBlogsQuery(cafe.id);
-  const { data: googleData } = useGetCafeGoogleReviewsQuery(cafe.id);
+  const { data: googleData, isLoading: googleLoading } = useGetCafeGoogleReviewsQuery(cafe.id);
 
   // ── 갤러리 라이트박스 ──────────────────────────────────────────────────
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
@@ -462,11 +462,11 @@ export function CafeDetailClient({ cafe }: Props) {
             리뷰{cafe.reviewCount > 0 ? ` ${cafe.reviewCount}` : ''}
           </TabsTrigger>
           <TabsTrigger value="blogs">블로그</TabsTrigger>
-          {googleData && googleData.reviews.length > 0 && (
-            <TabsTrigger value="google">
-              Google {googleData.reviews.length}
-            </TabsTrigger>
-          )}
+          {/* Google 리뷰는 데이터 도착 전/데이터 없음 모두 탭은 유지하고
+              내부에서 빈 상태를 표시 → 탭이 갑자기 "생성"되는 깜빡임 제거. */}
+          <TabsTrigger value="google">
+            Google{googleData && googleData.reviews.length > 0 ? ` ${googleData.reviews.length}` : ''}
+          </TabsTrigger>
           {allPhotos.length > 0 && (
             <TabsTrigger value="gallery">
               갤러리 {allPhotos.length}
@@ -614,65 +614,71 @@ export function CafeDetailClient({ cafe }: Props) {
           )}
         </TabsContent>
 
-        {googleData && googleData.reviews.length > 0 && (
-          <TabsContent value="google" style={{ marginTop: 16 }}>
-            {googleData.googleRating && (
-              <GoogleRatingBanner>
-                <Star size={16} fill="#fbbf24" color="#fbbf24" />
-                Google 평점 {googleData.googleRating.toFixed(1)}
-                {googleData.googleTotalRatings && (
-                  <span style={{ fontWeight: 400, color: '#a16207' }}>
-                    ({googleData.googleTotalRatings.toLocaleString()}개 평가)
-                  </span>
-                )}
-              </GoogleRatingBanner>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {googleData.reviews.map((review, i) => (
-                <GoogleReviewCard key={i}>
-                  <GoogleReviewHeader>
-                    {review.authorPhoto ? (
-                      <GoogleAvatar
-                        src={review.authorPhoto}
-                        alt={review.authorName}
-                        referrerPolicy="no-referrer"
-                      />
-                    ) : (
-                      <GoogleAvatar
-                        as="div"
-                        style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 14, color: '#9ca3af', background: '#f3f4f6',
-                        }}
-                      >
-                        {review.authorName.charAt(0)}
-                      </GoogleAvatar>
-                    )}
-                    <GoogleAuthorInfo>
-                      <ReviewerName>{review.authorName}</ReviewerName>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <StarRow>
-                          {Array.from({ length: 5 }).map((_, j) => (
-                            <Star
-                              key={j}
-                              size={11}
-                              fill={j < review.rating ? '#fbbf24' : 'none'}
-                              color={j < review.rating ? '#fbbf24' : '#d1d5db'}
-                            />
-                          ))}
-                        </StarRow>
-                        <ReviewDate>{review.relativeTime}</ReviewDate>
-                      </div>
-                    </GoogleAuthorInfo>
-                  </GoogleReviewHeader>
-                  {review.text && (
-                    <ReviewContent>{review.text}</ReviewContent>
+        <TabsContent value="google" style={{ marginTop: 16 }}>
+          {googleLoading ? (
+            <EmptyMessage>Google 리뷰 불러오는 중…</EmptyMessage>
+          ) : !googleData || googleData.reviews.length === 0 ? (
+            <EmptyMessage>Google 리뷰가 아직 없어요.</EmptyMessage>
+          ) : (
+            <>
+              {googleData.googleRating && (
+                <GoogleRatingBanner>
+                  <Star size={16} fill="#fbbf24" color="#fbbf24" />
+                  Google 평점 {googleData.googleRating.toFixed(1)}
+                  {googleData.googleTotalRatings && (
+                    <span style={{ fontWeight: 400, color: '#a16207' }}>
+                      ({googleData.googleTotalRatings.toLocaleString()}개 평가)
+                    </span>
                   )}
-                </GoogleReviewCard>
-              ))}
-            </div>
-          </TabsContent>
-        )}
+                </GoogleRatingBanner>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {googleData.reviews.map((review, i) => (
+                  <GoogleReviewCard key={i}>
+                    <GoogleReviewHeader>
+                      {review.authorPhoto ? (
+                        <GoogleAvatar
+                          src={review.authorPhoto}
+                          alt={review.authorName}
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <GoogleAvatar
+                          as="div"
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 14, color: '#9ca3af', background: '#f3f4f6',
+                          }}
+                        >
+                          {review.authorName.charAt(0)}
+                        </GoogleAvatar>
+                      )}
+                      <GoogleAuthorInfo>
+                        <ReviewerName>{review.authorName}</ReviewerName>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <StarRow>
+                            {Array.from({ length: 5 }).map((_, j) => (
+                              <Star
+                                key={j}
+                                size={11}
+                                fill={j < review.rating ? '#fbbf24' : 'none'}
+                                color={j < review.rating ? '#fbbf24' : '#d1d5db'}
+                              />
+                            ))}
+                          </StarRow>
+                          <ReviewDate>{review.relativeTime}</ReviewDate>
+                        </div>
+                      </GoogleAuthorInfo>
+                    </GoogleReviewHeader>
+                    {review.text && (
+                      <ReviewContent>{review.text}</ReviewContent>
+                    )}
+                  </GoogleReviewCard>
+                ))}
+              </div>
+            </>
+          )}
+        </TabsContent>
 
         {allPhotos.length > 0 && (
           <TabsContent value="gallery" style={{ marginTop: 16 }}>
