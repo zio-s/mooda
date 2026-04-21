@@ -266,7 +266,18 @@ export function SearchClient() {
               </ClearAllButton>
             </SectionTitle>
             {recentItems.map((item) => (
-              <Row key={item.cafeId} onClick={() => handleSelectRecent(item)}>
+              <Row
+                key={item.cafeId}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleSelectRecent(item)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleSelectRecent(item);
+                  }
+                }}
+              >
                 <IconBox $variant="recent">
                   <Clock size={18} />
                 </IconBox>
@@ -320,7 +331,15 @@ export function SearchClient() {
                     {moodaResults.map((result) => (
                       <Row
                         key={result.kakaoPlaceId}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => handleSelectResult(result)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleSelectResult(result);
+                          }
+                        }}
                       >
                         <IconBox $variant="mooda">
                           <Sparkles size={18} />
@@ -341,24 +360,39 @@ export function SearchClient() {
                     <SectionTitle>
                       <span>Kakao Local 검색</span>
                     </SectionTitle>
-                    {kakaoResults.map((result) => (
-                      <Row
-                        key={result.kakaoPlaceId}
-                        onClick={() => handleSelectResult(result)}
-                        disabled={registeringId === result.kakaoPlaceId}
-                      >
-                        <IconBox $variant="generic">
-                          <MapPin size={18} />
-                        </IconBox>
-                        <RowBody>
-                          <RowTitle>{highlight(result.name, trimmed)}</RowTitle>
-                          {result.address && <RowMeta>{result.address}</RowMeta>}
-                          {registeringId === result.kakaoPlaceId && (
-                            <RowMeta>Mooda에 등록하는 중…</RowMeta>
-                          )}
-                        </RowBody>
-                      </Row>
-                    ))}
+                    {kakaoResults.map((result) => {
+                      const isRegistering = registeringId === result.kakaoPlaceId;
+                      const activate = () => {
+                        if (isRegistering) return;
+                        handleSelectResult(result);
+                      };
+                      return (
+                        <Row
+                          key={result.kakaoPlaceId}
+                          role="button"
+                          tabIndex={isRegistering ? -1 : 0}
+                          aria-disabled={isRegistering}
+                          onClick={activate}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              activate();
+                            }
+                          }}
+                        >
+                          <IconBox $variant="generic">
+                            <MapPin size={18} />
+                          </IconBox>
+                          <RowBody>
+                            <RowTitle>{highlight(result.name, trimmed)}</RowTitle>
+                            {result.address && <RowMeta>{result.address}</RowMeta>}
+                            {isRegistering && (
+                              <RowMeta>Mooda에 등록하는 중…</RowMeta>
+                            )}
+                          </RowBody>
+                        </Row>
+                      );
+                    })}
                     <InfoNote>
                       Kakao Local 검색 기반 · 등록되지 않은 카페는 선택 시 Mooda에 자동
                       등록됩니다.

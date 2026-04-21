@@ -152,13 +152,18 @@ export const Band = styled.div`
   background: ${theme.colors.ink50};
 `;
 
-export const Row = styled.button`
+// role="button" 의 <div> — <button> 안에 <button>(RowRemove) 중첩이 HTML 스펙
+// 위반이라 native button 사용 불가. keyboard/focus 동작은 SearchClient 에서
+// tabIndex + onKeyDown 으로 보강, 여기서는 button 감각 시각/제스처만 복원.
+export const Row = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
   padding: 12px 20px;
-  text-align: left;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
   transition: background 0.12s ease;
 
   &:hover {
@@ -167,6 +172,21 @@ export const Row = styled.button`
 
   &:active {
     background: ${theme.colors.ink100};
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px ${theme.colors.primary};
+  }
+
+  &[aria-disabled='true'] {
+    cursor: default;
+    opacity: 0.6;
+  }
+
+  &[aria-disabled='true']:hover,
+  &[aria-disabled='true']:active {
+    background: transparent;
   }
 `;
 
