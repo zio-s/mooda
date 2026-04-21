@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Map, Coffee } from 'lucide-react';
+import { Map, Coffee, Search } from 'lucide-react';
 import {
   HeaderWrapper,
   HeaderInner,
@@ -23,12 +23,26 @@ import {
   AvatarButton,
   MenuLink,
   AuthLink,
+  SearchIconLink,
   SignupWrapper,
 } from './Header.styles';
+
+/**
+ * 몰입형 뷰(지도/검색/카페 상세)에서는 공용 Header를 숨긴다. 각 뷰가 자체
+ * 상단 UI(FilterBar · 검색 헤더 · Hero FAB)로 네비게이션을 제공하기 때문.
+ */
+const IMMERSIVE_PREFIXES = ['/map', '/search', '/cafes/'];
+function shouldHideHeader(pathname: string): boolean {
+  return IMMERSIVE_PREFIXES.some(
+    (prefix) => pathname === prefix.replace(/\/$/, '') || pathname.startsWith(prefix),
+  );
+}
 
 export function Header() {
   const { data: session } = useSession();
   const pathname = usePathname();
+
+  if (shouldHideHeader(pathname)) return null;
 
   return (
     <HeaderWrapper>
@@ -50,6 +64,11 @@ export function Header() {
         </Nav>
 
         <HeaderRight>
+          {/* 모바일 전용 검색 진입점 — 데스크톱은 Nav의 '지도 검색'으로 대체. */}
+          <SearchIconLink href={PATHS.Search} aria-label="검색">
+            <Search size={18} />
+          </SearchIconLink>
+
           {session ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

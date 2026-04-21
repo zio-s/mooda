@@ -97,6 +97,30 @@ export const HeaderRight = styled.div`
   gap: 8px;
 `;
 
+/**
+ * 모바일 전용 검색 아이콘 버튼 — /search로 이동. 데스크톱에서는 Nav의
+ * '지도 검색' 링크가 존재해 중복을 피하려고 sm 이상에서 숨김.
+ */
+export const SearchIconLink = styled(Link)`
+  width: 40px;
+  height: 40px;
+  border-radius: ${theme.borderRadius.md};
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: ${theme.colors.ink700};
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: ${theme.colors.ink100};
+    color: ${theme.colors.ink900};
+  }
+
+  @media (min-width: ${theme.breakpoints.sm}) {
+    display: none;
+  }
+`;
+
 export const AvatarButton = styled.button`
   width: 32px;
   height: 32px;

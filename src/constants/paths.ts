@@ -2,6 +2,7 @@ export const PATHS = {
   // 공개 페이지
   Home: '/',
   Map: '/map',
+  Search: '/search',
   CafeDetail: (id: string) => `/cafes/${id}`,
 
   // 인증
