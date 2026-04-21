@@ -125,6 +125,18 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
   const boundsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSyncingRef = useRef(false);
   const selectedIdRef = useRef(selectedCafeId);
+  // SDK 로드 중 탭 전환/복귀 등으로 refresh 요청이 들어오면 mapRef 가 null
+  // 이어서 no-op 됨. pendingRefreshRef 로 큐잉했다가 map init 직후 flush.
+  const pendingRefreshRef = useRef(false);
+
+  const requestRefresh = useCallback(() => {
+    const map = mapRef.current;
+    if (map) {
+      map.refresh(true);
+    } else {
+      pendingRefreshRef.current = true;
+    }
+  }, []);
 
   const { loading, error } = useNaverMapsLoader({
     clientId: NAVER_CLIENT_ID,
@@ -187,6 +199,11 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
     });
     mapRef.current = map;
     setMapReady(true);
+    // SDK 초기화 이전에 들어왔던 refresh 요청을 flush.
+    if (pendingRefreshRef.current) {
+      pendingRefreshRef.current = false;
+      map.refresh(true);
+    }
 
     const idleListener = naver.maps.Event.addListener(map, 'idle', () => {
       emitBoundsUpdate(map);
@@ -246,23 +263,24 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
   // ── BUG-MAP-01: 탭/창 복귀 + BFCache + resize 대응 ────────
   // 지도 canvas 는 컨테이너 크기가 바뀌어도 자동 relayout 안 됨. 다른 탭에서
   // 돌아오거나 뒤로가기로 BFCache 복원되거나 컨테이너가 리사이즈될 때
-  // map.refresh(true)로 SDK 내부 상태 + 타일을 강제 재동기화.
+  // requestRefresh 로 SDK 내부 상태 + 타일을 강제 재동기화 (map 이 아직
+  // init 전이면 큐잉 후 init 완료 시 flush — BUG-MAP-A2).
   useEffect(() => {
     const onVis = () => {
       if (document.hidden) return;
-      mapRef.current?.refresh(true);
+      requestRefresh();
     };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
-  }, []);
+  }, [requestRefresh]);
 
   useEffect(() => {
     const onShow = (e: PageTransitionEvent) => {
-      if (e.persisted) mapRef.current?.refresh(true);
+      if (e.persisted) requestRefresh();
     };
     window.addEventListener('pageshow', onShow);
     return () => window.removeEventListener('pageshow', onShow);
-  }, []);
+  }, [requestRefresh]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -274,12 +292,12 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
       scheduled = true;
       requestAnimationFrame(() => {
         scheduled = false;
-        mapRef.current?.refresh(true);
+        requestRefresh();
       });
     });
     obs.observe(container);
     return () => obs.disconnect();
-  }, []);
+  }, [requestRefresh]);
 
   // ── 마커 + 자체 클러스터 관리 ──────────────────────
   // cafes / level / selectedCafeId 변화에 반응. mapReady 게이트로 map init 이후에만 실행.

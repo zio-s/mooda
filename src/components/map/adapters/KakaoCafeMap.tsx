@@ -47,6 +47,9 @@ export function KakaoCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
   useEffect(() => {
     centerRef.current = center;
   }, [center]);
+  // SDK 로드 중 탭 전환/복귀 등으로 refresh 요청이 들어오면 mapRef 가 null
+  // 이어서 no-op 됨. pendingRefreshRef 로 큐잉했다가 handleCreate 에서 flush.
+  const pendingRefreshRef = useRef(false);
   const [locating, setLocating] = useState(false);
   const [nearbyLoading, setNearbyLoading] = useState<{ lat: number; lng: number } | null>(null);
   const [searchNearby] = useSearchNearbyMutation();
@@ -123,16 +126,6 @@ export function KakaoCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
     [dispatch],
   );
 
-  // Kakao SDK 는 <Map> 컴포넌트에 ref 못 꽂음 → onCreate 로 받은 인스턴스를
-  // mapRef 에 저장. 이후 relayout 호출에 필요.
-  const handleCreate = useCallback(
-    (map: kakao.maps.Map) => {
-      mapRef.current = map;
-      handleBoundsChange(map);
-    },
-    [handleBoundsChange],
-  );
-
   // ── BUG-MAP-02: 탭/창 복귀 + BFCache + resize 대응 ────────
   // Kakao SDK 는 컨테이너 크기가 바뀌어도 자동 relayout 안 됨. 탭 복귀 /
   // BFCache 복원 / 컨테이너 리사이즈 시 map.relayout() 으로 SDK 내부 상태 +
@@ -145,22 +138,45 @@ export function KakaoCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
     map.setCenter(new kakao.maps.LatLng(c.lat, c.lng));
   }, []);
 
+  // BUG-MAP-A2: map 이 아직 init 전이면 플래그만 세우고 handleCreate 에서 flush.
+  const requestRefresh = useCallback(() => {
+    if (mapRef.current) {
+      refreshMapView();
+    } else {
+      pendingRefreshRef.current = true;
+    }
+  }, [refreshMapView]);
+
+  // Kakao SDK 는 <Map> 컴포넌트에 ref 못 꽂음 → onCreate 로 받은 인스턴스를
+  // mapRef 에 저장. 이후 relayout 호출에 필요. 큐잉된 refresh 가 있으면 flush.
+  const handleCreate = useCallback(
+    (map: kakao.maps.Map) => {
+      mapRef.current = map;
+      handleBoundsChange(map);
+      if (pendingRefreshRef.current) {
+        pendingRefreshRef.current = false;
+        refreshMapView();
+      }
+    },
+    [handleBoundsChange, refreshMapView],
+  );
+
   useEffect(() => {
     const onVis = () => {
       if (document.hidden) return;
-      refreshMapView();
+      requestRefresh();
     };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
-  }, [refreshMapView]);
+  }, [requestRefresh]);
 
   useEffect(() => {
     const onShow = (e: PageTransitionEvent) => {
-      if (e.persisted) refreshMapView();
+      if (e.persisted) requestRefresh();
     };
     window.addEventListener('pageshow', onShow);
     return () => window.removeEventListener('pageshow', onShow);
-  }, [refreshMapView]);
+  }, [requestRefresh]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -172,12 +188,12 @@ export function KakaoCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
       scheduled = true;
       requestAnimationFrame(() => {
         scheduled = false;
-        refreshMapView();
+        requestRefresh();
       });
     });
     obs.observe(container);
     return () => obs.disconnect();
-  }, [refreshMapView]);
+  }, [requestRefresh]);
 
   const handleLocate = useCallback(() => {
     if (!navigator.geolocation) return;
