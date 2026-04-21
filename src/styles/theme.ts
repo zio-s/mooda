@@ -167,6 +167,7 @@ export const theme = {
     mapOverlay: 10,
     mapFloatingButton: 15,
     search: 20,
+    overlayCard: 22,
     bottomSheet: 25,
     modal: 50,
     toast: 60,
