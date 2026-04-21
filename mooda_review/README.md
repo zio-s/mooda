@@ -5,6 +5,19 @@
 
 ---
 
+## ⚠️ 모든 커밋/푸시에 적용되는 글로벌 규칙 (2026-04-21 명시)
+
+> **🚫 커밋 메시지에 `Co-Authored-By: Claude …` trailer 를 절대 추가하지 말 것.**
+>
+> - `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>` 등 모든 Anthropic / Claude co-author trailer **금지**
+> - `🤖 Generated with Claude Code` 같은 자동 서명 문구 **금지**
+> - 사용자 명시 지시. 과거 커밋에 들어갔던 trailer 도 **신규 커밋부터는 제외**
+> - 커밋 메시지 = `<type>(<scope>): <subject> (작업ID)` + (선택) 본문. 추가 서명/푸터 없음
+> - PR 본문도 동일. `## Summary` · `## Test plan` 만 유지, Claude 서명 라인 없음
+> - `--trailer "Co-Authored-By=…"` · `git config commit.gpgsign` 우회 등도 금지
+
+---
+
 ## 🚀 Claude Code — 작업 시작 절차 (Entry Point)
 
 1. **이 README 를 먼저 읽는다** — 현재 상태 + 우선순위 + 라우팅 정보가 있습니다.
@@ -34,7 +47,8 @@
 | 🟢 BUG-MAP (지도 렌더 깨짐) | ✅ 수정 `5e91180` · ✅ 예방 A2 `e8a6b19` · A3 `63f4841` · A4 `22b0f71` · ⏳ 실기 QA |
 | 🟢 BUG-SEARCH (button 중첩 hydration) | ✅ 완료 (커밋 `605b856`, `818389a`) · 전수 스캔 0건 |
 | 🟢 P7-A (데이터 레이어 클린업) | ✅ 완료 · P6-06 `d50e4df` + P6-08 `64acbf6` · T7-3(schema drop) 사용자 결정 대기 |
-| Phase 7 시나리오 (P7-B/C/D/E/F) | ❓ 사용자 결정 대기 |
+| 🟢 Phase 7-B (Desktop Overlay + Header 복원 + ListCard v2) | ✅ 코드 완료 · 커밋 `70d208b`~`47cf8a8` (T7-B1~9) · T7-B10 실기 QA 매트릭스 사용자 실측 대기 |
+| Phase 7 추가 시나리오 (P7-C 다크모드 / P7-D 관측 / P7-E 관리자 / P7-F view-transition) | ❓ 사용자 결정 대기 |
 
 **체감 점수**: A (94/100). UI 레벨 마감, 데이터 레이어 잔재 + hotfix 남음.
 
@@ -42,21 +56,36 @@
 
 ## 🎯 다음 작업 (우선순위 순)
 
-### 🟢 **완료 기록** — P7-A 데이터 레이어 클린업 (2026-04-21)
+### 🟢 **완료 기록** — Phase 7-B · PC Overlay 레이아웃 재설계 (2026-04-21)
+
+- **T7-B1** (`70d208b`) `theme.z.overlayCard` 스케일 추가
+- **T7-B2** (`bc80a1d`) Header 전역 복원 + 48px 축소. Phase 4 "몰입 경로 숨김" 철회. `/search` 만 숨김 유지. `MapPageWrapper`/`PageWrapper`/`map/loading` height calc 48 로 동기화
+- **T7-B3** (`a95548e`) FilterBar PC ≥1024 에서 한 줄 강제 + `overflow:hidden`. `SearchTrigger` 미디어쿼리로 inline 확장 (flex:1 + min-width:200 + max-width:520). `useIsDesktop` 훅 신설
+- **T7-B4** (`48bd98e`) PC 에서 Segmented + Toolbar 전체 미렌더. Sort 드롭다운을 ListHeader 로 이관. Provider 토글을 MapArea 우하단 floating (`MapProviderToggleFloating`)
+- **T7-B5** (`888aeee`) `CafeListCard` v2 — 수평 64 썸네일 + 별점/거리/OpenBadge/MoodTag. `/map` ListPanel 에서만 사용, 기존 `CafeCard` 는 홈/검색/즐찾 그리드 유지
+- **T7-B6** (`f3e0482`) `CafeOverlayCard` 신설 — PC 전용 floating (420/380 반응형). TopNav(외부링크/Heart/Share/닫기) + Hero(16:10) + ESC 키 + focus 관리
+- **T7-B7** (`f7633c4`) `CafeDetailBody` 공통 추출 — Overlay 가 소비. variant='overlay'/'page'/'sheet' padding 변형. 향후 `CafeDetailClient` 이관 여지
+- **T7-B8** (`1ceaf9f`) `MapClient` 재구성 — Redux `selectedCafeId` SSoT 로 일원화 (기존 local state 제거). URL `?cafe=` ↔ Redux 양방향 sync (`router.replace` + scroll:false). 딥링크 진입 시 `useGetCafeQuery` fallback. PC Overlay / 비-PC BottomSheet 조건부 렌더
+- **T7-B9** (`47cf8a8`) `MapPageWrapper`/`MainArea`/`ListPanel`/`ListInner` 에 `min-height:0` 추가 — flex children overflow 계산 안정화 + 하단 빈 공간 제거
+- **T7-B10** 회귀 QA 매트릭스(1440/1280/1024/768/375 × Kakao/Naver) 는 사용자 실기 대기
+
+**핵심 DoD 코드 레벨 통과**: tsc --noEmit + pnpm build 2종 모두 통과. 모바일 회귀 방지 — 모든 PC 전용 변경이 `useIsDesktop` 훅 또는 `@media (min-width: lg)` 분기로 엄격 격리.
+
+### ⏸ **2순위** — Phase 7 추가 후보 (P7-B 완료 후)
+
+- P7-C 다크모드 · P7-D 관측 지표 · P7-E 관리자 · P7-F view-transition
+- **상태**: 사용자 결정 대기 · 09 리포트 PART 3 참조
+
+---
+
+## 📜 완료 기록
+
+### 🟢 P7-A 데이터 레이어 클린업 (2026-04-21)
 
 - **T7-1 / P6-06** (`d50e4df`) `src/types/index.ts` 의 `Mood` 인터페이스 삭제(사용처 0) + `CafeMood.moodCategory` 를 `MoodCategory` 로 좁힘. 구성 5 사이트 `as MoodCategory` narrow
 - **T7-2 / P6-08** (`64acbf6`) SSoT `src/constants/moods-data.ts` 신설 (lucide-react 비의존 · 순수 데이터). `constants/moods.ts` 가 re-export. `prisma/seed.ts` + `scripts/seed-cafes.ts` 의 로컬 MOODS(17+53건) 를 import 로 대체, `sortOrder` 는 배열 index+1 로 파생, emoji 필드 제거(70건)
 - **T7-4 DoD 재스캔**: `prisma/` + `scripts/` + `src/` 의 active emoji 참조 0건. `schema.prisma` 의 `emoji String?` (T7-3) 과 `migrations/*.sql` (히스토리) 만 남음
 - **T7-3 (Prisma schema `emoji` 컬럼 drop)** 은 사용자 결정 대기 — 운영 DB 영향 범위라 진행 금지
-
-### ⏸ **2순위** — Phase 7 본 착수 (시나리오 선택 후)
-
-- **상태**: 사용자가 시나리오 1/2/3 을 선택해야 Claude Design 이 `phase_3_5/PHASE_7_*.md` 작성
-- **Claude Code 는 진입 금지** — P7-A 완료 후 새 지시서가 커밋되면 그때 착수
-
----
-
-## 📜 완료 기록
 
 ### 🟢 BUG-SEARCH (커밋 `605b856`, `818389a`, 2026-04-21)
 
@@ -97,9 +126,11 @@
 | `08_next_iteration_v3.md` | v3 이후 재설계 지시 (V3-01~12) + Phase 3~6 완료 기록 |
 | `09_post_phase6_qa.md` | **Phase 6 검증 + P6-06~08 후속 + Phase 7 후보(A~F)** |
 | `10_bug_map_resize.md` | ✅ **Critical bug 리포트 + T-BUG-MAP-01/02/03 실행 가이드** (코드 완료, 실기 QA 대기) |
-| `11_bug_search_nested_button.md` | 🔴 **Critical bug — button 중첩 hydration + T-BUG-SEARCH-01/02 실행 가이드** |
+| `11_bug_search_nested_button.md` | ✅ Critical bug — button 중첩 hydration (완료 `605b856`) |
 | `phase_3_5/README.md` | Phase 3~6 가이드 폴더 index |
 | `phase_3_5/PHASE_{3,4,5,6}_*.md` | 각 Phase 상세 가이드 (완료) |
+| `phase_3_5/PHASE_7_DESKTOP_OVERLAY.md` | 🔵 **Phase 7-B — Desktop Overlay 레이아웃 + Header 복원 + ListCard v2 지시서** |
+| `script_view/README.md` + `PHOTO_PIPELINE_GUIDE.md` + `DECISIONS.md` | 🧑‍🔧 **Claude Script 전용 — 카페 이미지 수집 파이프라인 설계** (T-SCRIPT-01~08) |
 
 **작업 순서 판단 규칙**:
 - 🔴 마크가 붙은 것 최우선
@@ -137,7 +168,7 @@
   - type: `feat` / `fix` / `refactor` / `chore` / `docs` / `style` / `test`
   - scope: `map` / `auth` / `profile` / `filter` / `cafe` / `ui` / `api` / `types` / `seed` 등
   - 작업ID: `T4-2`, `T6-5`, `BUG-MAP-01`, `P6-06` 등 참조 가능한 코드
-- **Co-Authored-By** 유지: 기존 커밋 패턴 따라
+- 🚫 **`Co-Authored-By: Claude …` trailer 금지** — `🤖 Generated with Claude Code` 서명 포함. 상단 "⚠️ 글로벌 규칙" 섹션 참조. 과거 커밋 템플릿에 자동 포함되던 라인도 **수동 제거 후 커밋**
 - **PR 분리 원칙**: Phase 6 때처럼 Task 단위 커밋. 한 PR에 여러 Task 섞지 않음
 - **훅 우회 금지**: `--no-verify` 금지. 훅 실패 시 원인 수정 후 새 커밋
 - **강제 푸시 금지**: `git push --force` 사용자 명시 없이는 금지
@@ -177,6 +208,7 @@
 - **기존 완료 Phase (3~6) 의 이미 커밋된 결정 되돌리기 금지** — 토큰 명명, 카테고리 색 시스템 등
 - **이 README 에 없는 MD 지시를 선택적으로 수행 금지** — 구버전(05~07) 에서 해결되지 않은 것처럼 보이는 항목도 08/09 의 완료 기록을 우선 신뢰
 - **`app/icon.tsx`, `apple-icon.tsx`** 의 `☕` 이모지는 Phase 6 명시적 제외 — 수정 금지
+- **커밋 메시지에 Claude/Anthropic co-author trailer 및 자동 서명 추가 금지** — `Co-Authored-By: Claude …`, `🤖 Generated with Claude Code` 전부. 상단 "⚠️ 글로벌 규칙" 참조
 
 ---
 

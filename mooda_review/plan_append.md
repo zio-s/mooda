@@ -85,11 +85,23 @@
 
 ### I. Phase 7 후보 (09 리포트 PART 3)
 - [x] **P7-A** Phase 6 후속 클린업 (H 섹션, 0.5일) — P6-06 `d50e4df` + P6-08 `64acbf6`. T7-4 재스캔 active emoji 0건
-- [ ] **P7-B** D2 리뷰 작성 플로우 재설계 (3-5일, **추천 1순위**)
+- [ ] **P7-B-original** D2 리뷰 작성 플로우 재설계 (3-5일) — K 섹션 Desktop Overlay 완료 후 재검토
 - [ ] **P7-C** 다크모드 토큰 분기 (1.5일)
 - [ ] **P7-D** 관측 지표 설계 (1일)
 - [ ] **P7-E** 관리자 페이지 리디자인 (2일)
 - [ ] **P7-F** view-transition 페이지 전환 (0.5일)
+
+### K. ✅ Phase 7-B · Desktop Overlay 레이아웃 (`phase_3_5/PHASE_7_DESKTOP_OVERLAY.md`) — **완료 (2026-04-21)**
+- [x] **T7-B1** `theme.z.overlayCard` 스케일 추가 (커밋 `70d208b`)
+- [x] **T7-B2** Header 전역 복원 + 48px 축소 + `/search` 만 숨김 유지 (커밋 `bc80a1d`)
+- [x] **T7-B3** FilterBar PC 한 줄 + SearchTrigger inline 확장 + `useIsDesktop` 훅 신설 (커밋 `a95548e`)
+- [x] **T7-B4** PC 에서 Segmented 제거 + Provider 토글 우하단 이동 + Sort 를 ListHeader 로 이관 (커밋 `48bd98e`)
+- [x] **T7-B5** `CafeListCard` v2 — 수평 썸네일+정보밀도 (커밋 `888aeee`)
+- [x] **T7-B6** `CafeOverlayCard` — PC 전용 floating 상세 (커밋 `f3e0482`)
+- [x] **T7-B7** `CafeDetailBody` 공통 추출 — Overlay 소비. 향후 `CafeDetailClient` 이관 가능 (커밋 `f7633c4`)
+- [x] **T7-B8** `MapClient` 레이아웃 재구성 + URL `?cafe=` sync + `useGetCafeQuery` fallback (커밋 `1ceaf9f`)
+- [x] **T7-B9** 하단 빈 공간 제거 + `min-height:0` 3곳 추가 (커밋 `47cf8a8`)
+- [ ] **T7-B10** 회귀 QA + 반응형 매트릭스 — 실기 매트릭스(1440/1280/1024/768/375) 사용자 실측 대기
 
 ### J. Hotfix (10·11 리포트 참조)
 
