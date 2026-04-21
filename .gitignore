@@ -48,6 +48,9 @@ yarn-error.log*
 # Playwright MCP
 .playwright-mcp/
 
+# Script Pipeline — 진단/수집 리포트 (T-SCRIPT-01~08)
+/scripts/reports/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
