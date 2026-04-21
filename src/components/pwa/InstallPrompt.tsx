@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { X, Download, Share } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { X, Download, Share, Coffee } from 'lucide-react';
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 
@@ -10,7 +11,16 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+// 설치 배너를 허용하는 경로. /map, /cafes/[id], /search 같은 몰입형 뷰에서는
+// 하단 배너가 지도/바텀시트와 경쟁해 방해가 됨.
+function isAllowedPath(pathname: string): boolean {
+  if (pathname === '/') return true;
+  if (pathname.startsWith('/profile')) return true;
+  return false;
+}
+
 export function InstallPrompt() {
+  const pathname = usePathname();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showIosBanner, setShowIosBanner] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -55,13 +65,16 @@ export function InstallPrompt() {
   }, []);
 
   if (dismissed) return null;
+  if (!isAllowedPath(pathname)) return null;
 
   // Android: 설치 버튼
   if (deferredPrompt) {
     return (
       <Banner>
         <BannerContent>
-          <BannerIcon>☕</BannerIcon>
+          <BannerIcon>
+            <Coffee size={22} color={theme.colors.white} />
+          </BannerIcon>
           <BannerText>
             <strong>Mooda 앱 설치</strong>
             <span>홈 화면에 추가하여 앱처럼 사용하세요</span>
@@ -85,7 +98,9 @@ export function InstallPrompt() {
     return (
       <Banner>
         <BannerContent>
-          <BannerIcon>☕</BannerIcon>
+          <BannerIcon>
+            <Coffee size={22} color={theme.colors.white} />
+          </BannerIcon>
           <BannerText>
             <strong>Mooda 앱으로 사용하기</strong>
             <span>
@@ -133,14 +148,15 @@ const BannerContent = styled.div`
 `;
 
 const BannerIcon = styled.span`
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 40px;
   height: 40px;
   border-radius: ${theme.borderRadius.md};
-  background: linear-gradient(135deg, #d97706, #f59e0b);
-  font-size: 22px;
+  /* primary(amber-700) → amber-600 그라데이션. 두 번째 색은 theme 외 tonal
+     변화용으로 의도적 유지 (디자인 가이드). */
+  background: linear-gradient(135deg, ${theme.colors.primary}, #d97706);
   flex-shrink: 0;
 `;
 
@@ -187,7 +203,7 @@ const InstallBtn = styled.button`
   white-space: nowrap;
 
   &:hover {
-    background: ${theme.colors.primaryDark};
+    background: ${theme.colors.primaryHover};
   }
 `;
 
