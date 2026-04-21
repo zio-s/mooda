@@ -62,12 +62,22 @@ export const InputWrap = styled.div<{ $focused: boolean }>`
 
 export const Input = styled.input`
   flex: 1;
+  min-width: 0;
   border: none;
   background: transparent;
   color: ${theme.colors.ink900};
   font-size: 16px; /* iOS 16px 하한 */
   font-weight: 500;
   outline: none;
+
+  /* 포커스 피드백은 부모 InputWrap의 brand border + tint shadow가 담당.
+     전역 :focus-visible box-shadow 규칙이 인풋에 이중 링을 그리는 문제
+     방지 — 여기서 명시적으로 비활성화. */
+  &:focus,
+  &:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
 
   &::placeholder {
     color: ${theme.colors.ink400};
