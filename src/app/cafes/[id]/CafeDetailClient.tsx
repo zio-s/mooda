@@ -454,7 +454,7 @@ export function CafeDetailClient({ cafe }: Props) {
         </MoodSection>
       )}
 
-      <Separator style={{ marginBottom: 24 }} />
+      <Separator style={{ marginBottom: theme.space[6] }} />
 
       <Tabs defaultValue="info">
         <TabsList>

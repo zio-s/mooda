@@ -46,7 +46,9 @@ export const FieldLabel = styled.label`
 
 export const OptionalText = styled.span`
   font-weight: ${theme.fontWeight.normal};
-  color: ${theme.colors.textLight};
+  /* primaryLight 배경 위에서 textLight(ink400 #a8a29e)는 대비 부족(~3.2:1).
+     textMuted(ink500 #78716c, ~5.1:1)로 상향해 WCAG AA 확보. */
+  color: ${theme.colors.textMuted};
   margin-left: 4px;
   font-size: ${theme.fontSize.xs};
 `;

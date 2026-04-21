@@ -225,6 +225,9 @@ export function ReviewForm({
                 placeholder="카페 방문 경험을 자유롭게 남겨주세요."
                 rows={4}
                 style={{ paddingBottom: '28px' }}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
                 aria-invalid={!!errors.content}
                 aria-describedby={errors.content ? 'review-content-error' : undefined}
               />

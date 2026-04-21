@@ -23,7 +23,8 @@ export const RequiredMark = styled.span`
 
 export const OptionalText = styled.span`
   font-weight: ${theme.fontWeight.normal};
-  color: ${theme.colors.textLight};
+  /* WCAG AA 대비 확보 — textLight(ink400)보다 textMuted(ink500)가 읽기 쉬움. */
+  color: ${theme.colors.textMuted};
   margin-left: 4px;
   font-size: ${theme.fontSize.xs};
 `;
