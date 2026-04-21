@@ -304,3 +304,11 @@
 - ProfilePageClient 통계 허브화 — Avatar 72, 3-column StatCardLink, MenuIconBox(primary/err), DangerButton 로그아웃.
 - Header 몰입형 경로(`/map`·`/search`·`/cafes/*`)에서 null 반환 + 모바일 SearchIconLink.
 - 회귀 QA 5경로 통과 예정(사용자 실측).
+
+## Phase 5 완료 (2026-04-21)
+- `src/app/(auth)/_shared.styles.ts` 신설 — BrandBand, FormCard, LogoWrapper, KakaoButton, EmailToggle, OrDivider, GuestLink, FooterLink 등 공용 스타일 한 곳.
+- `components/ui/input.tsx` `[aria-invalid='true']` 시 err border + errBg ring.
+- 로그인 리디자인: BrandBand(48 primaryLight) + 떠있는 logo card + 카카오 primary + Disclosure 이메일 폼 + '둘러보기 (비로그인)' GuestLink.
+- 회원가입 리디자인: 동일 카드 톤 + 카카오 가입 옵션(OrDivider 또는) + 이메일 폼 기본 펼침 + autoComplete/aria-invalid 전체 필드 적용.
+- 기존 login/signup 개별 page.styles.ts 삭제(shared로 통합).
+- QA v2 N13 처리: CafeDetail의 `'로그인이 필요합니다'` toast에 로그인 action 버튼 연결.
