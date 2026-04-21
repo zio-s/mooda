@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { useSearchCafesQuery } from '@/store/api/cafesApi';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchCafesQuery, useGetCafeQuery } from '@/store/api/cafesApi';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { toggleMoodFilter, setSelectedCafe as deselectCafe, setUserLocation, setCenter, setLevel, setViewMode, setSort } from '@/store/slices/mapSlice';
+import { toggleMoodFilter, setSelectedCafe, setUserLocation, setCenter, setLevel, setViewMode, setSort } from '@/store/slices/mapSlice';
 import { useDebouncedMapBounds, useDebouncedMapCenter } from '@/hooks/useDebouncedMapBounds';
 import { encodeGeohash, haversineMeters } from '@/lib/geohash';
 import { CafeMapWrapper } from '@/components/map/CafeMapWrapper';
@@ -15,6 +15,7 @@ import { VisuallyHiddenCafeList } from '@/components/map/VisuallyHiddenCafeList'
 import { MoodFilterChips } from '@/components/filter/MoodFilter';
 import { MoodFilterSheet } from '@/components/filter/MoodFilterSheet';
 import { CafeListCard } from '@/components/cafe/CafeListCard';
+import { CafeOverlayCard } from '@/components/map/CafeOverlayCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { SearchTrigger } from '@/components/search/SearchTrigger';
@@ -86,14 +87,14 @@ const SORT_OPTIONS: { key: 'distance' | 'rating' | 'reviews'; label: string }[] 
 
 export function MapClient() {
   const searchParamsHook = useSearchParams();
+  const router = useRouter();
   const dispatch = useAppDispatch();
-  const { filters, viewMode } = useAppSelector((s) => s.map);
+  const { filters, viewMode, selectedCafeId } = useAppSelector((s) => s.map);
   const isDesktop = useIsDesktop();
   const debouncedBounds = useDebouncedMapBounds(300);
   const { center: debouncedCenter, level: debouncedLevel } = useDebouncedMapCenter(300);
   const showList = viewMode === 'list';
 
-  const [selectedCafe, setSelectedCafe] = useState<Cafe | null>(null);
   const [nearbyCafe, setNearbyCafe] = useState<Cafe | null>(null);
   const [selectedArea, setSelectedArea] = useState<number | null>(null);
   const [areaOpen, setAreaOpen] = useState(false);
@@ -211,17 +212,17 @@ export function MapClient() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [areaOpen, sortOpen]);
 
-  // 주변 카페 검색 결과 처리
+  // 주변 카페 검색 결과 처리 — Redux selectedCafeId 는 이미 어댑터가 dispatch.
+  // 여기서는 searchCafes 에 없는 경우를 대비해 nearbyCafe 에 보관해서 `cafes`
+  // 배열에 편입시킨다.
   const handleNearbyFound = useCallback((cafe: Cafe) => {
     setNearbyCafe(cafe);
-    setSelectedCafe(cafe);
   }, []);
 
-  // 바텀시트 닫기: 로컬 상태 + Redux 마커 deselect
-  const handleBottomSheetClose = useCallback(() => {
-    setSelectedCafe(null);
+  // Overlay/BottomSheet 닫기: Redux 만 업데이트. URL sync effect 가 ?cafe= 제거.
+  const handleCafeClose = useCallback(() => {
     setNearbyCafe(null);
-    dispatch(deselectCafe(null));
+    dispatch(setSelectedCafe(null));
   }, [dispatch]);
 
   // 위치 권한 요청 (바텀시트에서 호출)
@@ -253,6 +254,48 @@ export function MapClient() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // T7-B8 URL ↔ Redux 양방향 sync (`?cafe=<id>`)
+  //  - URL 쪽 값이 바뀌면 Redux 반영 (딥링크/뒤로가기 지원)
+  //  - Redux 쪽 선택이 바뀌면 URL 갱신 (replace — 히스토리 누적 방지)
+  //  - 값이 같으면 업데이트 스킵 → 순환 방지
+  const cafeIdFromUrl = searchParamsHook.get('cafe');
+  useEffect(() => {
+    if (cafeIdFromUrl && cafeIdFromUrl !== selectedCafeId) {
+      dispatch(setSelectedCafe(cafeIdFromUrl));
+    } else if (!cafeIdFromUrl && selectedCafeId) {
+      dispatch(setSelectedCafe(null));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cafeIdFromUrl]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const current = new URLSearchParams(window.location.search);
+    if (selectedCafeId) {
+      if (current.get('cafe') !== selectedCafeId) {
+        current.set('cafe', selectedCafeId);
+        router.replace(`/map?${current.toString()}`, { scroll: false });
+      }
+    } else if (current.has('cafe')) {
+      current.delete('cafe');
+      const qs = current.toString();
+      router.replace(qs ? `/map?${qs}` : '/map', { scroll: false });
+    }
+  }, [selectedCafeId, router]);
+
+  // 딥링크(`?cafe=xxx`) 로 직접 진입 시 검색 결과 `cafes` 에 없을 수 있음 →
+  // fallback 쿼리로 cafe 객체 확보. Redux 에 selectedCafeId 가 있고 cafes 에
+  // 없을 때만 활성화.
+  const inListCafe = useMemo(
+    () => (selectedCafeId ? cafes.find((c) => c.id === selectedCafeId) ?? null : null),
+    [selectedCafeId, cafes],
+  );
+  const shouldFallbackFetch = Boolean(selectedCafeId) && !inListCafe;
+  const { data: fallbackCafe } = useGetCafeQuery(selectedCafeId ?? '', {
+    skip: !shouldFallbackFetch,
+  });
+  const selectedCafeObj: Cafe | null = inListCafe ?? fallbackCafe ?? null;
 
   return (
     <MapPageWrapper>
@@ -361,7 +404,9 @@ export function MapClient() {
 
         {/* 지도 */}
         <MapArea $hidden={showList}>
-          <CafeMapWrapper cafes={cafes} onCafeSelect={setSelectedCafe} onNearbyFound={handleNearbyFound} />
+          {/* 어댑터 내부에서 Redux setSelectedCafe(id) 를 dispatch 하므로 여기서
+              onCafeSelect 는 nearbyCafe 경로만 신호받는다 (실제 선택 state 는 Redux). */}
+          <CafeMapWrapper cafes={cafes} onCafeSelect={() => {}} onNearbyFound={handleNearbyFound} />
           {/* 스크린리더 접근성 — 지도 상 시각 마커와 동일 정보를 리스트로 병행 제공 */}
           <VisuallyHiddenCafeList cafes={cafes} />
           <ResearchAreaChip
@@ -375,6 +420,11 @@ export function MapClient() {
             <MapProviderToggleFloating>
               <MapProviderToggle />
             </MapProviderToggleFloating>
+          )}
+
+          {/* T7-B6/B8: PC 전용 Overlay — selectedCafeObj 있을 때만 렌더. */}
+          {isDesktop && selectedCafeObj && (
+            <CafeOverlayCard cafe={selectedCafeObj} onClose={handleCafeClose} />
           )}
         </MapArea>
 
@@ -443,12 +493,14 @@ export function MapClient() {
           </ListInner>
         </ListPanel>
 
-        {/* 바텀시트 — 모바일에서 카페 선택 시 표시 */}
-        <BottomSheet
-          cafe={showList ? null : selectedCafe}
-          onClose={handleBottomSheetClose}
-          onRequestLocation={handleRequestLocation}
-        />
+        {/* 바텀시트 — 비-PC (Tablet/Mobile) 에서만 렌더. PC 는 CafeOverlayCard 사용. */}
+        {!isDesktop && (
+          <BottomSheet
+            cafe={showList ? null : selectedCafeObj}
+            onClose={handleCafeClose}
+            onRequestLocation={handleRequestLocation}
+          />
+        )}
       </MainArea>
     </MapPageWrapper>
   );
