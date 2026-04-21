@@ -12,6 +12,9 @@ import type { CafeMapAdapterProps } from './adapters/types';
 
 export function CafeMap(props: CafeMapAdapterProps) {
   const provider = useAppSelector((s) => s.map.provider);
-  if (provider === 'naver') return <NaverCafeMap {...props} />;
-  return <KakaoCafeMap {...props} />;
+  // BUG-MAP-A4: key prop 으로 provider 별 어댑터 tree 를 분리 → 토글 시 React 가
+  // 이전 어댑터 unmount(→ SDK destroy) 후 새 어댑터 mount 를 동기 순서로 보장.
+  // key 없이 컴포넌트 타입만 바꾸면 두 SDK 인스턴스가 DOM 에 일시 overlap 가능.
+  if (provider === 'naver') return <NaverCafeMap key="naver" {...props} />;
+  return <KakaoCafeMap key="kakao" {...props} />;
 }
