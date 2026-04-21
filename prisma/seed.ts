@@ -1,30 +1,21 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
+import { MOODS } from '../src/constants/moods-data';
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-const MOODS = [
-  { key: 'quiet', label: '조용한', category: 'atmosphere', emoji: '🤫', sortOrder: 0 },
-  { key: 'lively', label: '활기찬', category: 'atmosphere', emoji: '⚡', sortOrder: 1 },
-  { key: 'romantic', label: '로맨틱', category: 'atmosphere', emoji: '💕', sortOrder: 2 },
-  { key: 'vintage', label: '빈티지', category: 'atmosphere', emoji: '🎞️', sortOrder: 3 },
-  { key: 'modern', label: '모던', category: 'atmosphere', emoji: '🏙️', sortOrder: 4 },
-  { key: 'cafe_vibe', label: '카페감성', category: 'atmosphere', emoji: '☕', sortOrder: 5 },
-  { key: 'nature', label: '자연친화', category: 'atmosphere', emoji: '🌿', sortOrder: 6 },
-  { key: 'cozy', label: '아늑한', category: 'atmosphere', emoji: '🕯️', sortOrder: 7 },
-  { key: 'date', label: '데이트', category: 'purpose', emoji: '👫', sortOrder: 8 },
-  { key: 'study', label: '공부/작업', category: 'purpose', emoji: '💻', sortOrder: 9 },
-  { key: 'photo', label: '사진촬영', category: 'purpose', emoji: '📸', sortOrder: 10 },
-  { key: 'gathering', label: '모임', category: 'purpose', emoji: '👥', sortOrder: 11 },
-  { key: 'solo', label: '혼카공', category: 'purpose', emoji: '🧘', sortOrder: 12 },
-  { key: 'natural_light', label: '자연광', category: 'photo', emoji: '☀️', sortOrder: 13 },
-  { key: 'large_window', label: '통창', category: 'photo', emoji: '🪟', sortOrder: 14 },
-  { key: 'sponsored', label: '협찬가능', category: 'photo', emoji: '🤝', sortOrder: 15 },
-  { key: 'photo_spot', label: '감성배경', category: 'photo', emoji: '🎨', sortOrder: 16 },
-];
+// sortOrder 는 MOODS 배열 순서(1-based)로 파생. emoji 필드는 제거 — Phase 6
+// 이모지 전면 제거 이후 DB 차원에서도 더 이상 쓰지 않음(Mood.emoji 컬럼 drop
+// 은 T7-3 사용자 결정 대기).
+const MOOD_ROWS = MOODS.map((m, i) => ({
+  key: m.key,
+  label: m.label,
+  category: m.category,
+  sortOrder: i + 1,
+}));
 
 // 강남/홍대/성수 테스트 카페 데이터
 const TEST_CAFES = [
@@ -145,14 +136,14 @@ async function main() {
 
   // 1. 분위기 마스터 데이터
   console.log('  → Seeding moods...');
-  for (const mood of MOODS) {
+  for (const mood of MOOD_ROWS) {
     await prisma.mood.upsert({
       where: { key: mood.key },
       update: mood,
       create: mood,
     });
   }
-  console.log(`  ✅ ${MOODS.length} moods seeded`);
+  console.log(`  ✅ ${MOOD_ROWS.length} moods seeded`);
 
   const allMoods = await prisma.mood.findMany();
   const moodMap = new Map(allMoods.map((m) => [m.key, m.id]));

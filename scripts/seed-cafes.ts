@@ -9,6 +9,7 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
+import { MOODS } from '../src/constants/moods-data';
 
 const isSupabase = (process.env.DATABASE_URL ?? '').includes('supabase.com');
 const pool = new Pool({
@@ -173,68 +174,15 @@ async function main() {
 
   console.log('🌱 분위기 마스터 데이터 삽입...');
 
-  const moodData = [
-    // 분위기
-    { key: 'quiet',        label: '조용한',        category: 'atmosphere', emoji: '🤫', sortOrder: 1 },
-    { key: 'lively',       label: '활기찬',        category: 'atmosphere', emoji: '⚡', sortOrder: 2 },
-    { key: 'romantic',     label: '로맨틱',        category: 'atmosphere', emoji: '💕', sortOrder: 3 },
-    { key: 'cozy',         label: '아늑한',        category: 'atmosphere', emoji: '🕯️', sortOrder: 4 },
-    { key: 'modern',       label: '모던/세련',     category: 'atmosphere', emoji: '🏙️', sortOrder: 5 },
-    { key: 'nature',       label: '자연친화',      category: 'atmosphere', emoji: '🌿', sortOrder: 6 },
-    { key: 'luxury',       label: '럭셔리',        category: 'atmosphere', emoji: '✨', sortOrder: 7 },
-    { key: 'minimal',      label: '미니멀',        category: 'atmosphere', emoji: '⬜', sortOrder: 8 },
-    { key: 'nordic',       label: '북유럽감성',    category: 'atmosphere', emoji: '🌨️', sortOrder: 9 },
-    { key: 'industrial',   label: '인더스트리얼',  category: 'atmosphere', emoji: '🏭', sortOrder: 10 },
-    { key: 'traditional',  label: '한옥/전통',     category: 'atmosphere', emoji: '🏯', sortOrder: 11 },
-    { key: 'art_gallery',  label: '아트갤러리',    category: 'atmosphere', emoji: '🖼️', sortOrder: 12 },
-    // 씬/감성
-    { key: 'cafe_vibe',    label: '카페감성',      category: 'scene', emoji: '☕', sortOrder: 13 },
-    { key: 'vintage',      label: '빈티지/레트로', category: 'scene', emoji: '🎞️', sortOrder: 14 },
-    { key: 'hiphop',       label: '힙합감성',      category: 'scene', emoji: '🎤', sortOrder: 15 },
-    { key: 'indie',        label: '인디감성',      category: 'scene', emoji: '🎸', sortOrder: 16 },
-    { key: 'jazz',         label: '재즈바',        category: 'scene', emoji: '🎷', sortOrder: 17 },
-    { key: 'local',        label: '로컬감성',      category: 'scene', emoji: '📍', sortOrder: 18 },
-    { key: 'trendy',       label: '힙한/트렌디',   category: 'scene', emoji: '🔥', sortOrder: 19 },
-    { key: 'aesthetic',    label: '감성카페',      category: 'scene', emoji: '🌸', sortOrder: 20 },
-    { key: 'bookish',      label: '책방느낌',      category: 'scene', emoji: '📚', sortOrder: 21 },
-    { key: 'lounge',       label: '라운지바',      category: 'scene', emoji: '🍸', sortOrder: 22 },
-    // 목적
-    { key: 'date',         label: '데이트',        category: 'purpose', emoji: '👫', sortOrder: 23 },
-    { key: 'study',        label: '공부/작업',     category: 'purpose', emoji: '💻', sortOrder: 24 },
-    { key: 'gathering',    label: '모임',          category: 'purpose', emoji: '👥', sortOrder: 25 },
-    { key: 'solo',         label: '혼카공',        category: 'purpose', emoji: '🧘', sortOrder: 26 },
-    { key: 'laptop',       label: '노트북작업',    category: 'purpose', emoji: '🖥️', sortOrder: 27 },
-    { key: 'business',     label: '비즈니스미팅',  category: 'purpose', emoji: '💼', sortOrder: 28 },
-    { key: 'anniversary',  label: '기념일',        category: 'purpose', emoji: '🎂', sortOrder: 29 },
-    { key: 'pet_friendly', label: '반려동물동반',  category: 'purpose', emoji: '🐶', sortOrder: 30 },
-    { key: 'brunch',       label: '브런치',        category: 'purpose', emoji: '🥞', sortOrder: 31 },
-    { key: 'first_meet',   label: '첫만남/소개팅', category: 'purpose', emoji: '🤝', sortOrder: 32 },
-    // 인테리어
-    { key: 'rooftop',      label: '루프탑',        category: 'interior', emoji: '🌇', sortOrder: 33 },
-    { key: 'terrace',      label: '테라스/정원',   category: 'interior', emoji: '🌳', sortOrder: 34 },
-    { key: 'large_window', label: '통창/뷰맛집',   category: 'interior', emoji: '🪟', sortOrder: 35 },
-    { key: 'hanok',        label: '한옥카페',      category: 'interior', emoji: '🏠', sortOrder: 36 },
-    { key: 'warehouse',    label: '창고형카페',    category: 'interior', emoji: '🏗️', sortOrder: 37 },
-    { key: 'forest',       label: '숲속카페',      category: 'interior', emoji: '🌲', sortOrder: 38 },
-    { key: 'underground',  label: '지하/비밀공간', category: 'interior', emoji: '🕳️', sortOrder: 39 },
-    // 음료/메뉴
-    { key: 'specialty',    label: '스페셜티커피',  category: 'menu', emoji: '☕', sortOrder: 40 },
-    { key: 'non_coffee',   label: '논커피/티',     category: 'menu', emoji: '🍵', sortOrder: 41 },
-    { key: 'dessert',      label: '디저트맛집',    category: 'menu', emoji: '🍰', sortOrder: 42 },
-    { key: 'signature',    label: '시그니처음료',  category: 'menu', emoji: '🥤', sortOrder: 43 },
-    { key: 'vegan',        label: '비건/건강',     category: 'menu', emoji: '🥗', sortOrder: 44 },
-    // 편의시설
-    { key: 'parking',      label: '주차가능',      category: 'facility', emoji: '🅿️', sortOrder: 45 },
-    { key: 'open24',       label: '24시간',        category: 'facility', emoji: '🌙', sortOrder: 46 },
-    { key: 'plug',         label: '콘센트많음',    category: 'facility', emoji: '🔌', sortOrder: 47 },
-    { key: 'group_seat',   label: '단체석',        category: 'facility', emoji: '🪑', sortOrder: 48 },
-    { key: 'drive_thru',   label: '드라이브스루',  category: 'facility', emoji: '🚗', sortOrder: 49 },
-    // 촬영특성
-    { key: 'photo',        label: '사진촬영',      category: 'photo', emoji: '📸', sortOrder: 50 },
-    { key: 'natural_light', label: '자연광',       category: 'photo', emoji: '☀️', sortOrder: 51 },
-    { key: 'photo_spot',   label: '감성배경',      category: 'photo', emoji: '🎨', sortOrder: 52 },
-    { key: 'sponsored',    label: '협찬가능',      category: 'photo', emoji: '🤝', sortOrder: 53 },
-  ];
+  // SSoT = src/constants/moods-data.ts. sortOrder 는 배열 순서(1-based)로 파생.
+  // emoji 필드는 제거 — Phase 6 이모지 전면 제거 이후 DB 차원에서도 미사용
+  // (Mood.emoji 컬럼 drop 은 T7-3 사용자 결정 대기).
+  const moodData = MOODS.map((m, i) => ({
+    key: m.key,
+    label: m.label,
+    category: m.category,
+    sortOrder: i + 1,
+  }));
 
   for (const mood of moodData) {
     await prisma.mood.upsert({ where: { key: mood.key }, create: mood, update: mood });
