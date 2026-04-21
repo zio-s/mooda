@@ -153,15 +153,23 @@ model MoodVote {
 }
 
 model CafePhoto {
-  id        String   @id @default(cuid())
-  cafeId    String
-  url       String
-  caption   String?
-  isMain    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  cafeId       String
+  url          String
+  originalUrl  String?
+  sourceType   String?
+  width        Int?
+  height       Int?
+  fileSize     Int?
+  attribution  String?
+  caption      String?
+  isMain       Boolean  @default(false)
+  createdAt    DateTime @default(now())
 
   cafe Cafe @relation(fields: [cafeId], references: [id], onDelete: Cascade)
 
+  @@unique([cafeId, url])
+  @@index([sourceType])
   @@map("cafe_photos")
 }
 
