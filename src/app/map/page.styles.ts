@@ -12,6 +12,8 @@ export const MapPageWrapper = styled.div`
   @supports (height: 100dvh) {
     height: calc(100dvh - 48px - env(safe-area-inset-top, 0px));
   }
+  /* T7-B9: flex children 이 flex:1 + overflow:auto 로 계산되도록 min-height:0 명시. */
+  min-height: 0;
 `;
 
 // ─── Filter Bar ───────────────────────────────────────────
@@ -75,6 +77,9 @@ export const MainArea = styled.div`
   position: relative;
   display: flex;
   flex: 1;
+  /* T7-B9: flexbox 하단 잘림/빈 공간 방지 — 자식 ListInner 가 overflow:auto 로
+     계산되도록 min-height:0 명시. */
+  min-height: 0;
   overflow: hidden;
 `;
 
@@ -92,6 +97,9 @@ export const ListPanel = styled.div<{ $visible?: boolean }>`
   display: ${({ $visible }) => ($visible ? 'flex' : 'none')};
   flex-direction: column;
   width: 100%;
+  /* T7-B9: column flex 내부 자식(ListInner) 가 flex:1+overflow:auto 로 정상
+     계산되도록 min-height:0. */
+  min-height: 0;
   background: ${theme.colors.bg};
   overflow: hidden;
 
@@ -142,7 +150,10 @@ export const ListCount = styled.p`
 export const ListInner = styled.div`
   padding: 12px;
   flex: 1;
+  /* T7-B9: flexbox 계산 안정 + overflow 컨테인. */
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
 `;
 
 export const SkeletonList = styled.div`
