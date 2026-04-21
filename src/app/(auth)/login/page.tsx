@@ -6,28 +6,31 @@ import { signIn } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Coffee, ChevronDown, Mail, MapPin } from 'lucide-react';
+import { toast } from 'sonner';
 import { PATHS } from '@/constants/paths';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Coffee } from 'lucide-react';
-import { toast } from 'sonner';
 import {
   PageWrapper,
   FormCard,
+  BrandBand,
   CardHeader,
   LogoWrapper,
   CardTitle,
   CardDesc,
   CardBody,
   KakaoButton,
-  Divider,
+  EmailToggle,
+  EmailPanel,
   Form,
   Field,
   ErrorText,
+  GuestLink,
   FooterText,
   FooterLink,
-} from './page.styles';
+} from '../_shared.styles';
 
 const schema = z.object({
   email: z.string().email('올바른 이메일을 입력해주세요'),
@@ -39,6 +42,7 @@ type FormData = z.infer<typeof schema>;
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
 
   const {
     register,
@@ -73,45 +77,86 @@ export default function LoginPage() {
   return (
     <PageWrapper>
       <FormCard>
+        <BrandBand />
         <CardHeader>
-          <LogoWrapper>
-            <Coffee size={32} />
+          <LogoWrapper aria-hidden>
+            <Coffee size={28} />
           </LogoWrapper>
-          <CardTitle>로그인</CardTitle>
-          <CardDesc>Mooda에 오신 것을 환영합니다</CardDesc>
+          <CardTitle>Mooda에 오신 걸 환영해요</CardTitle>
+          <CardDesc>분위기로 찾는 나만의 카페</CardDesc>
         </CardHeader>
+
         <CardBody>
-          <KakaoButton onClick={handleKakaoLogin}>카카오로 로그인</KakaoButton>
+          <KakaoButton type="button" onClick={handleKakaoLogin}>
+            카카오로 시작하기
+          </KakaoButton>
 
-          <Divider>또는</Divider>
+          <EmailToggle
+            type="button"
+            onClick={() => setEmailOpen((v) => !v)}
+            aria-expanded={emailOpen}
+            aria-controls="email-login-panel"
+          >
+            <Mail size={15} aria-hidden />
+            이메일로 시작하기
+            <ChevronDown
+              size={15}
+              aria-hidden
+              style={{
+                transform: emailOpen ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.15s',
+              }}
+            />
+          </EmailToggle>
 
-          <Form onSubmit={handleSubmit(onSubmit)}>
-            <Field>
-              <Label htmlFor="email">이메일</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="hello@example.com"
-                {...register('email')}
-              />
-              {errors.email && <ErrorText>{errors.email.message}</ErrorText>}
-            </Field>
+          {emailOpen && (
+            <EmailPanel id="email-login-panel">
+              <Form onSubmit={handleSubmit(onSubmit)}>
+                <Field>
+                  <Label htmlFor="email">이메일</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="hello@example.com"
+                    autoComplete="email"
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? 'email-error' : undefined}
+                    {...register('email')}
+                  />
+                  {errors.email && (
+                    <ErrorText id="email-error" role="alert">
+                      {errors.email.message}
+                    </ErrorText>
+                  )}
+                </Field>
+                <Field>
+                  <Label htmlFor="password">비밀번호</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    aria-invalid={!!errors.password}
+                    aria-describedby={errors.password ? 'password-error' : undefined}
+                    {...register('password')}
+                  />
+                  {errors.password && (
+                    <ErrorText id="password-error" role="alert">
+                      {errors.password.message}
+                    </ErrorText>
+                  )}
+                </Field>
+                <Button type="submit" disabled={loading} fullWidth>
+                  {loading ? '로그인 중…' : '로그인'}
+                </Button>
+              </Form>
+            </EmailPanel>
+          )}
 
-            <Field>
-              <Label htmlFor="password">비밀번호</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                {...register('password')}
-              />
-              {errors.password && <ErrorText>{errors.password.message}</ErrorText>}
-            </Field>
-
-            <Button type="submit" disabled={loading} style={{ width: '100%' }}>
-              {loading ? '로그인 중...' : '로그인'}
-            </Button>
-          </Form>
+          <GuestLink href={PATHS.Map}>
+            <MapPin size={14} aria-hidden />
+            둘러보기 (비로그인)
+          </GuestLink>
 
           <FooterText>
             계정이 없으신가요?{' '}
