@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "dev:turbo": "next dev",
-    "build": "prisma generate && prisma migrate deploy && next build",
+    "build": "prisma generate && bash scripts/migrate-deploy.sh && next build",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "prisma generate",
