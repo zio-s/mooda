@@ -48,6 +48,8 @@
 | 🟢 BUG-SEARCH (button 중첩 hydration) | ✅ 완료 (커밋 `605b856`, `818389a`) · 전수 스캔 0건 |
 | 🟢 P7-A (데이터 레이어 클린업) | ✅ 완료 · P6-06 `d50e4df` + P6-08 `64acbf6` · T7-3(schema drop) 사용자 결정 대기 |
 | 🟢 Phase 7-B (Desktop Overlay + Header 복원 + ListCard v2) | ✅ 코드 완료 · 커밋 `70d208b`~`47cf8a8` (T7-B1~9) · T7-B10 실기 QA 매트릭스 사용자 실측 대기 |
+| 🟢 Script Pipeline + ONDEMAND | ✅ 완료 · T-SCRIPT-01~06 + T-CODE-01~06+08. 평균 해상도 357→1358, 썸네일 84%→6.1%. on-demand 파이프라인 배포됨 |
+| 🟢 BUG-SHEET URL LOOP | ✅ 완료 — T-BUG-SHEET-01 `f5da079` · T-BUG-SHEET-02 `dab34c2` · QA-2/3 `e40ee63` · 실기 QA 대기 |
 | Phase 7 추가 시나리오 (P7-C 다크모드 / P7-D 관측 / P7-E 관리자 / P7-F view-transition) | ❓ 사용자 결정 대기 |
 
 **체감 점수**: A (94/100). UI 레벨 마감, 데이터 레이어 잔재 + hotfix 남음.
@@ -56,7 +58,26 @@
 
 ## 🎯 다음 작업 (우선순위 순)
 
-### 🟢 **완료 기록** — Phase 7-B · PC Overlay 레이아웃 재설계 (2026-04-21)
+### 🟢 **완료 기록** — BUG-SHEET URL LOOP Hotfix (2026-04-22)
+
+- **T-BUG-SHEET-01** (`f5da079`) `BottomSheet.tsx` 의 pushState/popstate/replaceState 블록 + `handleClose` 의 `pushedRef` 분기 전부 제거. 시트 표시/숨김 = `cafe` prop 단일 경로
+- **T-BUG-SHEET-02** (`dab34c2`) `MapClient.tsx` URL sync 재설계 — 카페 선택=`router.push`, 명시 닫기=`router.back()`(push 있을 때) 또는 `router.replace`(딥링크 진입). `openedByPushRef` 로 push 엔트리 소비 여부 추적. 뒤로가기로 URL 정리되면 자동 리셋
+- **QA-1 (검증)** enrich-images 기존 로직 안전 확인 — 304/204 early return + Redis recent 1h + lock 60s + cancelled flag. 코드 변경 없음
+- **QA-2** (`e40ee63`) CafeOverlayCard `previousFocusRef` 추가 — mount 시 `document.activeElement` 보관, unmount 시 복귀. ESC/×/딥링크 닫기 후 Tab 탐색 위치 유지
+- **QA-3** (`e40ee63`) BottomSheet `visible` 동안 `body.overflow='hidden'` — 모바일 주소창 + scroll chain 방어. 딥링크 진입 자동 lock
+- **DoD 코드 레벨**: tsc + build 통과
+- **실기 QA 대기**: 안드로이드 물리 뒤로가기 / 시트 닫기 깜빡임 해소 / 딥링크 공유 (사용자 측정)
+
+### ⏸ **2순위** — Phase 7 추가 후보
+
+- P7-C 다크모드 · P7-D 관측 지표 · P7-E 관리자 · P7-F view-transition
+- **상태**: 사용자 결정 대기 · 09 리포트 PART 3 참조
+
+---
+
+## 📜 완료 기록
+
+### 🟢 Phase 7-B · PC Overlay 레이아웃 재설계 (2026-04-21)
 
 - **T7-B1** (`70d208b`) `theme.z.overlayCard` 스케일 추가
 - **T7-B2** (`bc80a1d`) Header 전역 복원 + 48px 축소. Phase 4 "몰입 경로 숨김" 철회. `/search` 만 숨김 유지. `MapPageWrapper`/`PageWrapper`/`map/loading` height calc 48 로 동기화
@@ -127,6 +148,7 @@
 | `09_post_phase6_qa.md` | **Phase 6 검증 + P6-06~08 후속 + Phase 7 후보(A~F)** |
 | `10_bug_map_resize.md` | ✅ **Critical bug 리포트 + T-BUG-MAP-01/02/03 실행 가이드** (코드 완료, 실기 QA 대기) |
 | `11_bug_search_nested_button.md` | ✅ Critical bug — button 중첩 hydration (완료 `605b856`) |
+| `12_bug_sheet_url_loop.md` | 🔴 **Critical bug — 시트 닫힘 후 재열림 + URL 리프래시 루프. T-BUG-SHEET-01/02 + 보조 QA-1/2/3 지시서** |
 | `phase_3_5/README.md` | Phase 3~6 가이드 폴더 index |
 | `phase_3_5/PHASE_{3,4,5,6}_*.md` | 각 Phase 상세 가이드 (완료) |
 | `phase_3_5/PHASE_7_DESKTOP_OVERLAY.md` | 🔵 **Phase 7-B — Desktop Overlay 레이아웃 + Header 복원 + ListCard v2 지시서** |

@@ -121,6 +121,14 @@
 - [x] **BUG-SEARCH-01** `/search` Row를 `<div role="button">` 로 전환 (40분) (커밋 `605b856`)
 - [x] **BUG-SEARCH-02** styled.button 중첩 전수 스캔 0건 확인 (20분) — native button-in-button 0건. CardLink(a)+FavoriteBtn(button) 은 doc 명시 scope 밖(분리된 a11y 채무)
 
+#### J-3. 🟢 BUG-SHEET URL LOOP (12 리포트, 2026-04-22) — **완료**
+- [x] **T-BUG-SHEET-01** `BottomSheet.tsx:87-127` pushState/popstate/replaceState 제거 + handleClose 단순화 (커밋 `f5da079`)
+- [x] **T-BUG-SHEET-02** `MapClient.tsx:272-285` URL sync 를 push 기반으로 재설계 + `openedByPushRef` 추가 (커밋 `dab34c2`)
+- [x] **QA-1** enrich-images `router.refresh()` 루프 검증 — 기존 로직 안전 (304/204 early return + recent TTL + lock + cancelled flag). 코드 변경 없음
+- [x] **QA-2** CafeOverlayCard ESC 닫기 focus 복귀 — `previousFocusRef` 추가 (커밋 `e40ee63`)
+- [x] **QA-3** 모바일 딥링크 진입 시 body scroll lock — `visible` 동안 `body.overflow=hidden` (커밋 `e40ee63`)
+- [ ] 실기 회귀: 안드로이드 물리 뒤로가기 + BUG-MAP 회귀 없음 + 딥링크 공유 정상 — 사용자 실측 대기
+
 ---
 
 **Exit**: A+B 완료 → 릴리즈 가능. C는 스프린트 1~2일 추가 투자 시 완성도 A+ 도달. D+E+F는 릴리즈 후 지속. **G 완료 = Phase 3-6 종료**. H·I 는 다음 스프린트 결정 대기.
