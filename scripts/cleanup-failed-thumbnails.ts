@@ -32,7 +32,7 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import Redis from 'ioredis';
-import { extractNaverProxyOrigin, isBlockedHost } from './lib/naver-proxy';
+import { extractNaverProxyOrigin, isBlockedHost } from '../src/lib/image/naver-proxy';
 
 const isSupabase = (process.env.DATABASE_URL ?? '').includes('supabase.com');
 const pool = new Pool({

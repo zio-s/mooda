@@ -31,7 +31,7 @@ import { dirname, join } from 'node:path';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
-import { batchFetchDimensions, type ImageFormat, type RemoteImageResult } from './lib/image-size';
+import { batchFetchDimensions, type ImageFormat, type RemoteImageResult } from '../src/lib/image/size';
 
 // ─── 연결 ──────────────────────────────────────────────────────────────
 const isSupabase = (process.env.DATABASE_URL ?? '').includes('supabase.com');

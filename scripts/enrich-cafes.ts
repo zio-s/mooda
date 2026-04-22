@@ -19,8 +19,8 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
-import { batchFetchDimensions } from './lib/image-size';
-import { extractNaverProxyOrigin, isBlockedHost } from './lib/naver-proxy';
+import { batchFetchDimensions } from '../src/lib/image/size';
+import { extractNaverProxyOrigin, isBlockedHost } from '../src/lib/image/naver-proxy';
 
 const isSupabase = (process.env.DATABASE_URL ?? '').includes('supabase.com');
 const pool = new Pool({
