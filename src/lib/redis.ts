@@ -27,6 +27,11 @@ const noopRedis = {
   setex: async () => 'OK' as const,
   set: async () => 'OK' as const,
   del: async () => 0,
+  scan: async () => ['0', []] as [string, string[]],
+  pipeline: () => ({
+    del: () => noopRedis.pipeline(),
+    exec: async () => [],
+  }),
   on: () => noopRedis,
 } as unknown as Redis;
 
@@ -71,3 +76,35 @@ export const CACHE_TTL = {
   MOODS: 60 * 60,          // 1시간
   GOOGLE_REVIEW: 60 * 60 * 24 * 7, // 7일
 } as const;
+
+/**
+ * 카페 상세 캐시 일괄 무효화. enrich-images / google-reviews / cleanup 스크립트
+ * 에서 공용. Redis 미설정 환경에서는 noopRedis 가 빈 pipeline 처리.
+ */
+export async function invalidateCafeCaches(cafeIds: string[] | string): Promise<void> {
+  const ids = Array.isArray(cafeIds) ? cafeIds : [cafeIds];
+  if (ids.length === 0) return;
+  const pipeline = redis.pipeline();
+  for (const id of ids) pipeline.del(`cafe:${id}`);
+  await pipeline.exec().catch(() => null);
+}
+
+/**
+ * `search:*` prefix 일괄 삭제. 카페 사진/무드/영업시간 변경 시 목록 응답
+ * 캐시를 전부 털어 다음 요청에서 재생성되도록 한다.
+ *
+ * SCAN 은 prod Redis 에서 O(1*N) — 키 수 많을 때도 블로킹 없음. noopRedis 는
+ * 빈 배열 반환.
+ */
+export async function invalidateSearchCaches(): Promise<void> {
+  try {
+    let cursor = '0';
+    do {
+      const [next, keys] = await redis.scan(cursor, 'MATCH', 'search:*', 'COUNT', '500');
+      cursor = next;
+      if (keys.length > 0) await redis.del(...keys).catch(() => null);
+    } while (cursor !== '0');
+  } catch {
+    // Redis 연결 실패 등 — 조용히 스킵
+  }
+}
