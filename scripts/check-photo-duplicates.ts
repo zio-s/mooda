@@ -6,7 +6,7 @@
  *
  * 실행: npx tsx scripts/check-photo-duplicates.ts
  */
-import 'dotenv/config';
+import './lib/env';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';

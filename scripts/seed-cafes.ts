@@ -6,6 +6,7 @@
  * - 예상 수집량: 500~1,000개 고유 카페
  * - Kakao 무료 쿼터: 일 300,000건 (충분)
  */
+import './lib/env';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';

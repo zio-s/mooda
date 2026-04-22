@@ -25,7 +25,7 @@
  *   9. JSON 리포트 파일
  */
 
-import 'dotenv/config';
+import './lib/env';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { PrismaClient } from '@prisma/client';
