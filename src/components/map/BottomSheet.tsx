@@ -80,51 +80,9 @@ export function BottomSheet({ cafe, onClose, onRequestLocation }: BottomSheetPro
     return () => clearCloseTimer();
   }, [clearCloseTimer]);
 
-  // 물리 뒤로가기(Android Chrome 등)로 시트만 닫히게 — popstate 통합.
-  // cafe가 set될 때마다 1회 pushState, 시트 종료 시 state를 소진해 history
-  // 스택이 쌓이지 않게 한다. 중복 push 방지 플래그(pushedRef)로 새 카페로
-  // 교체될 때도 한 번만 push.
-  const pushedRef = useRef(false);
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (cafe && !pushedRef.current) {
-      pushedRef.current = true;
-      window.history.pushState({ mooda: 'bottom-sheet' }, '');
-    }
-
-    const onPop = () => {
-      if (pushedRef.current) {
-        pushedRef.current = false;
-        // 히스토리가 이미 back 됐으므로 pushState 없이 onClose만 실행.
-        setVisible(false);
-        setShowRoute(false);
-        clearCloseTimer();
-        closeTimerRef.current = setTimeout(() => {
-          closeTimerRef.current = null;
-          onClose();
-        }, 350);
-      }
-    };
-    window.addEventListener('popstate', onPop);
-
-    return () => {
-      window.removeEventListener('popstate', onPop);
-      // 언마운트 시 내가 push한 state가 살아있으면 replaceState로 덮어써
-      // 유령 히스토리 엔트리를 제거. back 호출은 route 이탈 유발 가능해 X.
-      // 시나리오: 시트 열림 → 부모가 cafe=null 설정(프로그램 close) → popstate
-      // 안 발사됨 → 히스토리 스택에 내가 심어둔 엔트리 남음. 이 지점에서
-      // replaceState로 현재 URL/state를 재기록해 엔트리 낭비 해소.
-      if (pushedRef.current) {
-        pushedRef.current = false;
-        try {
-          const url = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-          window.history.replaceState({}, '', url);
-        } catch {
-          /* replaceState 실패는 무시 */
-        }
-      }
-    };
-  }, [cafe, onClose, clearCloseTimer]);
+  // T-BUG-SHEET-01: history 조작은 MapClient URL sync(T7-B8) 로 일원화 — 이 컴포넌트
+  // 는 순수 UI. cafe prop 이 null 로 내려오면 애니메이션 후 onClose 콜백만 호출.
+  // 브라우저 뒤로가기 감지 / ?cafe= push & back 은 MapClient 가 담당.
 
   // 경로 조회
   const { data: route, isLoading: routeLoading, isError: routeError } = useGetTransitRouteQuery(
@@ -137,17 +95,13 @@ export function BottomSheet({ cafe, onClose, onRequestLocation }: BottomSheetPro
     { skip: !displayCafe || !userLocation },
   );
 
-  // X 버튼 / 오버레이 클릭 → 닫기. pushState로 쌓인 히스토리를 back()으로
-  // 소진해 popstate 핸들러가 공용 close 로직을 실행한다. pushedRef가 false면
-  // (이미 popstate 등으로 소진됐다는 뜻) 직접 onClose.
+  // X 버튼 / 오버레이 클릭 → 닫기. 애니메이션 후 onClose 콜백 호출 — 부모
+  // (MapClient) 가 dispatch(setSelectedCafe(null)) → URL sync 가 router.back()
+  // 으로 history 정리. history 조작 책임은 MapClient 단일 경로.
   const handleClose = useCallback((e?: React.MouseEvent) => {
     if (e) {
       e.stopPropagation();
       e.preventDefault();
-    }
-    if (typeof window !== 'undefined' && pushedRef.current) {
-      window.history.back();
-      return;
     }
     setVisible(false);
     setShowRoute(false);
