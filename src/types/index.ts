@@ -90,16 +90,10 @@ export interface GoogleReview {
   language?: string;
 }
 
-export interface GooglePhoto {
-  url: string;
-  width: number;
-  height: number;
-  attributions: string[];
-}
-
+// T-CODE-03/05: photos 는 API 응답에서 제거됨. Google 사진은 cafe_photos 에
+// upsert 되어 `Cafe.photos` 로 통합 관리. GooglePhoto 타입은 필요 시 추후 재도입.
 export interface GoogleReviewsResponse {
   reviews: GoogleReview[];
-  photos: GooglePhoto[];
   googleRating?: number;
   googleTotalRatings?: number;
 }

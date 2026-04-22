@@ -139,11 +139,14 @@ export function CafeDetailClient({ cafe }: Props) {
   const { data: googleData, isLoading: googleLoading } = useGetCafeGoogleReviewsQuery(cafe.id);
 
   // ── 갤러리 라이트박스 ──────────────────────────────────────────────────
+  // T-CODE-05: Google photos 는 enrich-images / google-reviews route 가
+  // cafe_photos 테이블에 upsert 하므로 `googleData.photos` 의존 제거.
+  // 갤러리는 cafe.photos 단일 소스만 참조 → 중복 원천 차단.
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
-  const allPhotos = useMemo(() => [
-    ...cafe.photos.map((p) => p.url),
-    ...(googleData?.photos?.map((p) => p.url) ?? []),
-  ], [cafe.photos, googleData?.photos]);
+  const allPhotos = useMemo(
+    () => cafe.photos.map((p) => p.url),
+    [cafe.photos],
+  );
 
   // 라이트박스 열린 동안 body scroll lock — 배경 페이지 뒤에서 스크롤 방지.
   useEffect(() => {
