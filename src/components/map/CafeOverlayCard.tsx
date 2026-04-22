@@ -63,12 +63,20 @@ export function CafeOverlayCard({ cafe, onClose }: Props) {
   const [addFavorite] = useAddFavoriteMutation();
   const [removeFavorite] = useRemoveFavoriteMutation();
   const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   const isFav = cafe.isFavorited ?? false;
 
-  // 열리자마자 × 버튼에 focus — a11y (Tab 순서 진입 용이)
+  // QA-2: 열릴 때 이전 focus 보관 + × 버튼으로 이동, 언마운트 시 원래 요소로 복귀.
+  // focus trap 없이도 ESC/×/딥링크 닫기 후 Tab 키 탐색 위치가 유지됨.
   useEffect(() => {
+    if (typeof document !== 'undefined') {
+      previousFocusRef.current = document.activeElement as HTMLElement | null;
+    }
     closeBtnRef.current?.focus();
+    return () => {
+      previousFocusRef.current?.focus?.();
+    };
   }, [cafe.id]);
 
   // ESC 키 닫기

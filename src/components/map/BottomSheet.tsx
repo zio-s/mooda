@@ -84,6 +84,18 @@ export function BottomSheet({ cafe, onClose, onRequestLocation }: BottomSheetPro
   // 는 순수 UI. cafe prop 이 null 로 내려오면 애니메이션 후 onClose 콜백만 호출.
   // 브라우저 뒤로가기 감지 / ?cafe= push & back 은 MapClient 가 담당.
 
+  // QA-3: 시트 열린 동안 body scroll lock — 모바일 주소창 감춤 이슈 + scroll
+  // chain(시트 내부 스크롤이 배경 지도로 번지는 것) 방지. 딥링크 진입 시도
+  // visible=true 로 전환되면 자동으로 lock 설정됨.
+  useEffect(() => {
+    if (typeof document === 'undefined' || !visible) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [visible]);
+
   // 경로 조회
   const { data: route, isLoading: routeLoading, isError: routeError } = useGetTransitRouteQuery(
     {
