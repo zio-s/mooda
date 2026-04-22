@@ -255,16 +255,27 @@ export function MapClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // T7-B8 URL ↔ Redux 양방향 sync (`?cafe=<id>`)
-  //  - URL 쪽 값이 바뀌면 Redux 반영 (딥링크/뒤로가기 지원)
-  //  - Redux 쪽 선택이 바뀌면 URL 갱신 (replace — 히스토리 누적 방지)
+  // T7-B8 / T-BUG-SHEET-02 URL ↔ Redux 양방향 sync (`?cafe=<id>`)
+  //  - URL 쪽 값이 바뀌면 Redux 반영 (딥링크/뒤로가기 자연 닫힘 지원)
+  //  - 카페 선택 = history push (뒤로가기로 닫을 수 있게 엔트리 +1)
+  //  - 명시 닫기 = router.back() (push 엔트리 소비) 또는 replace (딥링크 진입 시)
   //  - 값이 같으면 업데이트 스킵 → 순환 방지
+  //
+  // history 조작은 이 훅이 단일 경로 — BottomSheet/CafeOverlayCard 는 건드리지 않음.
   const cafeIdFromUrl = searchParamsHook.get('cafe');
+
+  // 우리가 push 로 history 엔트리를 쌓았는지 기록. 명시 닫기 시 router.back()
+  // 으로 소비할지, replace 로 단순 URL 정리만 할지 결정하는 스위치.
+  const openedByPushRef = useRef(false);
+
   useEffect(() => {
     if (cafeIdFromUrl && cafeIdFromUrl !== selectedCafeId) {
       dispatch(setSelectedCafe(cafeIdFromUrl));
     } else if (!cafeIdFromUrl && selectedCafeId) {
+      // 뒤로가기로 URL 이 /map 으로 돌아간 경우 — Redux 정리 + push 엔트리 상태
+      // 도 리셋(이미 소비됨).
       dispatch(setSelectedCafe(null));
+      openedByPushRef.current = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cafeIdFromUrl]);
@@ -272,15 +283,24 @@ export function MapClient() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const current = new URLSearchParams(window.location.search);
-    if (selectedCafeId) {
-      if (current.get('cafe') !== selectedCafeId) {
-        current.set('cafe', selectedCafeId);
-        router.replace(`/map?${current.toString()}`, { scroll: false });
+    const urlCafe = current.get('cafe');
+
+    if (selectedCafeId && selectedCafeId !== urlCafe) {
+      // 카페 선택 — history push 로 엔트리 +1 (뒤로가기로 닫히게)
+      current.set('cafe', selectedCafeId);
+      router.push(`/map?${current.toString()}`, { scroll: false });
+      openedByPushRef.current = true;
+    } else if (!selectedCafeId && urlCafe) {
+      if (openedByPushRef.current) {
+        // 명시 닫기 — push 로 쌓은 엔트리가 있으니 back 으로 소비
+        openedByPushRef.current = false;
+        router.back();
+      } else {
+        // 딥링크 `/map?cafe=xxx` 진입 후 명시 닫기 — push 엔트리 없음 → replace
+        current.delete('cafe');
+        const qs = current.toString();
+        router.replace(qs ? `/map?${qs}` : '/map', { scroll: false });
       }
-    } else if (current.has('cafe')) {
-      current.delete('cafe');
-      const qs = current.toString();
-      router.replace(qs ? `/map?${qs}` : '/map', { scroll: false });
     }
   }, [selectedCafeId, router]);
 
