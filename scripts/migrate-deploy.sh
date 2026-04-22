@@ -12,9 +12,15 @@
 
 set -euo pipefail
 
-if [ -z "${DATABASE_URL:-}" ]; then
-  echo "❌ DATABASE_URL env var required"
-  exit 1
+# CI / 로컬 dummy 환경 감지 — 진짜 DB 가 아니면 migrate skip.
+# GitHub Actions CI 는 빌드 통과만 검증하려고 dummy DATABASE_URL 을 주입함.
+# Vercel 프로덕션 빌드는 실제 Supabase URL 이 들어와서 정상 진입.
+if [ -z "${DATABASE_URL:-}" ] \
+   || [[ "$DATABASE_URL" == *"localhost"* ]] \
+   || [[ "$DATABASE_URL" == *"127.0.0.1"* ]] \
+   || [[ "$DATABASE_URL" == *"dummy"* ]]; then
+  echo "⏭️  Skipping migrate deploy — DATABASE_URL is missing or points to local/dummy host."
+  exit 0
 fi
 
 # 6543 → 5432, pgbouncer=true 제거. 이미 5432 면 no-op.
