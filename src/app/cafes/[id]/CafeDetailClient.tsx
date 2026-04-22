@@ -138,6 +138,34 @@ export function CafeDetailClient({ cafe }: Props) {
   const { data: blogData } = useGetCafeBlogsQuery(cafe.id);
   const { data: googleData, isLoading: googleLoading } = useGetCafeGoogleReviewsQuery(cafe.id);
 
+  // T-CODE-04: 사진 부족한 카페 진입 시 on-demand enrich 트리거. 응답이
+  // saved>0 이면 router.refresh() 로 SSR 다시 가져와 갤러리 반영. 동일 카페
+  // 내 중복 호출 방지용으로 id 키 기반 useEffect — StrictMode 이중 발화는
+  // 서버 쪽 Redis recent TTL 이 흡수.
+  useEffect(() => {
+    if (cafe.photos.length >= 3) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/cafes/${cafe.id}/enrich-images`, {
+          method: 'POST',
+        });
+        if (!res.ok || res.status === 204 || res.status === 304) return;
+        const body = (await res.json().catch(() => null)) as
+          | { saved?: number }
+          | null;
+        if (!cancelled && body && typeof body.saved === 'number' && body.saved > 0) {
+          router.refresh();
+        }
+      } catch {
+        // 네트워크/서버 장애 — silent fail, UI placeholder 유지
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [cafe.id, cafe.photos.length, router]);
+
   // ── 갤러리 라이트박스 ──────────────────────────────────────────────────
   // T-CODE-05: Google photos 는 enrich-images / google-reviews route 가
   // cafe_photos 테이블에 upsert 하므로 `googleData.photos` 의존 제거.
