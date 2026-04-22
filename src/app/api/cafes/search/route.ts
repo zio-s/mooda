@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { after } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { redis, CACHE_TTL } from '@/lib/redis';
 import type { MoodCategory } from '@/constants/moods';
 import { z } from 'zod';
+
+// T-CODE-06: 목록 응답 후 썸네일 없는 카페 최대 N 개를 background 로 enrich.
+// 응답 지연 없음 — Next.js 15+ `after()` 가 response flush 이후 실행 보장.
+const BACKGROUND_ENRICH_LIMIT = 5;
 
 const searchSchema = z.object({
   lat: z.number().optional(),
@@ -142,6 +147,25 @@ export async function POST(request: NextRequest) {
     prisma.searchLog
       .create({ data: { query: params, resultCount: total } })
       .catch(() => null);
+
+    // T-CODE-06: 썸네일 없는 카페 최대 5곳 background enrich.
+    // `after()` 는 response flush 이후 실행 — 사용자 응답 지연 0.
+    // enrich-images route 가 자체 Redis lock/recent 로 중복 호출 방어.
+    const needsEnrich = result.cafes
+      .filter((c) => !c.mainPhoto && c.photos.length === 0)
+      .slice(0, BACKGROUND_ENRICH_LIMIT);
+    if (needsEnrich.length > 0) {
+      const origin = new URL(request.url).origin;
+      after(async () => {
+        await Promise.all(
+          needsEnrich.map((c) =>
+            fetch(`${origin}/api/cafes/${c.id}/enrich-images`, {
+              method: 'POST',
+            }).catch(() => null),
+          ),
+        );
+      });
+    }
 
     return NextResponse.json(result);
   } catch (error) {
