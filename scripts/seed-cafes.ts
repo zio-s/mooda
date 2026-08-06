@@ -33,6 +33,7 @@ const TARGET_AREAS = [
 
   // ─── 서울 마포/홍대권 ─────────────────────────────────────
   { name: '홍대', lat: 37.5563, lng: 126.9238, radius: 1200 },
+  { name: '연희동', lat: 37.5670, lng: 126.9320, radius: 800 },
   { name: '연남동', lat: 37.5605, lng: 126.9233, radius: 800 },
   { name: '합정', lat: 37.5498, lng: 126.9143, radius: 1000 },
   { name: '망원', lat: 37.5558, lng: 126.9027, radius: 900 },
@@ -53,6 +54,8 @@ const TARGET_AREAS = [
   { name: '해방촌', lat: 37.5416, lng: 126.9884, radius: 700 },
   { name: '한남동', lat: 37.5350, lng: 127.0033, radius: 900 },
   { name: '용산', lat: 37.5298, lng: 126.9647, radius: 1000 },
+  { name: '녹사평', lat: 37.5346, lng: 126.9866, radius: 700 },
+  { name: '후암동', lat: 37.5455, lng: 126.9740, radius: 700 },
 
   // ─── 서울 종로/중구권 ─────────────────────────────────────
   { name: '을지로', lat: 37.5660, lng: 126.9947, radius: 1000 },
@@ -62,6 +65,7 @@ const TARGET_AREAS = [
   { name: '혜화', lat: 37.5825, lng: 127.0020, radius: 900 },
   { name: '광화문', lat: 37.5760, lng: 126.9768, radius: 900 },
   { name: '인사동', lat: 37.5745, lng: 126.9857, radius: 700 },
+  { name: '신당동', lat: 37.5658, lng: 127.0192, radius: 800 },
 
   // ─── 서울 강북/노원권 ─────────────────────────────────────
   { name: '노원', lat: 37.6542, lng: 127.0568, radius: 1200 },
@@ -81,6 +85,7 @@ const TARGET_AREAS = [
   { name: '목동', lat: 37.5272, lng: 126.8752, radius: 1100 },
   { name: '강서/마곡', lat: 37.5601, lng: 126.8283, radius: 1200 },
   { name: '당산', lat: 37.5338, lng: 126.8978, radius: 900 },
+  { name: '문래창작촌', lat: 37.5165, lng: 126.8945, radius: 800 },
 
   // ─── 서울 송파/강동권 ─────────────────────────────────────
   { name: '잠실', lat: 37.5131, lng: 127.1000, radius: 1200 },
@@ -103,6 +108,11 @@ const TARGET_AREAS = [
   { name: '고양 일산', lat: 37.6583, lng: 126.7786, radius: 1500 },
   { name: '부천', lat: 37.5034, lng: 126.7660, radius: 1200 },
 ];
+
+// --only=신당동,문래창작촌 : 지정 지역만 수집 (Kakao 일일 쿼터가 작아
+// 전체 재수집이 중간에 끊겼을 때 남은 지역만 이어서 돌리는 용도)
+const ONLY_ARG = process.argv.find((a) => a.startsWith('--only='));
+const ONLY_AREAS = ONLY_ARG ? ONLY_ARG.split('=')[1].split(',').map((s) => s.trim()) : null;
 
 interface KakaoPlace {
   id: string;
@@ -197,7 +207,12 @@ async function main() {
   let totalNew = 0;
   let totalUpdated = 0;
 
-  for (const area of TARGET_AREAS) {
+  const targetAreas = ONLY_AREAS
+    ? TARGET_AREAS.filter((a) => ONLY_AREAS.includes(a.name))
+    : TARGET_AREAS;
+  if (ONLY_AREAS) console.log(`🎯 지정 지역만 수집: ${targetAreas.map((a) => a.name).join(', ')}\n`);
+
+  for (const area of targetAreas) {
     console.log(`\n📍 [${area.name}] 수집 중...`);
     let areaCount = 0;
 

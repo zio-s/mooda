@@ -13,10 +13,13 @@
  *   npx tsx scripts/analyze-moods.ts
  *
  * 옵션 플래그:
- *   --dry-run   DB 변경 없이 분석 결과만 출력
- *   --limit=50  처리할 카페 수 제한 (테스트용)
+ *   --dry-run            DB 변경 없이 분석 결과만 출력
+ *   --limit=50           처리할 카페 수 제한 (테스트용)
+ *   --since=2026-08-06   해당 일시 이후 생성된 카페만 분석. 기존 카페의
+ *                        태그·투표 집계는 건드리지 않음 (증분 seed 후 사용)
  */
 
+import './lib/env';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
@@ -35,6 +38,12 @@ const NAVER_CLIENT_SECRET = process.env.NAVER_CLIENT_SECRET!;
 const IS_DRY_RUN = process.argv.includes('--dry-run');
 const LIMIT_ARG = process.argv.find((a) => a.startsWith('--limit='));
 const LIMIT = LIMIT_ARG ? parseInt(LIMIT_ARG.split('=')[1]) : undefined;
+const SINCE_ARG = process.argv.find((a) => a.startsWith('--since='));
+const SINCE = SINCE_ARG ? new Date(SINCE_ARG.split('=')[1]) : undefined;
+if (SINCE && isNaN(SINCE.getTime())) {
+  console.error(`❌ --since 값을 해석할 수 없습니다: ${SINCE_ARG}`);
+  process.exit(1);
+}
 
 // ─── 분위기 키워드 사전 ────────────────────────────────────────────────────
 // 각 mood key에 해당하는 한국어 키워드 목록
@@ -368,12 +377,14 @@ async function main() {
 
   console.log(IS_DRY_RUN ? '🧪 DRY RUN 모드 (DB 변경 없음)\n' : '🚀 네이버 블로그 분위기 분석 시작\n');
 
-  // 모든 카페 로드
+  // 모든 카페 로드 (--since 지정 시 그 이후 생성분만)
   const cafes = await prisma.cafe.findMany({
     select: { id: true, name: true, neighborhood: true, district: true },
+    where: SINCE ? { createdAt: { gte: SINCE } } : undefined,
     orderBy: { name: 'asc' },
     ...(LIMIT ? { take: LIMIT } : {}),
   });
+  if (SINCE) console.log(`📅 ${SINCE.toISOString()} 이후 생성된 카페만 대상\n`);
 
   console.log(`📋 총 ${cafes.length}개 카페 분석 예정`);
   console.log(`⏱  예상 소요 시간: 약 ${Math.ceil(cafes.length * 0.35 / 60)}분\n`);
@@ -383,8 +394,10 @@ async function main() {
   const moodByKey = Object.fromEntries(allMoods.map((m) => [m.key, m]));
 
   if (!IS_DRY_RUN) {
-    // 기존 랜덤 분위기 데이터 전부 삭제
-    const deleted = await prisma.cafeMood.deleteMany({});
+    // 기존 분위기 데이터 삭제 — --since 시엔 대상 카페 것만 (기존 투표 보존)
+    const deleted = await prisma.cafeMood.deleteMany({
+      where: SINCE ? { cafeId: { in: cafes.map((c) => c.id) } } : undefined,
+    });
     console.log(`🗑  기존 분위기 태그 ${deleted.count}개 삭제 완료\n`);
   }
 
