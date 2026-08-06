@@ -38,12 +38,16 @@ export const FilterBar = styled.div`
     padding: 8px 12px;
   }
 
-  /* Phase 7-B T7-B3: PC ≥1024 에서 한 줄 완전 강제. 넘치면 ChipsScroll 이
-     자체 overflow-x 로 흡수하고, FilterBar 자체는 overflow: hidden 으로 감싼다. */
+  /* PC ≥1024: 한 줄 강제. ChipsScroll 이 overflow-x:auto 로 가로 overflow 흡수.
+     overflow: hidden 은 AreaDropdown(position:absolute) 을 clip 해버려 제거.
+     overflow-x: clip 으로 가로만 클리핑하되, overflow-y 를 명시하지 않으면
+     스펙상 overflow-x가 visible이 아닐 때 overflow-y가 auto로 강제 계산되어
+     세로로 펼쳐지는 AreaDropdown까지 함께 잘림 → overflow-y: visible 명시. */
   @media (min-width: ${theme.breakpoints.lg}) {
     gap: 10px;
     padding: 10px 20px;
-    overflow: hidden;
+    overflow-x: clip;
+    overflow-y: visible;
   }
 `;
 
