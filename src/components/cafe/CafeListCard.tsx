@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Coffee, Star } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { setSelectedCafe } from '@/store/slices/mapSlice';
@@ -11,6 +12,8 @@ import {
 } from '@/lib/cafe/openStatus';
 import { CATEGORY_META } from '@/constants/moods';
 import { theme } from '@/styles/theme';
+import { PATHS } from '@/constants/paths';
+import { useIsDesktop } from '@/hooks/useViewport';
 import type { Cafe } from '@/types';
 import {
   Wrapper,
@@ -36,8 +39,21 @@ function formatDistance(m?: number): string | null {
 
 export function CafeListCard({ cafe }: CafeListCardProps) {
   const dispatch = useAppDispatch();
+  const router = useRouter();
+  const isDesktop = useIsDesktop();
   const selectedId = useAppSelector((s) => s.map.selectedCafeId);
   const isSelected = selectedId === cafe.id;
+
+  // PC: 사이드 오버레이(CafeOverlayCard)로 미리보기. 모바일/태블릿: 목록
+  // 화면 위에 뜨는 BottomSheet는 showList일 때 렌더되지 않아 무반응 버그가
+  // 있었고, 목록에서는 미리보기 없이 상세 페이지로 바로 진입하는 게 자연스러움.
+  const handleSelect = () => {
+    if (isDesktop) {
+      dispatch(setSelectedCafe(cafe.id));
+    } else {
+      router.push(PATHS.CafeDetail(cafe.id));
+    }
+  };
 
   const topMoods = [...cafe.moods]
     .sort((a, b) => b.voteCount - a.voteCount)
@@ -68,7 +84,7 @@ export function CafeListCard({ cafe }: CafeListCardProps) {
       $selected={isSelected}
       aria-pressed={isSelected}
       aria-label={`${cafe.name} 선택`}
-      onClick={() => dispatch(setSelectedCafe(cafe.id))}
+      onClick={handleSelect}
     >
       <Thumb>
         {mainPhoto ? (
