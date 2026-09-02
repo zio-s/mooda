@@ -1,8 +1,8 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import styled, { css, keyframes } from 'styled-components';
-import { CustomOverlayMap, MapMarker, MarkerClusterer } from 'react-kakao-maps-sdk';
+import { CustomOverlayMap, MapMarker, MarkerClusterer, useMap } from 'react-kakao-maps-sdk';
 import { Star } from 'lucide-react';
 import { theme } from '@/styles/theme';
 import type { Cafe, MapBounds } from '@/types';
@@ -37,6 +37,88 @@ function withinPaddedBounds(cafe: Cafe, bounds: MapBounds | null): boolean {
     cafe.lng >= bounds.swLng - lngPad &&
     cafe.lng <= bounds.neLng + lngPad
   );
+}
+
+// 같은 건물(또는 같은 상가/단지의 여러 유닛)에 입점한 카페들은 pill이 화면
+// 상에서 서로 겹쳐 클릭하기 어려워진다. 좌표를 고정 격자(m 단위)로 스냅하는
+// 방식은 실패했다 — 큰 상업단지에서는 카페마다 좌표가 조금씩 달라 같은 칸에
+// 안 묶이는데도 화면 픽셀상으론 여전히 겹쳐 보임.
+//
+// 겹치는 pill을 세로로 강제로 벌리는 방식도 시도했으나 폐기 — 2번째부터는
+// 실제 좌표가 아닌 곳에 이름표만 떠서 위치 왜곡이 생기고(가로수길처럼
+// 20~50m씩 떨어진 카페를 억지로 한 줄로 쌓으면 "다 한 자리에 있다"는 잘못된
+// 인상을 줌), 몇 개 이상 겹치면 그마저도 다시 겹침.
+//
+// 대신 지도 투영으로 각 카페의 실제 렌더 픽셀 좌표를 구해서, 픽셀 거리가
+// 가까운(=화면에서 겹치는) 카페들을 그룹으로 묶고, 그 그룹의 실제 좌표
+// 중심점에 "카페 N개" 칩 하나만 그린다. 탭하면 그룹 내 카페 목록이 뜬다 —
+// 실제 카페 좌표는 왜곡하지 않으면서 클릭 가능성을 보장.
+const COLLISION_PX_RADIUS = 46;
+
+type CollisionGroup = {
+  key: string;
+  centerLat: number;
+  centerLng: number;
+  cafes: Cafe[];
+};
+
+function computeCollisionGroups(
+  cafes: Cafe[],
+  map: kakao.maps.Map,
+): { groups: CollisionGroup[]; groupedIds: Set<string> } {
+  const projection = map.getProjection();
+  const points = cafes.map((cafe) => ({
+    cafe,
+    point: projection.containerPointFromCoords(
+      new kakao.maps.LatLng(cafe.lat, cafe.lng),
+    ),
+  }));
+
+  // Union-Find — 픽셀 반경 내에 있는 카페들을 하나의 그룹으로 합친다.
+  const parent = new Map<string, string>(points.map((p) => [p.cafe.id, p.cafe.id]));
+  const find = (id: string): string => {
+    let root = id;
+    while (parent.get(root) !== root) root = parent.get(root)!;
+    return root;
+  };
+  const union = (a: string, b: string) => {
+    const ra = find(a);
+    const rb = find(b);
+    if (ra !== rb) parent.set(ra, rb);
+  };
+
+  for (let i = 0; i < points.length; i++) {
+    for (let j = i + 1; j < points.length; j++) {
+      const dx = points[i].point.x - points[j].point.x;
+      const dy = points[i].point.y - points[j].point.y;
+      if (Math.sqrt(dx * dx + dy * dy) < COLLISION_PX_RADIUS) {
+        union(points[i].cafe.id, points[j].cafe.id);
+      }
+    }
+  }
+
+  const byRoot = new Map<string, Cafe[]>();
+  for (const { cafe } of points) {
+    const root = find(cafe.id);
+    const bucket = byRoot.get(root);
+    if (bucket) bucket.push(cafe);
+    else byRoot.set(root, [cafe]);
+  }
+
+  const groups: CollisionGroup[] = [];
+  const groupedIds = new Set<string>();
+  for (const [root, groupCafes] of byRoot) {
+    if (groupCafes.length < 2) continue;
+    groupCafes.sort((a, b) => a.id.localeCompare(b.id)); // 렌더마다 순서 고정
+    for (const c of groupCafes) groupedIds.add(c.id);
+    groups.push({
+      key: root,
+      centerLat: groupCafes.reduce((sum, c) => sum + c.lat, 0) / groupCafes.length,
+      centerLng: groupCafes.reduce((sum, c) => sum + c.lng, 0) / groupCafes.length,
+      cafes: groupCafes,
+    });
+  }
+  return { groups, groupedIds };
 }
 
 const bounce = keyframes`
@@ -102,6 +184,65 @@ const PillLeadDot = styled.span<{ $selected: boolean }>`
   background: ${({ $selected }) => ($selected ? theme.colors.white : theme.colors.primary)};
 `;
 
+/**
+ * 겹치는 카페 그룹을 대표하는 칩 — 그룹의 실제 좌표 중심점에 그려진다
+ * (개별 카페 좌표를 왜곡하지 않음). 탭하면 GroupPopover로 목록이 뜬다.
+ */
+const GroupChip = styled.div`
+  ${markerBase}
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px 5px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: ${theme.colors.white};
+  background: ${theme.colors.primary};
+  border: 1.5px solid ${theme.colors.primary};
+  box-shadow: ${theme.shadows.lg};
+  white-space: nowrap;
+`;
+
+const GroupPopover = styled.div`
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px;
+  background: ${theme.colors.white};
+  border-radius: 14px;
+  box-shadow: ${theme.shadows.lg};
+  border: 1.5px solid ${theme.colors.primary};
+  min-width: 170px;
+  max-height: 260px;
+  overflow-y: auto;
+`;
+
+const GroupPopoverItem = styled.button<{ $selected: boolean }>`
+  ${markerBase}
+  display: block;
+  width: 100%;
+  flex-shrink: 0;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: ${({ $selected }) => ($selected ? theme.colors.white : theme.colors.ink900)};
+  background: ${({ $selected }) => ($selected ? theme.colors.primary : 'transparent')};
+
+  &:hover {
+    background: ${({ $selected }) => ($selected ? theme.colors.primary : theme.colors.ink100)};
+  }
+`;
+
 const Dot = styled.div<{ $selected: boolean }>`
   ${markerBase}
   position: relative;
@@ -140,6 +281,59 @@ const DotStar = styled.span`
     height: 10px;
   }
 `;
+
+type GroupChipProps = {
+  group: CollisionGroup;
+  selectedCafeId: string | null;
+  isOpen: boolean;
+  onToggle: (key: string) => void;
+  onSelect: (cafe: Cafe) => void;
+};
+
+function CollisionGroupChip({ group, selectedCafeId, isOpen, onToggle, onSelect }: GroupChipProps) {
+  const containsSelected = group.cafes.some((c) => c.id === selectedCafeId);
+
+  return (
+    <CustomOverlayMap
+      position={{ lat: group.centerLat, lng: group.centerLng }}
+      yAnchor={0.5}
+      zIndex={isOpen ? 50 : containsSelected ? 30 : 10}
+      clickable
+    >
+      <div style={{ position: 'relative' }}>
+        {isOpen && (
+          // 트랙패드/휠로 목록을 스크롤할 때 이벤트가 지도까지 버블링되면
+          // Kakao 지도의 휠 줌이 같이 발동한다(리스트 스크롤 + 지도 줌인/아웃
+          // 동시 발생). wheel 이벤트를 여기서 막아 지도로 전파되지 않게 한다.
+          <GroupPopover onWheel={(e) => e.stopPropagation()}>
+            {group.cafes.map((cafe) => (
+              <GroupPopoverItem
+                key={cafe.id}
+                type="button"
+                $selected={cafe.id === selectedCafeId}
+                onClick={() => {
+                  onToggle(group.key);
+                  onSelect(cafe);
+                }}
+              >
+                {cafe.name}
+              </GroupPopoverItem>
+            ))}
+          </GroupPopover>
+        )}
+        <GroupChip
+          role="button"
+          aria-expanded={isOpen}
+          aria-label={`카페 ${group.cafes.length}개 — ${group.cafes.map((c) => c.name).join(', ')}`}
+          onClick={() => onToggle(group.key)}
+        >
+          <PillLeadDot $selected aria-hidden />
+          카페 {group.cafes.length}개
+        </GroupChip>
+      </div>
+    </CustomOverlayMap>
+  );
+}
 
 type MarkerMode = 'pill' | 'dot' | 'cluster';
 
@@ -237,7 +431,10 @@ type Props = {
 };
 
 function CafeMarkersImpl({ cafes, level, bounds, selectedCafeId, onMarkerClick }: Props) {
+  const map = useMap();
   const mode = resolveMode(level);
+  const [openGroupKey, setOpenGroupKey] = useState<string | null>(null);
+  const toggleGroup = (key: string) => setOpenGroupKey((prev) => (prev === key ? null : key));
 
   if (mode === 'cluster') {
     return (
@@ -268,10 +465,15 @@ function CafeMarkersImpl({ cafes, level, bounds, selectedCafeId, onMarkerClick }
   }
 
   const visibleCafes = cafes.filter((c) => withinPaddedBounds(c, bounds));
+  const { groups, groupedIds } =
+    mode === 'pill'
+      ? computeCollisionGroups(visibleCafes, map)
+      : { groups: [], groupedIds: new Set<string>() };
+  const singleCafes = visibleCafes.filter((c) => !groupedIds.has(c.id));
 
   return (
     <>
-      {visibleCafes.map((cafe) => {
+      {singleCafes.map((cafe) => {
         const selected = cafe.id === selectedCafeId;
         return (
           <CustomOverlayMap
@@ -312,6 +514,17 @@ function CafeMarkersImpl({ cafes, level, bounds, selectedCafeId, onMarkerClick }
           </CustomOverlayMap>
         );
       })}
+
+      {groups.map((group) => (
+        <CollisionGroupChip
+          key={group.key}
+          group={group}
+          selectedCafeId={selectedCafeId}
+          isOpen={openGroupKey === group.key}
+          onToggle={toggleGroup}
+          onSelect={onMarkerClick}
+        />
+      ))}
     </>
   );
 }

@@ -89,7 +89,7 @@ export function MapClient() {
   const searchParamsHook = useSearchParams();
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { filters, viewMode, selectedCafeId } = useAppSelector((s) => s.map);
+  const { filters, viewMode, selectedCafeId, level } = useAppSelector((s) => s.map);
   const isDesktop = useIsDesktop();
   const debouncedBounds = useDebouncedMapBounds(300);
   const { center: debouncedCenter, level: debouncedLevel } = useDebouncedMapCenter(300);
@@ -286,10 +286,17 @@ export function MapClient() {
     const urlCafe = current.get('cafe');
 
     if (selectedCafeId && selectedCafeId !== urlCafe) {
-      // 카페 선택 — history push 로 엔트리 +1 (뒤로가기로 닫히게)
       current.set('cafe', selectedCafeId);
-      router.push(`/map?${current.toString()}`, { scroll: false });
-      openedByPushRef.current = true;
+      if (openedByPushRef.current) {
+        // 이미 push 로 연 상태에서 다른 카페로 전환 — entry 를 더 쌓지 않고
+        // 같은 entry의 URL만 교체 (안 그러면 여러 개 연속 선택 후 닫을 때
+        // back 1회가 마지막 카페만 닫고 이전 카페가 다시 뜨는 문제 발생)
+        router.replace(`/map?${current.toString()}`, { scroll: false });
+      } else {
+        // 최초 선택 — history push 로 엔트리 +1 (뒤로가기로 닫히게)
+        router.push(`/map?${current.toString()}`, { scroll: false });
+        openedByPushRef.current = true;
+      }
     } else if (!selectedCafeId && urlCafe) {
       if (openedByPushRef.current) {
         // 명시 닫기 — push 로 쌓은 엔트리가 있으니 back 으로 소비
@@ -316,6 +323,23 @@ export function MapClient() {
     skip: !shouldFallbackFetch,
   });
   const selectedCafeObj: Cafe | null = inListCafe ?? fallbackCafe ?? null;
+
+  // 카페 선택(마커 클릭 / 목록 카드 클릭) 시 지도가 해당 카페 위치로
+  // 센터 이동 + 줌인 — 지금까지는 selectedCafeId 만 바뀌고 지도는 그대로라
+  // 팝업/바텀시트만 뜨고 실제 위치를 안 보여주는 문제가 있었음. 이미 그보다
+  // 가까이 줌인돼 있으면 더 줌아웃하지 않도록 min 으로 캡.
+  const lastCenteredCafeIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedCafeObj) {
+      // 닫힘 — 다음에 같은 카페를 다시 선택해도 recenter 가 다시 동작하도록 리셋
+      lastCenteredCafeIdRef.current = null;
+      return;
+    }
+    if (lastCenteredCafeIdRef.current === selectedCafeObj.id) return;
+    lastCenteredCafeIdRef.current = selectedCafeObj.id;
+    dispatch(setCenter({ lat: selectedCafeObj.lat, lng: selectedCafeObj.lng }));
+    dispatch(setLevel(Math.min(level, 3)));
+  }, [selectedCafeObj, level, dispatch]);
 
   return (
     <MapPageWrapper>
