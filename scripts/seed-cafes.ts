@@ -58,6 +58,7 @@ const TARGET_AREAS = [
   { name: '후암동', lat: 37.5455, lng: 126.9740, radius: 700 },
 
   // ─── 서울 종로/중구권 ─────────────────────────────────────
+  { name: '서촌', lat: 37.5788, lng: 126.9700, radius: 700 },
   { name: '을지로', lat: 37.5660, lng: 126.9947, radius: 1000 },
   { name: '익선동', lat: 37.5738, lng: 126.9938, radius: 600 },
   { name: '삼청동', lat: 37.5837, lng: 126.9817, radius: 700 },
@@ -103,6 +104,7 @@ const TARGET_AREAS = [
   { name: '경기광주', lat: 37.4296, lng: 127.2552, radius: 1200 },
   { name: '수원 인계동', lat: 37.2643, lng: 127.0277, radius: 1200 },
   { name: '수원 영통', lat: 37.2569, lng: 127.0552, radius: 1100 },
+  { name: '수원 행궁동', lat: 37.2836, lng: 127.0175, radius: 800 },
   { name: '용인 수지', lat: 37.3232, lng: 127.0970, radius: 1200 },
   { name: '의정부', lat: 37.7382, lng: 127.0337, radius: 1200 },
   { name: '고양 일산', lat: 37.6583, lng: 126.7786, radius: 1500 },
