@@ -110,6 +110,123 @@ function clusterMarkerHtml(count: number): string {
 type NaverMarker = any;
 type NaverMap = any;
 
+// 같은 건물/상권에 카페가 여러 개면 pill 이 화면상 겹쳐 클릭이 안 되는 문제
+// (Kakao CafeMarkers.tsx computeCollisionGroups 와 동일 접근). Naver Projection의
+// fromCoordToOffset/fromOffsetToCoord 로 실제 렌더 픽셀 좌표를 왕복 변환해
+// 화면에서 겹치는 카페를 그룹핑하고, 그룹은 실제 좌표 중심에 칩으로 표시한다.
+const COLLISION_PX_RADIUS = 46;
+const GROUP_ITEM_HEIGHT = 30;
+const GROUP_ITEM_GAP = 4;
+const GROUP_POPOVER_GAP = 10;
+const GROUP_ITEM_MAX = 8;
+
+type CollisionGroup = {
+  key: string;
+  centerLat: number;
+  centerLng: number;
+  cafes: Cafe[];
+};
+
+function computeCollisionGroups(
+  cafes: Cafe[],
+  map: NaverMap,
+  naver: typeof window.naver,
+): { groups: CollisionGroup[]; groupedIds: Set<string> } {
+  const projection = map.getProjection();
+  const points = cafes.map((cafe) => ({
+    cafe,
+    point: projection.fromCoordToOffset(new naver.maps.LatLng(cafe.lat, cafe.lng)),
+  }));
+
+  const parent = new Map<string, string>(points.map((p) => [p.cafe.id, p.cafe.id]));
+  const find = (id: string): string => {
+    let root = id;
+    while (parent.get(root) !== root) root = parent.get(root)!;
+    return root;
+  };
+  const union = (a: string, b: string) => {
+    const ra = find(a);
+    const rb = find(b);
+    if (ra !== rb) parent.set(ra, rb);
+  };
+
+  for (let i = 0; i < points.length; i++) {
+    for (let j = i + 1; j < points.length; j++) {
+      const dx = points[i].point.x - points[j].point.x;
+      const dy = points[i].point.y - points[j].point.y;
+      if (Math.sqrt(dx * dx + dy * dy) < COLLISION_PX_RADIUS) {
+        union(points[i].cafe.id, points[j].cafe.id);
+      }
+    }
+  }
+
+  const byRoot = new Map<string, Cafe[]>();
+  for (const { cafe } of points) {
+    const root = find(cafe.id);
+    const bucket = byRoot.get(root);
+    if (bucket) bucket.push(cafe);
+    else byRoot.set(root, [cafe]);
+  }
+
+  const groups: CollisionGroup[] = [];
+  const groupedIds = new Set<string>();
+  for (const [root, groupCafes] of byRoot) {
+    if (groupCafes.length < 2) continue;
+    groupCafes.sort((a, b) => a.id.localeCompare(b.id)); // 렌더마다 순서 고정
+    for (const c of groupCafes) groupedIds.add(c.id);
+    groups.push({
+      key: root,
+      centerLat: groupCafes.reduce((sum, c) => sum + c.lat, 0) / groupCafes.length,
+      centerLng: groupCafes.reduce((sum, c) => sum + c.lng, 0) / groupCafes.length,
+      cafes: groupCafes,
+    });
+  }
+  return { groups, groupedIds };
+}
+
+function groupChipHtml(count: number): string {
+  return `
+    <div style="
+      display:inline-flex;align-items:center;gap:5px;
+      padding:5px 12px 5px 10px;border-radius:999px;
+      font-size:11.5px;font-weight:700;
+      color:#ffffff;background:${BRAND};
+      border:1.5px solid ${BRAND};
+      box-shadow:0 12px 32px rgba(28,25,23,.12),0 2px 8px rgba(28,25,23,.06);
+      white-space:nowrap;cursor:pointer;transform:translate(-50%,-50%);">
+      <span style="width:7px;height:7px;border-radius:999px;background:#ffffff;flex-shrink:0;"></span>
+      카페 ${count}개
+    </div>`;
+}
+
+function groupItemHtml(name: string, selected: boolean): string {
+  const bg = selected ? BRAND : '#ffffff';
+  const fg = selected ? '#ffffff' : '#1c1917';
+  return `
+    <div style="
+      box-sizing:border-box;padding:7px 10px;border-radius:10px;
+      font-size:12px;font-weight:600;white-space:nowrap;
+      max-width:170px;overflow:hidden;text-overflow:ellipsis;
+      color:${fg};background:${bg};
+      box-shadow:0 8px 20px rgba(28,25,23,.14);
+      border:1px solid ${BRAND};
+      cursor:pointer;transform:translate(-50%,-50%);">
+      ${escapeHtml(name)}
+    </div>`;
+}
+
+function groupOverflowHtml(count: number): string {
+  return `
+    <div style="
+      box-sizing:border-box;padding:6px 10px;border-radius:10px;
+      font-size:11px;font-weight:600;white-space:nowrap;
+      color:#78716c;background:#f5f5f4;
+      border:1px solid #e7e5e4;
+      transform:translate(-50%,-50%);">
+      외 ${count}개
+    </div>`;
+}
+
 export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdapterProps) {
   const dispatch = useAppDispatch();
   const { center, level, selectedCafeId, userLocation } = useAppSelector((s) => s.map);
@@ -122,6 +239,9 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
   const mapRef = useRef<NaverMap | null>(null);
   const singleMarkersRef = useRef<Map<string, NaverMarker>>(new Map());
   const clusterMarkersRef = useRef<Map<string, NaverMarker>>(new Map());
+  const groupMarkersRef = useRef<Map<string, NaverMarker>>(new Map());
+  const groupItemMarkersRef = useRef<Map<string, NaverMarker[]>>(new Map());
+  const [openGroupKey, setOpenGroupKey] = useState<string | null>(null);
   const boundsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSyncingRef = useRef(false);
   const selectedIdRef = useRef(selectedCafeId);
@@ -246,6 +366,10 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
       singleMarkersRef.current.clear();
       clusterMarkersRef.current.forEach((m) => m.setMap(null));
       clusterMarkersRef.current.clear();
+      groupMarkersRef.current.forEach((m) => m.setMap(null));
+      groupMarkersRef.current.clear();
+      groupItemMarkersRef.current.forEach((markers) => markers.forEach((m) => m.setMap(null)));
+      groupItemMarkersRef.current.clear();
       map.destroy();
       mapRef.current = null;
       setMapReady(false);
@@ -324,9 +448,16 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
     const naverZoom = map.getZoom();
     const shouldCluster = naverZoom <= CLUSTER_MAX_ZOOM && mode !== 'pill';
 
+    // pill 모드에서만 화면 픽셀 겹침 그룹핑 적용 (Kakao CafeMarkers.tsx 와 동일 범위)
+    const { groups, groupedIds } =
+      mode === 'pill'
+        ? computeCollisionGroups(cafes, map, naver)
+        : { groups: [] as CollisionGroup[], groupedIds: new Set<string>() };
+    const singleCafes = mode === 'pill' ? cafes.filter((c) => !groupedIds.has(c.id)) : cafes;
+
     const entries: ClusterEntry[] = shouldCluster
-      ? computeClusters(cafes, naverZoom)
-      : cafes.map((cafe) => ({ kind: 'single', cafe }) as ClusterEntry);
+      ? computeClusters(singleCafes, naverZoom)
+      : singleCafes.map((cafe) => ({ kind: 'single', cafe }) as ClusterEntry);
 
     const nextSingleIds = new Set<string>();
     const nextClusterKeys = new Set<string>();
@@ -334,6 +465,7 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
       if (entry.kind === 'single') nextSingleIds.add(entry.cafe.id);
       else nextClusterKeys.add(entry.key);
     }
+    const nextGroupKeys = new Set(groups.map((g) => g.key));
 
     // 필요 없어진 single 마커 제거
     singleMarkersRef.current.forEach((marker, id) => {
@@ -347,6 +479,19 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
       if (!nextClusterKeys.has(key)) {
         marker.setMap(null);
         clusterMarkersRef.current.delete(key);
+      }
+    });
+    // 필요 없어진 group 칩/펼침 아이템 마커 제거
+    groupMarkersRef.current.forEach((marker, key) => {
+      if (!nextGroupKeys.has(key)) {
+        marker.setMap(null);
+        groupMarkersRef.current.delete(key);
+        const items = groupItemMarkersRef.current.get(key);
+        if (items) {
+          items.forEach((m) => m.setMap(null));
+          groupItemMarkersRef.current.delete(key);
+        }
+        setOpenGroupKey((prev) => (prev === key ? null : prev));
       }
     });
 
@@ -400,7 +545,100 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
         }
       }
     }
-  }, [mapReady, cafeSnapshot, level, selectedCafeId, cafes, dispatch, onCafeSelect]);
+
+    // group 칩 마커 생성 or 업데이트 + 펼쳐진 그룹의 목록 아이템 마커 관리
+    for (const group of groups) {
+      const position = new naver.maps.LatLng(group.centerLat, group.centerLng);
+      const containsSelected = group.cafes.some((c) => c.id === selectedIdRef.current);
+      const isOpen = openGroupKey === group.key;
+      const zIndex = isOpen ? 60 : containsSelected ? 30 : 20;
+      const content = groupChipHtml(group.cafes.length);
+      const existing = groupMarkersRef.current.get(group.key);
+      if (existing) {
+        existing.setPosition(position);
+        existing.setIcon({ content, anchor: new naver.maps.Point(0, 0) });
+        existing.setZIndex(zIndex);
+      } else {
+        const marker = new naver.maps.Marker({
+          position,
+          map,
+          icon: { content, anchor: new naver.maps.Point(0, 0) },
+          zIndex,
+        });
+        const key = group.key;
+        naver.maps.Event.addListener(marker, 'click', () => {
+          setOpenGroupKey((prev) => (prev === key ? null : key));
+        });
+        groupMarkersRef.current.set(group.key, marker);
+      }
+
+      const existingItems = groupItemMarkersRef.current.get(group.key);
+      if (existingItems) {
+        existingItems.forEach((m) => m.setMap(null));
+        groupItemMarkersRef.current.delete(group.key);
+      }
+
+      if (isOpen) {
+        const projection = map.getProjection();
+        const chipPoint = projection.fromCoordToOffset(position);
+        const visibleCafes = group.cafes.slice(0, GROUP_ITEM_MAX);
+        const overflow = group.cafes.length - visibleCafes.length;
+        const newItems: NaverMarker[] = [];
+
+        visibleCafes.forEach((cafe, idx) => {
+          const row = idx + 1; // 1부터 시작, 칩에 가까운 순
+          const itemY =
+            chipPoint.y -
+            GROUP_POPOVER_GAP -
+            (row - 0.5) * GROUP_ITEM_HEIGHT -
+            (row - 1) * GROUP_ITEM_GAP;
+          const itemLatLng = projection.fromOffsetToCoord(
+            new naver.maps.Point(chipPoint.x, itemY),
+          );
+          const selected = cafe.id === selectedIdRef.current;
+          const marker = new naver.maps.Marker({
+            position: itemLatLng,
+            map,
+            icon: {
+              content: groupItemHtml(cafe.name, selected),
+              anchor: new naver.maps.Point(0, 0),
+            },
+            zIndex: 70,
+          });
+          naver.maps.Event.addListener(marker, 'click', () => {
+            dispatch(setSelectedCafe(cafe.id));
+            onCafeSelect?.(cafe);
+            setOpenGroupKey(null);
+          });
+          newItems.push(marker);
+        });
+
+        if (overflow > 0) {
+          const row = visibleCafes.length + 1;
+          const itemY =
+            chipPoint.y -
+            GROUP_POPOVER_GAP -
+            (row - 0.5) * GROUP_ITEM_HEIGHT -
+            (row - 1) * GROUP_ITEM_GAP;
+          const itemLatLng = projection.fromOffsetToCoord(
+            new naver.maps.Point(chipPoint.x, itemY),
+          );
+          const marker = new naver.maps.Marker({
+            position: itemLatLng,
+            map,
+            icon: {
+              content: groupOverflowHtml(overflow),
+              anchor: new naver.maps.Point(0, 0),
+            },
+            zIndex: 70,
+          });
+          newItems.push(marker);
+        }
+
+        groupItemMarkersRef.current.set(group.key, newItems);
+      }
+    }
+  }, [mapReady, cafeSnapshot, level, selectedCafeId, cafes, dispatch, onCafeSelect, openGroupKey]);
 
   const handleLocate = useCallback(() => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) return;
