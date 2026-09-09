@@ -59,7 +59,14 @@ function escapeHtml(s: string): string {
   });
 }
 
-function pillMarkerHtml(cafe: Cafe, selected: boolean): string {
+// 신규 생성되는 마커에만 등장 애니메이션 부여 — 기존 마커의 setIcon() 업데이트
+// (선택 토글 등)에는 적용하면 매번 재생되어 오히려 산만해지므로 isNew로 분기.
+// 키프레임은 styled-components를 못 쓰는 raw HTML이라 globals.css 전역 정의 재사용.
+function entranceStyle(isNew: boolean): string {
+  return isNew ? 'animation:mooda-marker-pop 0.18s ease-out;' : '';
+}
+
+function pillMarkerHtml(cafe: Cafe, selected: boolean, isNew: boolean): string {
   const bg = selected ? BRAND : '#ffffff';
   const fg = selected ? '#ffffff' : '#1c1917';
   const dotColor = selected ? '#ffffff' : BRAND;
@@ -74,13 +81,13 @@ function pillMarkerHtml(cafe: Cafe, selected: boolean): string {
       box-shadow:0 12px 32px rgba(28,25,23,.12),0 2px 8px rgba(28,25,23,.06);
       white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis;
       cursor:pointer;transform:translate(-50%,-50%) scale(${scale});
-      transition:transform 0.12s ease;">
+      transition:transform 0.12s ease;${entranceStyle(isNew)}">
       <span style="width:7px;height:7px;border-radius:999px;background:${dotColor};flex-shrink:0;"></span>
       ${escapeHtml(cafe.name)}
     </div>`;
 }
 
-function dotMarkerHtml(selected: boolean): string {
+function dotMarkerHtml(selected: boolean, isNew: boolean): string {
   const scale = selected ? 1.25 : 1;
   return `
     <div style="
@@ -88,10 +95,10 @@ function dotMarkerHtml(selected: boolean): string {
       background:${BRAND};border:2.5px solid #fff;
       box-shadow:0 4px 12px rgba(28,25,23,.08),0 1px 3px rgba(28,25,23,.04);
       transform:translate(-50%,-50%) scale(${scale});
-      cursor:pointer;transition:transform 0.12s ease;"></div>`;
+      cursor:pointer;transition:transform 0.12s ease;${entranceStyle(isNew)}"></div>`;
 }
 
-function clusterMarkerHtml(count: number): string {
+function clusterMarkerHtml(count: number, isNew: boolean): string {
   const tier = tierForCount(count);
   return `
     <div style="
@@ -101,7 +108,7 @@ function clusterMarkerHtml(count: number): string {
       font-size:${tier.font}px;font-weight:700;
       font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
       box-shadow:rgba(180,83,9,.22) 0 0 0 ${tier.spread}px,rgba(28,25,23,.22) 0 3px 12px;
-      transform:translate(-50%,-50%);cursor:pointer;">
+      transform:translate(-50%,-50%);cursor:pointer;${entranceStyle(isNew)}">
       ${count}
     </div>`;
 }
@@ -184,7 +191,7 @@ function computeCollisionGroups(
   return { groups, groupedIds };
 }
 
-function groupChipHtml(count: number): string {
+function groupChipHtml(count: number, isNew: boolean): string {
   return `
     <div style="
       display:inline-flex;align-items:center;gap:5px;
@@ -193,7 +200,7 @@ function groupChipHtml(count: number): string {
       color:#ffffff;background:${BRAND};
       border:1.5px solid ${BRAND};
       box-shadow:0 12px 32px rgba(28,25,23,.12),0 2px 8px rgba(28,25,23,.06);
-      white-space:nowrap;cursor:pointer;transform:translate(-50%,-50%);">
+      white-space:nowrap;cursor:pointer;transform:translate(-50%,-50%);${entranceStyle(isNew)}">
       <span style="width:7px;height:7px;border-radius:999px;background:#ffffff;flex-shrink:0;"></span>
       카페 ${count}개
     </div>`;
@@ -500,9 +507,11 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
       if (entry.kind === 'single') {
         const cafe = entry.cafe;
         const selected = cafe.id === selectedIdRef.current;
-        const content = mode === 'pill' ? pillMarkerHtml(cafe, selected) : dotMarkerHtml(selected);
         const position = new naver.maps.LatLng(cafe.lat, cafe.lng);
         const existing = singleMarkersRef.current.get(cafe.id);
+        const content = mode === 'pill'
+          ? pillMarkerHtml(cafe, selected, !existing)
+          : dotMarkerHtml(selected, !existing);
         if (existing) {
           existing.setPosition(position);
           existing.setIcon({ content, anchor: new naver.maps.Point(0, 0) });
@@ -521,8 +530,8 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
         }
       } else {
         const position = new naver.maps.LatLng(entry.lat, entry.lng);
-        const content = clusterMarkerHtml(entry.size);
         const existing = clusterMarkersRef.current.get(entry.key);
+        const content = clusterMarkerHtml(entry.size, !existing);
         if (existing) {
           existing.setPosition(position);
           existing.setIcon({ content, anchor: new naver.maps.Point(0, 0) });
@@ -552,8 +561,8 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
       const containsSelected = group.cafes.some((c) => c.id === selectedIdRef.current);
       const isOpen = openGroupKey === group.key;
       const zIndex = isOpen ? 60 : containsSelected ? 30 : 20;
-      const content = groupChipHtml(group.cafes.length);
       const existing = groupMarkersRef.current.get(group.key);
+      const content = groupChipHtml(group.cafes.length, !existing);
       if (existing) {
         existing.setPosition(position);
         existing.setIcon({ content, anchor: new naver.maps.Point(0, 0) });

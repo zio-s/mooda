@@ -128,6 +128,14 @@ const bounce = keyframes`
   70% { transform: translateY(-8px); }
 `;
 
+// 마커 최초 등장(mount) 시 재생 — Naver 어댑터의 mooda-marker-pop과 동일한
+// 감각(scale+fade). React가 key 재사용으로 같은 DOM 노드를 유지하는 한
+// 리렌더마다 재생되지 않고, 새로 mount되는 마커에서만 자연히 발동한다.
+const markerPop = keyframes`
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+`;
+
 const markerBase = css`
   cursor: pointer;
   user-select: none;
@@ -156,12 +164,13 @@ const NamePill = styled.div<{ $selected: boolean }>`
   overflow: hidden;
   text-overflow: ellipsis;
   transition: transform 0.12s ease;
+  animation: ${markerPop} 0.18s ease-out;
 
   ${({ $selected }) =>
     $selected &&
     css`
       transform: scale(1.05);
-      animation: ${bounce} 0.6s ease-out;
+      animation: ${markerPop} 0.18s ease-out, ${bounce} 0.6s ease-out;
     `}
 
   svg {
@@ -202,6 +211,7 @@ const GroupChip = styled.div`
   border: 1.5px solid ${theme.colors.primary};
   box-shadow: ${theme.shadows.lg};
   white-space: nowrap;
+  animation: ${markerPop} 0.18s ease-out;
 `;
 
 const GroupPopover = styled.div`
@@ -254,12 +264,13 @@ const Dot = styled.div<{ $selected: boolean }>`
   box-shadow: ${theme.shadows.md};
   transform-origin: center;
   transition: transform 0.12s ease;
+  animation: ${markerPop} 0.18s ease-out;
 
   ${({ $selected }) =>
     $selected &&
     css`
       transform: scale(1.25);
-      animation: ${bounce} 0.6s ease-out;
+      animation: ${markerPop} 0.18s ease-out, ${bounce} 0.6s ease-out;
     `}
 `;
 

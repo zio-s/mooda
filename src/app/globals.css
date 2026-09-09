@@ -170,3 +170,17 @@ input, textarea, select {
   background-color: var(--ink-300);
   border-radius: 3px;
 }
+
+/* Naver 지도 마커는 raw HTML(naver.maps.Marker icon.content)로 렌더되어
+   styled-components keyframes를 못 쓴다 — 전역 keyframe으로 대체.
+   신규 마커/클러스터 배지 등장 시에만 적용(NaverCafeMap.tsx 참고). */
+@keyframes mooda-marker-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
