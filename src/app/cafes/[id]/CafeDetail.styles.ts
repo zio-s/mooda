@@ -136,13 +136,16 @@ export const HeroPhotoFill = styled.div`
   inset: 0;
 `;
 
-export const HeroCarousel = styled.div`
+export const HeroCarousel = styled.div<{ $dragging?: boolean }>`
   position: absolute;
   inset: 0;
   display: flex;
   overflow-x: auto;
-  scroll-snap-type: x mandatory;
+  scroll-snap-type: ${({ $dragging }) => ($dragging ? 'none' : 'x mandatory')};
   -webkit-overflow-scrolling: touch;
+  /* 데스크톱에서 슬라이드 위 마우스로 드래그해 넘길 수 있음을 암시. */
+  cursor: ${({ $dragging }) => ($dragging ? 'grabbing' : 'grab')};
+  ${({ $dragging }) => $dragging && 'user-select: none;'}
 
   &::-webkit-scrollbar {
     display: none;
@@ -155,6 +158,35 @@ export const HeroSlide = styled.div`
   position: relative;
   height: 100%;
   cursor: pointer;
+`;
+
+export const HeroSlideNav = styled.button<{ $side: 'left' | 'right' }>`
+  position: absolute;
+  top: 50%;
+  ${({ $side }) => ($side === 'left' ? 'left: 10px;' : 'right: 10px;')}
+  transform: translateY(-50%);
+  z-index: 4;
+  width: 36px;
+  height: 36px;
+  border-radius: ${theme.borderRadius.full};
+  border: none;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: ${theme.colors.white};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.12s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  &:active {
+    transform: translateY(-50%) scale(0.92);
+  }
 `;
 
 export const HeroDots = styled.div`

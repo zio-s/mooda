@@ -50,6 +50,7 @@ import {
   HeroPhotoFill,
   HeroCarousel,
   HeroSlide,
+  HeroSlideNav,
   HeroDots,
   HeroDot,
   QuickActionGrid,
@@ -181,11 +182,17 @@ export function CafeDetailClient({ cafe }: Props) {
   );
 
   // ── 히어로 사진 슬라이드 ───────────────────────────────────────────────
-  // CafeCard의 PhotoCarousel과 동일 패턴 (scroll-snap + onScroll 인덱스 추적).
+  // CafeCard의 PhotoCarousel과 동일 패턴(scroll-snap + onScroll 인덱스 추적)에
+  // 데스크톱 마우스 드래그 스크롤 + 화살표 버튼을 추가. 터치는 브라우저
+  // 네이티브 스크롤에 맡기고(overflow-x:auto 만으로 이미 동작), 마우스 드래그만
+  // 직접 구현(overflow 컨테이너는 마우스 드래그로 스크롤되지 않는 게 기본 동작).
   const [heroIdx, setHeroIdx] = useState(0);
+  const [heroDragging, setHeroDragging] = useState(false);
   const heroScrollRef = useRef<HTMLDivElement>(null);
   const heroSwipedRef = useRef(false);
   const heroTouchStartXRef = useRef(0);
+  const heroDragStartXRef = useRef(0);
+  const heroDragStartScrollLeftRef = useRef(0);
 
   const handleHeroScroll = useCallback(() => {
     const el = heroScrollRef.current;
@@ -202,6 +209,51 @@ export function CafeDetailClient({ cafe }: Props) {
     const x = e.touches[0]?.clientX ?? heroTouchStartXRef.current;
     if (Math.abs(x - heroTouchStartXRef.current) > 10) heroSwipedRef.current = true;
   }, []);
+
+  // 마우스 드래그로만 동작(터치는 위 handleHeroTouchStart/Move + 브라우저
+  // 네이티브 스크롤이 이미 처리). pointerType 으로 분기해 터치와 중복 처리되지
+  // 않게 한다.
+  const handleHeroPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse') return;
+    const el = heroScrollRef.current;
+    if (!el) return;
+    heroDragStartXRef.current = e.clientX;
+    heroDragStartScrollLeftRef.current = el.scrollLeft;
+    heroSwipedRef.current = false;
+    setHeroDragging(true);
+    el.setPointerCapture(e.pointerId);
+  }, []);
+
+  const handleHeroPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse') return;
+    const el = heroScrollRef.current;
+    if (!el || !el.hasPointerCapture(e.pointerId)) return;
+    const delta = e.clientX - heroDragStartXRef.current;
+    if (Math.abs(delta) > 10) heroSwipedRef.current = true;
+    el.scrollLeft = heroDragStartScrollLeftRef.current - delta;
+  }, []);
+
+  const endHeroDrag = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse') return;
+    const el = heroScrollRef.current;
+    if (el?.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+    setHeroDragging(false);
+    // 드래그를 놓은 위치에서 가장 가까운 슬라이드로 스냅.
+    if (el) {
+      const target = Math.round(el.scrollLeft / el.offsetWidth) * el.offsetWidth;
+      el.scrollTo({ left: target, behavior: 'smooth' });
+    }
+  }, []);
+
+  const goToHeroSlide = useCallback(
+    (index: number) => {
+      const el = heroScrollRef.current;
+      if (!el || allPhotos.length === 0) return;
+      const next = (index + allPhotos.length) % allPhotos.length;
+      el.scrollTo({ left: next * el.offsetWidth, behavior: 'smooth' });
+    },
+    [allPhotos.length],
+  );
 
   // 스와이프 직후 발사되는 클릭으로 라이트박스가 잘못 열리는 것 방지.
   const handleHeroSlideClick = useCallback((i: number) => {
@@ -419,9 +471,15 @@ export function CafeDetailClient({ cafe }: Props) {
         {allPhotos.length > 1 ? (
           <HeroCarousel
             ref={heroScrollRef}
+            $dragging={heroDragging}
             onScroll={handleHeroScroll}
             onTouchStart={handleHeroTouchStart}
             onTouchMove={handleHeroTouchMove}
+            onPointerDown={handleHeroPointerDown}
+            onPointerMove={handleHeroPointerMove}
+            onPointerUp={endHeroDrag}
+            onPointerLeave={endHeroDrag}
+            onPointerCancel={endHeroDrag}
           >
             {allPhotos.map((url, i) => (
               <HeroSlide key={i} onClick={() => handleHeroSlideClick(i)}>
@@ -433,6 +491,7 @@ export function CafeDetailClient({ cafe }: Props) {
                   style={{ objectFit: 'cover' }}
                   priority={i === 0}
                   sizes="(max-width: 768px) 100vw, 768px"
+                  draggable={false}
                 />
               </HeroSlide>
             ))}
@@ -455,6 +514,26 @@ export function CafeDetailClient({ cafe }: Props) {
               <Coffee size={48} strokeWidth={1.5} />
             </HeroGlyph>
           </HeroGradient>
+        )}
+        {allPhotos.length > 1 && (
+          <>
+            <HeroSlideNav
+              type="button"
+              $side="left"
+              aria-label="이전 사진"
+              onClick={() => goToHeroSlide(heroIdx - 1)}
+            >
+              <ChevronLeft size={20} aria-hidden />
+            </HeroSlideNav>
+            <HeroSlideNav
+              type="button"
+              $side="right"
+              aria-label="다음 사진"
+              onClick={() => goToHeroSlide(heroIdx + 1)}
+            >
+              <ChevronRight size={20} aria-hidden />
+            </HeroSlideNav>
+          </>
         )}
         <HeroOverlay>
           <HeroFab
