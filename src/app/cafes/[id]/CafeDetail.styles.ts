@@ -146,9 +146,13 @@ export const HeroCarousel = styled.div<{ $dragging?: boolean }>`
   /* 데스크톱에서 슬라이드 위 마우스로 드래그해 넘길 수 있음을 암시. */
   cursor: ${({ $dragging }) => ($dragging ? 'grabbing' : 'grab')};
   ${({ $dragging }) => $dragging && 'user-select: none;'}
+  /* 몇 장인지는 카운트 pill/dots + 화살표 버튼으로 이미 표시되므로, 스크롤
+     진행 상태를 보여주는 스크롤바는 굳이 필요 없어 브라우저 전체에서 숨김. */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* 구형 Edge/IE */
 
   &::-webkit-scrollbar {
-    display: none;
+    display: none; /* Chrome/Safari */
   }
 `;
 
