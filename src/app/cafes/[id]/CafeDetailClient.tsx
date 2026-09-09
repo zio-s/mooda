@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -48,6 +48,10 @@ import {
   HeroFabGroup,
   HeroCountPill,
   HeroPhotoFill,
+  HeroCarousel,
+  HeroSlide,
+  HeroDots,
+  HeroDot,
   QuickActionGrid,
   QuickActionCell,
   HeaderRow,
@@ -175,6 +179,38 @@ export function CafeDetailClient({ cafe }: Props) {
     () => cafe.photos.map((p) => p.url),
     [cafe.photos],
   );
+
+  // ── 히어로 사진 슬라이드 ───────────────────────────────────────────────
+  // CafeCard의 PhotoCarousel과 동일 패턴 (scroll-snap + onScroll 인덱스 추적).
+  const [heroIdx, setHeroIdx] = useState(0);
+  const heroScrollRef = useRef<HTMLDivElement>(null);
+  const heroSwipedRef = useRef(false);
+  const heroTouchStartXRef = useRef(0);
+
+  const handleHeroScroll = useCallback(() => {
+    const el = heroScrollRef.current;
+    if (!el) return;
+    setHeroIdx(Math.round(el.scrollLeft / el.offsetWidth));
+  }, []);
+
+  const handleHeroTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    heroTouchStartXRef.current = e.touches[0]?.clientX ?? 0;
+    heroSwipedRef.current = false;
+  }, []);
+
+  const handleHeroTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    const x = e.touches[0]?.clientX ?? heroTouchStartXRef.current;
+    if (Math.abs(x - heroTouchStartXRef.current) > 10) heroSwipedRef.current = true;
+  }, []);
+
+  // 스와이프 직후 발사되는 클릭으로 라이트박스가 잘못 열리는 것 방지.
+  const handleHeroSlideClick = useCallback((i: number) => {
+    if (heroSwipedRef.current) {
+      heroSwipedRef.current = false;
+      return;
+    }
+    setLightboxIdx(i);
+  }, []);
 
   // 라이트박스 열린 동안 body scroll lock — 배경 페이지 뒤에서 스크롤 방지.
   useEffect(() => {
@@ -310,9 +346,6 @@ export function CafeDetailClient({ cafe }: Props) {
     return computeOpenStatus(normalized);
   }, [cafe.hours]);
 
-  const heroPhotoUrl = cafe.mainPhoto ?? cafe.photos[0]?.url ?? null;
-  const photoCount = cafe.photos.length;
-
   async function handleShare() {
     const shareData = {
       title: cafe.name,
@@ -383,10 +416,31 @@ export function CafeDetailClient({ cafe }: Props) {
     <DetailWrapper>
       {/* ── Hero ──────────────────────────────────────────────── */}
       <HeroShell>
-        {heroPhotoUrl ? (
-          <HeroPhotoFill>
+        {allPhotos.length > 1 ? (
+          <HeroCarousel
+            ref={heroScrollRef}
+            onScroll={handleHeroScroll}
+            onTouchStart={handleHeroTouchStart}
+            onTouchMove={handleHeroTouchMove}
+          >
+            {allPhotos.map((url, i) => (
+              <HeroSlide key={i} onClick={() => handleHeroSlideClick(i)}>
+                <Image
+                  src={url}
+                  alt={`${cafe.name} 사진 ${i + 1}`}
+                  fill
+                  unoptimized
+                  style={{ objectFit: 'cover' }}
+                  priority={i === 0}
+                  sizes="(max-width: 768px) 100vw, 768px"
+                />
+              </HeroSlide>
+            ))}
+          </HeroCarousel>
+        ) : allPhotos.length === 1 ? (
+          <HeroPhotoFill onClick={() => handleHeroSlideClick(0)}>
             <Image
-              src={heroPhotoUrl}
+              src={allPhotos[0]}
               alt={cafe.name}
               fill
               unoptimized
@@ -424,8 +478,18 @@ export function CafeDetailClient({ cafe }: Props) {
             </HeroFab>
           </HeroFabGroup>
         </HeroOverlay>
-        {photoCount > 1 && (
-          <HeroCountPill>1 / {photoCount}</HeroCountPill>
+        {allPhotos.length > 1 && (
+          allPhotos.length <= 3 ? (
+            <HeroDots>
+              {allPhotos.map((_, i) => (
+                <HeroDot key={i} $active={i === heroIdx} />
+              ))}
+            </HeroDots>
+          ) : (
+            <HeroCountPill aria-label={`사진 ${heroIdx + 1} / ${allPhotos.length}`}>
+              {heroIdx + 1} / {allPhotos.length}
+            </HeroCountPill>
+          )
         )}
       </HeroShell>
 

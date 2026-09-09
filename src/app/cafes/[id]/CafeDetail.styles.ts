@@ -136,6 +136,46 @@ export const HeroPhotoFill = styled.div`
   inset: 0;
 `;
 
+export const HeroCarousel = styled.div`
+  position: absolute;
+  inset: 0;
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+`;
+
+export const HeroSlide = styled.div`
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  position: relative;
+  height: 100%;
+  cursor: pointer;
+`;
+
+export const HeroDots = styled.div`
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 5px;
+  z-index: 4;
+`;
+
+export const HeroDot = styled.span<{ $active?: boolean }>`
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: ${({ $active }) => ($active ? '#fff' : 'rgba(255, 255, 255, 0.5)')};
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+  transition: background 0.2s ease;
+`;
+
 // ─── Legacy Hero (CafeCard용, back-compat) ──────────────
 export const HeroPhoto = styled.div`
   position: relative;
