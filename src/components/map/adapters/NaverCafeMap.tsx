@@ -125,7 +125,11 @@ const COLLISION_PX_RADIUS = 46;
 const GROUP_ITEM_HEIGHT = 30;
 const GROUP_ITEM_GAP = 4;
 const GROUP_POPOVER_GAP = 10;
-const GROUP_ITEM_MAX = 8;
+const GROUP_PANEL_WIDTH = 172;
+const GROUP_PANEL_PADDING = 6;
+// Kakao GroupPopover의 max-height:260px 와 동일 기준. 항목이 이 높이를
+// 넘으면 안(만) 스크롤되도록 — 지도 자체는 줌/팬 되지 않아야 함.
+const GROUP_PANEL_MAX_HEIGHT = 260;
 
 type CollisionGroup = {
   key: string;
@@ -206,32 +210,59 @@ function groupChipHtml(count: number, isNew: boolean): string {
     </div>`;
 }
 
-function groupItemHtml(name: string, selected: boolean): string {
-  const bg = selected ? BRAND : '#ffffff';
-  const fg = selected ? '#ffffff' : '#1c1917';
-  return `
-    <div style="
-      box-sizing:border-box;padding:7px 10px;border-radius:10px;
-      font-size:12px;font-weight:600;white-space:nowrap;
-      max-width:170px;overflow:hidden;text-overflow:ellipsis;
-      color:${fg};background:${bg};
-      box-shadow:0 8px 20px rgba(28,25,23,.14);
-      border:1px solid ${BRAND};
-      cursor:pointer;transform:translate(-50%,-50%);">
-      ${escapeHtml(name)}
-    </div>`;
-}
+// Kakao GroupPopover와 동일 구조: 카드 하나(테두리/그림자/둥근모서리) 안에
+// "실제 스크롤 가능한" 목록 div 하나 — Naver는 마커별로 별도 DOM 오버레이라
+// 이 전체를 통짜 HTML 하나로 만든 단일 마커여야 스크롤 컨테이너가 성립한다.
+// (개별 카페마다 마커를 따로 만드는 이전 방식은 overflow:auto 를 걸 상위
+// 컨테이너 자체가 없어 스크롤이 원천적으로 불가능했다.)
+//
+// 각 행에 data-cafe-id 를 심어 클릭 위임으로 처리하고, 스크롤 div에는
+// wheel/touchmove 를 stopPropagation 해서 리스트를 스크롤할 때 지도가 같이
+// 줌/팬 되지 않게 한다(Kakao CafeMarkers.tsx GroupPopover의 onWheel과 동일 의도).
+// naver.maps.Marker 는 getElement() 를 제공하지 않으므로, 콘텐츠에 심어둔
+// id로 document.getElementById 조회해 리스너를 붙인다.
+function groupPopoverHtml(cafes: Cafe[], selectedId: string | null, scrollId: string): {
+  html: string;
+  innerHeight: number;
+} {
+  const contentHeight =
+    cafes.length * GROUP_ITEM_HEIGHT + Math.max(0, cafes.length - 1) * GROUP_ITEM_GAP;
+  const maxInnerHeight = GROUP_PANEL_MAX_HEIGHT - GROUP_PANEL_PADDING * 2;
+  const innerHeight = Math.min(contentHeight, maxInnerHeight);
+  const scrollable = contentHeight > maxInnerHeight;
 
-function groupOverflowHtml(count: number): string {
-  return `
+  const rows = cafes
+    .map((cafe) => {
+      const selected = cafe.id === selectedId;
+      const bg = selected ? BRAND : 'transparent';
+      const fg = selected ? '#ffffff' : '#1c1917';
+      return `
+        <div data-cafe-id="${escapeHtml(cafe.id)}" style="
+          box-sizing:border-box;height:${GROUP_ITEM_HEIGHT}px;flex-shrink:0;
+          display:flex;align-items:center;padding:0 10px;border-radius:10px;
+          font-size:12px;font-weight:600;white-space:nowrap;
+          overflow:hidden;text-overflow:ellipsis;
+          color:${fg};background:${bg};cursor:pointer;">
+          ${escapeHtml(cafe.name)}
+        </div>`;
+    })
+    .join('');
+
+  const html = `
     <div style="
-      box-sizing:border-box;padding:6px 10px;border-radius:10px;
-      font-size:11px;font-weight:600;white-space:nowrap;
-      color:#78716c;background:#f5f5f4;
-      border:1px solid #e7e5e4;
+      box-sizing:border-box;width:${GROUP_PANEL_WIDTH}px;
+      padding:${GROUP_PANEL_PADDING}px;border-radius:14px;background:#ffffff;
+      border:1.5px solid ${BRAND};
+      box-shadow:0 12px 32px rgba(28,25,23,.12),0 2px 8px rgba(28,25,23,.06);
       transform:translate(-50%,-50%);">
-      외 ${count}개
+      <div id="${scrollId}" style="
+        display:flex;flex-direction:column;gap:${GROUP_ITEM_GAP}px;
+        max-height:${innerHeight}px;overflow-y:${scrollable ? 'auto' : 'visible'};">
+        ${rows}
+      </div>
     </div>`;
+
+  return { html, innerHeight };
 }
 
 export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdapterProps) {
@@ -590,61 +621,47 @@ export function NaverCafeMap({ onCafeSelect, onNearbyFound, cafes }: CafeMapAdap
       if (isOpen) {
         const projection = map.getProjection();
         const chipPoint = projection.fromCoordToOffset(position);
-        const visibleCafes = group.cafes.slice(0, GROUP_ITEM_MAX);
-        const overflow = group.cafes.length - visibleCafes.length;
-        const newItems: NaverMarker[] = [];
+        const scrollId = `naver-group-scroll-${group.key}`;
+        const { html, innerHeight } = groupPopoverHtml(
+          group.cafes,
+          selectedIdRef.current,
+          scrollId,
+        );
+        const boxHeight = innerHeight + GROUP_PANEL_PADDING * 2;
+        const panelCenterY = chipPoint.y - GROUP_POPOVER_GAP - boxHeight / 2;
+        const panelLatLng = projection.fromOffsetToCoord(
+          new naver.maps.Point(chipPoint.x, panelCenterY),
+        );
+        const panelMarker = new naver.maps.Marker({
+          position: panelLatLng,
+          map,
+          icon: { content: html, anchor: new naver.maps.Point(0, 0) },
+          zIndex: 70,
+        });
 
-        visibleCafes.forEach((cafe, idx) => {
-          const row = idx + 1; // 1부터 시작, 칩에 가까운 순
-          const itemY =
-            chipPoint.y -
-            GROUP_POPOVER_GAP -
-            (row - 0.5) * GROUP_ITEM_HEIGHT -
-            (row - 1) * GROUP_ITEM_GAP;
-          const itemLatLng = projection.fromOffsetToCoord(
-            new naver.maps.Point(chipPoint.x, itemY),
-          );
-          const selected = cafe.id === selectedIdRef.current;
-          const marker = new naver.maps.Marker({
-            position: itemLatLng,
-            map,
-            icon: {
-              content: groupItemHtml(cafe.name, selected),
-              anchor: new naver.maps.Point(0, 0),
-            },
-            zIndex: 70,
-          });
-          naver.maps.Event.addListener(marker, 'click', () => {
+        // naver.maps.Marker 는 getElement() 를 제공하지 않는다(공식 API에
+        // 없음 — 확인됨) — 콘텐츠에 심어둔 id로 직접 DOM 조회. Marker의
+        // onAdd/draw가 생성 시 동기 실행되므로 이 시점에 이미 실제 DOM.
+        const scrollEl = document.getElementById(scrollId);
+        if (scrollEl) {
+          const stopBubble = (e: Event) => e.stopPropagation();
+          // 리스트를 휠/터치로 스크롤할 때 지도까지 전파되면 지도 줌/팬이
+          // 같이 발동한다(Kakao CafeMarkers.tsx GroupPopover onWheel과 동일 의도).
+          scrollEl.addEventListener('wheel', stopBubble, { passive: true });
+          scrollEl.addEventListener('touchmove', stopBubble, { passive: true });
+          scrollEl.addEventListener('click', (e) => {
+            const rowEl = (e.target as HTMLElement).closest('[data-cafe-id]');
+            if (!rowEl) return;
+            const cafeId = rowEl.getAttribute('data-cafe-id');
+            const cafe = group.cafes.find((c) => c.id === cafeId);
+            if (!cafe) return;
             dispatch(setSelectedCafe(cafe.id));
             onCafeSelect?.(cafe);
             setOpenGroupKey(null);
           });
-          newItems.push(marker);
-        });
-
-        if (overflow > 0) {
-          const row = visibleCafes.length + 1;
-          const itemY =
-            chipPoint.y -
-            GROUP_POPOVER_GAP -
-            (row - 0.5) * GROUP_ITEM_HEIGHT -
-            (row - 1) * GROUP_ITEM_GAP;
-          const itemLatLng = projection.fromOffsetToCoord(
-            new naver.maps.Point(chipPoint.x, itemY),
-          );
-          const marker = new naver.maps.Marker({
-            position: itemLatLng,
-            map,
-            icon: {
-              content: groupOverflowHtml(overflow),
-              anchor: new naver.maps.Point(0, 0),
-            },
-            zIndex: 70,
-          });
-          newItems.push(marker);
         }
 
-        groupItemMarkersRef.current.set(group.key, newItems);
+        groupItemMarkersRef.current.set(group.key, [panelMarker]);
       }
     }
   }, [mapReady, cafeSnapshot, level, selectedCafeId, cafes, dispatch, onCafeSelect, openGroupKey]);
