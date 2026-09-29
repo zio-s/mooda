@@ -176,10 +176,24 @@ export function CafeDetailClient({ cafe }: Props) {
   // cafe_photos 테이블에 upsert 하므로 `googleData.photos` 의존 제거.
   // 갤러리는 cafe.photos 단일 소스만 참조 → 중복 원천 차단.
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  // 핫링크가 막혔거나 지워진 외부 사진은 깨진 아이콘으로 남지 않게 목록에서 뺌
+  const [failedPhotoUrls, setFailedPhotoUrls] = useState<ReadonlySet<string>>(() => new Set());
   const allPhotos = useMemo(
-    () => cafe.photos.map((p) => p.url),
-    [cafe.photos],
+    () => cafe.photos.map((p) => p.url).filter((url) => !failedPhotoUrls.has(url)),
+    [cafe.photos, failedPhotoUrls],
   );
+  const handlePhotoError = useCallback(
+    (url: string) => {
+      if (failedPhotoUrls.has(url)) return;
+      // 라이트박스를 연 채로 마지막 남은 사진까지 깨지면 닫아서 스크롤 잠금도 풀림
+      if (allPhotos.length <= 1) setLightboxIdx(null);
+      setFailedPhotoUrls((prev) => new Set(prev).add(url));
+    },
+    [allPhotos.length, failedPhotoUrls],
+  );
+  // 사진이 빠지면 인덱스가 범위를 벗어날 수 있어 표시할 때마다 맞춤
+  const shownLightboxIdx =
+    lightboxIdx === null || allPhotos.length === 0 ? null : Math.min(lightboxIdx, allPhotos.length - 1);
 
   // ── 히어로 사진 슬라이드 ───────────────────────────────────────────────
   // CafeCard의 PhotoCarousel과 동일 패턴(scroll-snap + onScroll 인덱스 추적)에
@@ -187,6 +201,7 @@ export function CafeDetailClient({ cafe }: Props) {
   // 네이티브 스크롤에 맡기고(overflow-x:auto 만으로 이미 동작), 마우스 드래그만
   // 직접 구현(overflow 컨테이너는 마우스 드래그로 스크롤되지 않는 게 기본 동작).
   const [heroIdx, setHeroIdx] = useState(0);
+  const shownHeroIdx = Math.min(heroIdx, Math.max(allPhotos.length - 1, 0));
   const [heroDragging, setHeroDragging] = useState(false);
   const heroScrollRef = useRef<HTMLDivElement>(null);
   const heroSwipedRef = useRef(false);
@@ -492,6 +507,7 @@ export function CafeDetailClient({ cafe }: Props) {
                   priority={i === 0}
                   sizes="(max-width: 768px) 100vw, 768px"
                   draggable={false}
+                  onError={() => handlePhotoError(url)}
                 />
               </HeroSlide>
             ))}
@@ -506,6 +522,7 @@ export function CafeDetailClient({ cafe }: Props) {
               style={{ objectFit: 'cover' }}
               priority
               sizes="(max-width: 768px) 100vw, 768px"
+              onError={() => handlePhotoError(allPhotos[0])}
             />
           </HeroPhotoFill>
         ) : (
@@ -561,12 +578,12 @@ export function CafeDetailClient({ cafe }: Props) {
           allPhotos.length <= 3 ? (
             <HeroDots>
               {allPhotos.map((_, i) => (
-                <HeroDot key={i} $active={i === heroIdx} />
+                <HeroDot key={i} $active={i === shownHeroIdx} />
               ))}
             </HeroDots>
           ) : (
-            <HeroCountPill aria-label={`사진 ${heroIdx + 1} / ${allPhotos.length}`}>
-              {heroIdx + 1} / {allPhotos.length}
+            <HeroCountPill aria-label={`사진 ${shownHeroIdx + 1} / ${allPhotos.length}`}>
+              {shownHeroIdx + 1} / {allPhotos.length}
             </HeroCountPill>
           )
         )}
@@ -880,6 +897,7 @@ export function CafeDetailClient({ cafe }: Props) {
                     unoptimized
                     style={{ objectFit: 'cover' }}
                     sizes="(max-width: 640px) 50vw, 33vw"
+                    onError={() => handlePhotoError(url)}
                   />
                 </GalleryItem>
               ))}
@@ -890,7 +908,7 @@ export function CafeDetailClient({ cafe }: Props) {
       </ContentInner>
 
       {/* ── 갤러리 라이트박스 ─────────────────────────────────── */}
-      {lightboxIdx !== null && (
+      {shownLightboxIdx !== null && (
         <GalleryOverlay onClick={() => setLightboxIdx(null)}>
           <GalleryNav
             type="button"
@@ -907,13 +925,14 @@ export function CafeDetailClient({ cafe }: Props) {
           </GalleryNav>
 
           <Image
-            src={allPhotos[lightboxIdx]}
-            alt={`${cafe.name} 사진 ${lightboxIdx + 1}`}
+            src={allPhotos[shownLightboxIdx]}
+            alt={`${cafe.name} 사진 ${shownLightboxIdx + 1}`}
             width={800}
             height={600}
             unoptimized
             style={{ objectFit: 'contain', maxHeight: '85vh', maxWidth: '90vw', borderRadius: 8 }}
             onClick={(e) => e.stopPropagation()}
+            onError={() => handlePhotoError(allPhotos[shownLightboxIdx])}
           />
 
           <GalleryNav
@@ -931,7 +950,7 @@ export function CafeDetailClient({ cafe }: Props) {
           </GalleryNav>
 
           <GalleryCounter>
-            {lightboxIdx + 1} / {allPhotos.length}
+            {shownLightboxIdx + 1} / {allPhotos.length}
           </GalleryCounter>
 
           <button
