@@ -4,6 +4,7 @@ import { useMemo, useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { Coffee, Heart, Star, MapPin } from 'lucide-react';
 import { PATHS } from '@/constants/paths';
+import { canOptimizeImage } from '@/lib/imageHosts';
 import { OpenBadge } from '@/components/cafe/OpenBadge';
 import { computeOpenStatus, type CafeHourInput } from '@/lib/cafe/openStatus';
 import { theme } from '@/styles/theme';
@@ -63,9 +64,16 @@ export function CafeCard({ cafe, compact = false, onFavorite, isFavorited }: Caf
     return computeOpenStatus(normalized);
   }, [cafe.hours, cafe.isOpen]);
 
-  const photos = cafe.photos?.length > 0 ? cafe.photos : [];
+  // 최적화 허용 호스트 밖 사진은 브라우저가 직접 받는데, 일부 사이트가 핫링크를 막아서 깨짐 → 깨진 건 빼고 보여줌
+  const [failedUrls, setFailedUrls] = useState<ReadonlySet<string>>(() => new Set());
+  const markFailed = useCallback((url: string) => {
+    setFailedUrls((prev) => (prev.has(url) ? prev : new Set(prev).add(url)));
+  }, []);
+  const photos = (cafe.photos ?? []).filter((p) => !failedUrls.has(p.url));
   const hasMultiplePhotos = photos.length > 1;
-  const [activeSlide, setActiveSlide] = useState(0);
+  const [rawActiveSlide, setActiveSlide] = useState(0);
+  const activeSlide = Math.min(rawActiveSlide, Math.max(photos.length - 1, 0));
+  const mainPhoto = cafe.mainPhoto && !failedUrls.has(cafe.mainPhoto) ? cafe.mainPhoto : null;
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const handleScroll = useCallback(() => {
@@ -125,6 +133,8 @@ export function CafeCard({ cafe, compact = false, onFavorite, isFavorited }: Caf
                         alt={`${cafe.name} ${i + 1}`}
                         fill
                         sizes="(max-width: 768px) 100vw, 33vw"
+                        unoptimized={!canOptimizeImage(photo.url)}
+                        onError={() => markFailed(photo.url)}
                       />
                     </PhotoSlide>
                   ))}
@@ -147,14 +157,18 @@ export function CafeCard({ cafe, compact = false, onFavorite, isFavorited }: Caf
                 alt={cafe.name}
                 fill
                 sizes="(max-width: 768px) 100vw, 33vw"
+                unoptimized={!canOptimizeImage(photos[0].url)}
+                onError={() => markFailed(photos[0].url)}
               />
             )
-          ) : cafe.mainPhoto ? (
+          ) : mainPhoto ? (
             <Image
-              src={cafe.mainPhoto}
+              src={mainPhoto}
               alt={cafe.name}
               fill
               sizes="(max-width: 768px) 100vw, 33vw"
+              unoptimized={!canOptimizeImage(mainPhoto)}
+              onError={() => markFailed(mainPhoto)}
             />
           ) : (
             <PhotoPlaceholder aria-hidden>

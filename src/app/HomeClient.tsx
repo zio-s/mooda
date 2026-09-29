@@ -57,13 +57,13 @@ const HOW_IT_WORKS: ReadonlyArray<{
     step: 'STEP 01',
     Icon: Filter,
     title: '분위기 선택',
-    desc: '조용한, 로맨틱, 빈티지 등 원하는 분위기나 목적을 선택하세요. 16가지 태그 중 복수 선택도 가능해요.',
+    desc: `조용한, 로맨틱, 빈티지 등 원하는 분위기나 목적을 선택하세요. ${MOODS.length}가지 태그 중 복수 선택도 가능해요.`,
   },
   {
     step: 'STEP 02',
     Icon: Map,
     title: '지도로 탐색',
-    desc: '실시간 지도에서 주변 카페를 한눈에 확인하세요. 지도를 움직이면 해당 영역 카페가 자동으로 표시돼요.',
+    desc: "실시간 지도에서 주변 카페를 한눈에 확인하세요. 지도를 옮긴 뒤 '이 지역 재검색'을 누르면 그 영역 카페를 다시 불러와요.",
   },
   {
     step: 'STEP 03',
@@ -109,7 +109,7 @@ export function HomeClient() {
             </StatItem>
             <StatDivider />
             <StatItem>
-              <StatNumber>16가지</StatNumber>
+              <StatNumber>{MOODS.length}가지</StatNumber>
               <StatLabel>분위기 태그</StatLabel>
             </StatItem>
             <StatDivider />
@@ -121,11 +121,13 @@ export function HomeClient() {
         </HeroInner>
       </HeroSection>
 
-      {/* ── 분위기 태그 (전체 16개, 카테고리별) ── */}
+      {/* ── 분위기 태그 (전체, 카테고리별) ── */}
       <MoodSection>
         <SectionInner>
           <SectionTitle>찾고 싶은 분위기가 있나요?</SectionTitle>
-          <SectionDesc>16가지 분위기 태그로 원하는 카페를 빠르게 찾아보세요</SectionDesc>
+          <SectionDesc>
+            {Object.keys(MOOD_CATEGORIES).length}개 분류, {MOODS.length}가지 태그로 원하는 카페를 빠르게 찾아보세요
+          </SectionDesc>
           <MoodCategoriesWrapper>
             {CATEGORY_ORDER.map((cat) => {
               const moods = MOODS.filter((m) => m.category === cat);
