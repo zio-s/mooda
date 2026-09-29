@@ -54,3 +54,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 개인 로컬 설정 (저장소에 올리지 않음)
+CLAUDE.local.md
+.claude/settings.local.json
