@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Coffee, Star } from 'lucide-react';
@@ -13,6 +14,7 @@ import {
 import { CATEGORY_META } from '@/constants/moods';
 import { theme } from '@/styles/theme';
 import { PATHS } from '@/constants/paths';
+import { canOptimizeImage } from '@/lib/imageHosts';
 import { useIsDesktop } from '@/hooks/useViewport';
 import type { Cafe } from '@/types';
 import {
@@ -75,7 +77,10 @@ export function CafeListCard({ cafe }: CafeListCardProps) {
     return computeOpenStatus(normalized);
   })();
 
-  const mainPhoto = cafe.mainPhoto ?? cafe.photos?.[0]?.url ?? null;
+  // 핫링크가 막힌 외부 사진은 깨지므로, 실패하면 플레이스홀더로 바꿈
+  const [failedPhoto, setFailedPhoto] = useState<string | null>(null);
+  const photoUrl = cafe.mainPhoto ?? cafe.photos?.[0]?.url ?? null;
+  const mainPhoto = photoUrl && photoUrl !== failedPhoto ? photoUrl : null;
   const distanceLabel = formatDistance(cafe.distance);
 
   return (
@@ -88,7 +93,14 @@ export function CafeListCard({ cafe }: CafeListCardProps) {
     >
       <Thumb>
         {mainPhoto ? (
-          <Image src={mainPhoto} alt="" fill sizes="64px" />
+          <Image
+            src={mainPhoto}
+            alt=""
+            fill
+            sizes="64px"
+            unoptimized={!canOptimizeImage(mainPhoto)}
+            onError={() => setFailedPhoto(mainPhoto)}
+          />
         ) : (
           <ThumbPlaceholder aria-hidden>
             <Coffee size={22} strokeWidth={1.5} />
